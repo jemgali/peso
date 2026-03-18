@@ -21,7 +21,8 @@
     "paths": {
       "@/*": ["./src/*"],
       "@/prisma/*": ["./prisma/*"],
-      "@/generated/*": ["./generated/*"]
+      "@/generated/*": ["./generated/*"],
+      "@/public/*": ["./src/components/public/*"]
     }
   },
   "include": [

@@ -9,6 +9,7 @@ datasource db {
 }
 
 // ----- AUTH MODELS -----
+
 model User {
   // Primary Key
   id            String       @id
@@ -17,6 +18,10 @@ model User {
   email         String
   emailVerified Boolean      @default(false)
   image         String?
+  role          String?
+  banned        Boolean?
+  banReason     String?
+  banExpires    DateTime?
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
   // Relationships
@@ -32,17 +37,18 @@ model User {
 
 model Session {
   // Foreign Key
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   // Primary Key
-  id        String   @id
+  id             String   @id
   // Other fields
-  expiresAt DateTime
-  token     String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  ipAddress String?
-  userAgent String?
+  expiresAt      DateTime
+  token          String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  ipAddress      String?
+  userAgent      String?
+  impersonatedBy String?
 
   // Other things
   @@unique([token])
@@ -93,6 +99,7 @@ model Verification {
 }
 
 // ----- PROFILE MODELS -----
+
 model ProfileUser {
   // Foreign Key
   userId            String            @unique @map("user_id")

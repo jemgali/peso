@@ -1,11 +1,8 @@
 import React from 'react'
-import Header from "@/public/header"
 
 const Page = () => {
   return (
-    <>
-      <Header />
-    </>
+    <div>Page</div>
   )
 }
 
