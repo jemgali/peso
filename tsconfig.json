@@ -22,7 +22,10 @@
       "@/*": ["./src/*"],
       "@/prisma/*": ["./prisma/*"],
       "@/generated/*": ["./generated/*"],
-      "@/public/*": ["./src/components/public/*"]
+      "@/public/*": ["./src/components/public/*"],
+      "@/ui/*": ["./src/components/ui/*"],
+      "@/forms/*": ["./src/components/forms/*"],
+      "@/protected/*": ["./src/components/protected/*"],
     }
   },
   "include": [

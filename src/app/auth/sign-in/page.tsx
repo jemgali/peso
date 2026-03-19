@@ -1,9 +1,9 @@
 import React from 'react'
-import SignUpContent from '@/components/auth/sign-up-content'
+import SignInContent from '@/components/auth/sign-in-content'
 
 const Page = () => {
   return (
-    <SignUpContent />
+    <SignInContent />
   )
 }
 

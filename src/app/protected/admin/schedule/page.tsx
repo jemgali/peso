@@ -1,9 +1,9 @@
+import Schedule from '@/components/admin/content/schedule'
 import React from 'react'
-import SignUpContent from '@/components/auth/sign-up-content'
 
 const Page = () => {
   return (
-    <SignUpContent />
+    <Schedule />
   )
 }
 

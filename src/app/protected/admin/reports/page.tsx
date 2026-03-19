@@ -1,9 +1,9 @@
+import Reports from '@/components/admin/content/reports'
 import React from 'react'
-import SignUpContent from '@/components/auth/sign-up-content'
 
 const Page = () => {
   return (
-    <SignUpContent />
+    <Reports />
   )
 }
 
