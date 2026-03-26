@@ -3,8 +3,11 @@ import Header from '@/protected/header'
 import Footer from '@/protected/footer'
 import Side from '@/components/admin/side'
 import { SidebarProvider, SidebarInset } from '@/ui/sidebar'
+import { requireAdmin } from '@/lib/utils/admin-auth'
 
-const Layout = ({ children, }: { children: React.ReactNode }) => {
+const Layout = async ({ children, }: { children: React.ReactNode }) => {
+  const user = await requireAdmin()
+
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-background">
       <div className="shrink-0 z-50">

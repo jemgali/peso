@@ -1,5 +1,6 @@
 import React from 'react'
 import Image from 'next/image'
+import UserProfile from './user-profile'
 
 const Header = () => {
   return (
@@ -11,7 +12,7 @@ const Header = () => {
             <h2 className="text-sm">City Government of Baguio</h2>
         </div>
       </div>
-        {/* {user && <UserProfile user={user} />} */}
+      <UserProfile />
     </header>
   )
 }

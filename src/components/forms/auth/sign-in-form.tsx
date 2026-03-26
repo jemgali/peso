@@ -76,7 +76,7 @@ const SignInForm = () => {
                         id="email" 
                         disabled={isPending}
                         autoComplete="email" 
-                        placeholder="example@gmail.com"
+                        placeholder="user@example.com"
                         className="w-full"
                         aria-invalid={!!errors.email}
                     />

@@ -7,6 +7,7 @@ import { PrismaPg } from "@prisma/adapter-pg";
 import { nextCookies } from "better-auth/next-js";
 import { admin } from "better-auth/plugins"
 import { hashPassword, verifyPassword } from "./password";
+import { Resend } from "resend";
 
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL
@@ -14,6 +15,7 @@ const pool = new Pool({
 
 const adapter = new PrismaPg(pool as any);
 const prisma = new PrismaClient({ adapter });
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 export const auth = betterAuth({
   baseURL: process.env.BETTER_AUTH_URL,
@@ -24,10 +26,24 @@ export const auth = betterAuth({
   
   emailAndPassword: {
     enabled: true,
-    requireEmailVerification: true,
-    hash: hashPassword,
-    verify: verifyPassword,
+    password: {
+      hash: hashPassword,
+      verify: verifyPassword,
+    },
     autoSignIn: false,
+    requireEmailVerification: true,
+  },
+
+  emailVerification: {
+    sendOnSignUp: true,
+    sendVerificationEmail: async ({ user, url, token}, request) => {
+      await resend.emails.send({
+        from: "onboarding@resend.dev",
+        to: user.email,
+        subject: "Verify your email address",
+        html: `<p>Hi ${user.name},</p><p>Please click <a href="${url}">here</a> to verify your email address.</p>`,
+      })
+    }
   },
   
   socialProviders: {

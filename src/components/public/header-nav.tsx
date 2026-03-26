@@ -4,6 +4,9 @@ import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useActivePath } from '@/hooks/use-active-path'
+import { authClient } from '@/lib/auth-client'
+import UserProfile from '@/components/protected/user-profile'
+import { Loader2 } from 'lucide-react'
 
 const NAV_LINKS = [
   { label: 'Home', href: '/#home', id: 'home' },
@@ -15,6 +18,8 @@ const NAV_LINKS = [
 const HeaderNav = () => {
   const checkActive = useActivePath()
   const [activeTab, setActiveTab] = useState('home')
+
+  const { data: session, isPending } = authClient.useSession()
 
   useEffect(() => {
     const updateActiveTab = () => {
@@ -45,11 +50,17 @@ const HeaderNav = () => {
             </TabsTrigger>
           </Link>
         ))}
-        <Link href="/auth/sign-in" passHref>
-          <TabsTrigger value="sign-in" className="text-white hover:text-white/80 transition-colors ml-2">
-            Login
-          </TabsTrigger>
-        </Link>
+        {isPending ? (
+            <Loader2 className="h-4 w-4 animate-spin text-white/70" />
+        ) : session?.user ? (
+            <UserProfile />
+        ) : (
+            <Link href="/auth/sign-in" passHref>
+                <TabsTrigger value="sign-in" className="text-white hover:text-white/80 transition-colors">
+                    Login
+                </TabsTrigger>
+            </Link>
+        )}
       </TabsList>
     </Tabs>
   )

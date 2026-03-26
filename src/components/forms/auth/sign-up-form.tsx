@@ -61,12 +61,13 @@ const SignUpForm = () => {
             email: data.email,
             password: data.password,
             name: fullName,
+            callbackURL: "/auth/verified",
         }, {
             onRequest: () => {
                 setIsPending(true)
             },
             onSuccess: () => {
-                toast.success("Account created successfully.")
+                toast.success("Account created successfully.\nPlease check your email to verify your account.")
                 setIsPending(false)
                 router.push('/auth/sign-in')
             },
@@ -149,7 +150,7 @@ const SignUpForm = () => {
                         id="email"
                         disabled={isPending}
                         autoComplete="email"
-                        placeholder="example@gmail.com"
+                        placeholder="user@example.com"
                         className="w-full"
                         aria-invalid={!!errors.email}
                     />

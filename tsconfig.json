@@ -26,6 +26,7 @@
       "@/ui/*": ["./src/components/ui/*"],
       "@/forms/*": ["./src/components/forms/*"],
       "@/protected/*": ["./src/components/protected/*"],
+      "@/email-template/*": ["./src/components/email-template/*"],
     }
   },
   "include": [
