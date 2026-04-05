@@ -1,0 +1,18 @@
+import React from "react";
+import { redirect } from "next/navigation";
+import { headers } from "next/headers";
+import { auth } from "@/lib/auth";
+
+export async function requireUser() {
+  const headersList = await headers();
+
+  const session = await auth.api.getSession({
+    headers: headersList,
+  });
+
+  if (!session || !session.user) {
+    redirect("/auth/sign-in");
+  }
+
+  return session.user;
+}

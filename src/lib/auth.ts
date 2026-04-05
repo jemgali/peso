@@ -38,7 +38,7 @@ export const auth = betterAuth({
     sendOnSignUp: true,
     sendVerificationEmail: async ({ user, url, token}, request) => {
       await resend.emails.send({
-        from: "onboarding@resend.dev",
+        from: "PESO <noreply@jemgali.tech>",
         to: user.email,
         subject: "Verify your email address",
         html: `<p>Hi ${user.name},</p><p>Please click <a href="${url}">here</a> to verify your email address.</p>`,
