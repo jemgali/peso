@@ -1,5 +1,5 @@
 import React from 'react'
-import Users from '@/components/admin/content/users'
+import Users from '@/components/admin/content/users/index'
 
 const Page = () => {
   return (
