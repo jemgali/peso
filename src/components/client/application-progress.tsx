@@ -2,95 +2,159 @@
 
 import React from "react";
 import { Card } from "@/ui/card";
-import { CheckCircle2, Circle } from "lucide-react";
+import { CheckCircle2, Circle, AlertCircle } from "lucide-react";
 import { Progress } from "@/ui/progress";
+import { cn } from "@/lib/utils";
+
+export type StepStatus = "incomplete" | "complete" | "error" | "current";
 
 interface ProgressStep {
-  id: number;
+  id: string;
   title: string;
   description: string;
 }
 
 const steps: ProgressStep[] = [
   {
-    id: 1,
+    id: "basic-info",
     title: "Basic Information",
     description: "Name and role",
   },
   {
-    id: 2,
+    id: "personal-details",
     title: "Personal Details",
     description: "Birthdate and demographics",
   },
   {
-    id: 3,
+    id: "address",
+    title: "Address",
+    description: "Current residence",
+  },
+  {
+    id: "education",
+    title: "Education",
+    description: "Educational background",
+  },
+  {
+    id: "contact-info",
     title: "Contact Information",
     description: "Communication details",
   },
   {
-    id: 4,
+    id: "review",
     title: "Review & Submit",
     description: "Verify and submit",
   },
 ];
 
 interface ApplicationProgressProps {
-  currentStep?: number;
+  currentStepId?: string;
+  stepStatuses?: Record<string, StepStatus>;
+  onStepClick?: (stepId: string) => void;
 }
 
 const ApplicationProgress: React.FC<ApplicationProgressProps> = ({
-  currentStep = 1,
+  currentStepId = "basic-info",
+  stepStatuses = {},
+  onStepClick,
 }) => {
-  const progressPercentage = ((currentStep - 1) / (steps.length - 1)) * 100;
+  const currentStepIndex = steps.findIndex((s) => s.id === currentStepId);
+  const progressPercentage = (currentStepIndex / (steps.length - 1)) * 100;
+
+  const getStepStatus = (stepId: string): StepStatus => {
+    if (stepId === currentStepId) return "current";
+    return stepStatuses[stepId] || "incomplete";
+  };
+
+  const getStepIcon = (stepId: string, index: number) => {
+    const status = getStepStatus(stepId);
+
+    switch (status) {
+      case "complete":
+        return (
+          <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400" />
+        );
+      case "error":
+        return (
+          <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400" />
+        );
+      case "current":
+        return (
+          <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center">
+            <span className="text-xs text-primary-foreground font-medium">
+              {index + 1}
+            </span>
+          </div>
+        );
+      case "incomplete":
+      default:
+        return <Circle className="w-5 h-5 text-muted-foreground" />;
+    }
+  };
+
+  const getStepBackground = (stepId: string): string => {
+    const status = getStepStatus(stepId);
+
+    switch (status) {
+      case "complete":
+        return "bg-green-50 dark:bg-green-950";
+      case "error":
+        return "bg-red-50 dark:bg-red-950";
+      case "current":
+        return "bg-blue-50 dark:bg-blue-950";
+      case "incomplete":
+      default:
+        return "bg-muted";
+    }
+  };
 
   return (
-    <Card className="p-4 sticky top-4">
+    <Card className="p-4 fixed">
       <div className="space-y-4">
         <div>
           <h3 className="font-semibold text-sm mb-2">Application Progress</h3>
           <Progress value={progressPercentage} className="h-2" />
           <p className="text-xs text-muted-foreground mt-2">
-            Step {currentStep} of {steps.length}
+            Step {currentStepIndex + 1} of {steps.length}
           </p>
         </div>
 
-        <div className="space-y-3">
-          {steps.map((step) => (
-            <div
-              key={step.id}
-              className={`flex items-start gap-3 p-3 rounded-lg transition-colors ${
-                step.id < currentStep
-                  ? "bg-green-50 dark:bg-green-950"
-                  : step.id === currentStep
-                    ? "bg-blue-50 dark:bg-blue-950"
-                    : "bg-muted"
-              }`}
-            >
-              <div className="flex-shrink-0 mt-0.5">
-                {step.id < currentStep ? (
-                  <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400" />
-                ) : step.id === currentStep ? (
-                  <Circle className="w-5 h-5 text-blue-600 dark:text-blue-400 fill-current" />
-                ) : (
-                  <Circle className="w-5 h-5 text-muted-foreground" />
+        <div className="space-y-2">
+          {steps.map((step, index) => {
+            const status = getStepStatus(step.id);
+
+            return (
+              <button
+                key={step.id}
+                type="button"
+                onClick={() => onStepClick?.(step.id)}
+                className={cn(
+                  "flex items-start gap-3 p-3 rounded-lg transition-colors w-full text-left",
+                  getStepBackground(step.id),
+                  onStepClick && "hover:opacity-80 cursor-pointer",
                 )}
-              </div>
-              <div className="min-w-0">
-                <p
-                  className={`text-sm font-medium ${
-                    step.id <= currentStep
-                      ? "text-foreground"
-                      : "text-muted-foreground"
-                  }`}
-                >
-                  {step.title}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {step.description}
-                </p>
-              </div>
-            </div>
-          ))}
+              >
+                <div className="shrink-0 mt-0.5">
+                  {getStepIcon(step.id, index)}
+                </div>
+                <div className="min-w-0">
+                  <p
+                    className={cn(
+                      "text-sm font-medium",
+                      status === "current" || status === "complete"
+                        ? "text-foreground"
+                        : "text-muted-foreground",
+                    )}
+                  >
+                    {step.title}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {step.description}
+                  </p>
+                </div>
+              </button>
+            );
+          })}
         </div>
       </div>
     </Card>
