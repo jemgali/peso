@@ -1,3 +1,11 @@
+---
+name: peso-fullstack-dev
+description: >
+  Fullstack development guide for PESO Portal: Next.js 16 + React 19 +`
+  TypeScript + Better Auth + Prisma + PostgreSQL. Use when building features,
+  configuring auth, managing the database, or implementing UI components.
+---
+
 # SKILLS.md - PESO Portal Development Guide
 
 PESO Portal: Next.js 16 + React 19 + TypeScript + Better Auth + Prisma + PostgreSQL
@@ -68,6 +76,7 @@ peso/
 ## 🚀 Quick Start Commands
 
 ### Development
+
 ```bash
 pnpm install                          # Install dependencies
 pnpm dev                              # Start Next.js dev server (http://localhost:3000)
@@ -76,6 +85,7 @@ pnpm start                            # Start production server
 ```
 
 ### Database
+
 ```bash
 pnpm prisma generate                  # Generate Prisma client (output: generated/prisma)
 pnpm prisma migrate dev               # Create and apply migrations
@@ -84,6 +94,7 @@ pnpm prisma studio                    # Open Prisma Studio GUI
 ```
 
 ### Code Quality
+
 ```bash
 pnpm lint                             # Run ESLint (Next.js config)
 ```
@@ -116,6 +127,7 @@ GOOGLE_CLIENT_SECRET="..."
 ## 🏗️ Tech Stack Details
 
 ### Frontend
+
 - **Framework:** Next.js 16 (App Router, React Server Components)
 - **React:** React 19 (latest)
 - **Language:** TypeScript (strict mode enabled)
@@ -132,6 +144,7 @@ GOOGLE_CLIENT_SECRET="..."
 - **Date Picker:** React Day Picker
 
 ### Backend
+
 - **Runtime:** Node.js 20+ (required for Resend compatibility)
 - **Package Manager:** pnpm
 - **Database:** PostgreSQL (two schemas: `auth` + `public`)
@@ -143,6 +156,7 @@ GOOGLE_CLIENT_SECRET="..."
 - **Email OTP:** input-otp
 
 ### Development
+
 - **TypeScript:** Strict mode, ES2023 target
 - **Linter:** ESLint 9 (Next.js config)
 - **Runtime:** tsx (TypeScript execution for scripts)
@@ -169,16 +183,19 @@ GOOGLE_CLIENT_SECRET="..."
 | `ProfilePersonal` | `public.profile_personal` | Personal details (birthdate, sex, contact) |
 
 ### Relationships
+
 ```
 User (auth) ──── ProfileUser (public) ──── ProfilePersonal (public)
 ```
 
 ### Prisma Client Configuration
+
 - **Output Location:** `generated/prisma` (not committed to git)
 - **Adapter:** @prisma/adapter-pg
 - **Migrations:** Stored in `prisma/migrations/`
 
 ### Database Setup
+
 ```sql
 -- Create required schemas before running migrations
 CREATE SCHEMA IF NOT EXISTS auth;
@@ -190,29 +207,34 @@ CREATE SCHEMA IF NOT EXISTS public;
 ## 🔐 Authentication
 
 ### Better Auth Integration
+
 - **Server config:** `src/lib/auth.ts`
 - **Client config:** `src/lib/auth-client.ts`
 - **API handler:** `src/app/api/auth/[...all]/route.ts`
 
 ### Auth Pages
-| Route | Purpose |
-|-------|---------|
-| `/auth/sign-in` | Email/password sign-in |
-| `/auth/sign-up` | Registration with email verification |
-| `/auth/verified` | Email verification success page |
+
+| Route            | Purpose                              |
+| ---------------- | ------------------------------------ |
+| `/auth/sign-in`  | Email/password sign-in               |
+| `/auth/sign-up`  | Registration with email verification |
+| `/auth/verified` | Email verification success page      |
 
 ### Protected Routes (Role-Based)
-| Route | Required Role |
-|-------|--------------|
-| `/protected/admin` | admin |
-| `/protected/client` | client |
-| `/protected/employee` | employee |
+
+| Route                 | Required Role |
+| --------------------- | ------------- |
+| `/protected/admin`    | admin         |
+| `/protected/client`   | client        |
+| `/protected/employee` | employee      |
 
 ### Providers
+
 - Email/Password (built-in, password hashed with argon2)
 - Google OAuth (requires `GOOGLE_CLIENT_ID` + `GOOGLE_CLIENT_SECRET`)
 
 ### Client Usage
+
 ```typescript
 import { authClient } from "@/lib/auth-client";
 
@@ -231,17 +253,20 @@ const { data: session } = await authClient.getSession();
 ## 📧 Email & Notifications
 
 ### Resend Integration
+
 - **Service:** Resend API for transactional emails
 - **Templates:** React components in `src/components/email-template/`
 - **Test Endpoint:** `POST /api/send` (development)
 - **From Domain:** `onboarding@resend.dev` (development only — change for production)
 
 ### Email Verification Flow
+
 1. User registers → receives OTP email via Resend
 2. User enters OTP (using `input-otp` component)
 3. Redirected to `/auth/verified` on success
 
 ### Toast Notifications (Sonner)
+
 ```typescript
 import { toast } from "sonner";
 
@@ -255,16 +280,19 @@ toast.loading("Saving...");
 ## 🎨 UI & Styling
 
 ### Tailwind CSS 4
+
 - PostCSS 4 support
 - `tw-animate-css` for animation utilities
 - Theme configuration in `tailwind.config.ts`
 
 ### shadcn/ui Components
+
 - Located in `src/components/ui/` (auto-generated)
 - Based on Radix UI primitives
 - Full TypeScript support
 
 ### Adding New shadcn/ui Components
+
 ```bash
 npx shadcn@latest add <component-name>
 # Examples:
@@ -274,6 +302,7 @@ npx shadcn@latest add data-table
 ```
 
 ### Component Architecture
+
 ```
 src/components/
 ├── ui/               # Base UI components (button, input, dialog, etc.)
@@ -285,6 +314,7 @@ src/components/
 ```
 
 ### Path Aliases for Component Imports
+
 ```typescript
 import { Button } from "@/ui/button";
 import { LoginForm } from "@/forms/login";
@@ -295,6 +325,7 @@ import { LoginForm } from "@/forms/login";
 ## 📝 Forms & Validation
 
 ### React Hook Form + Zod Pattern
+
 ```typescript
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -319,6 +350,7 @@ const onSubmit = async (data: FormData) => {
 ```
 
 ### Common Form Patterns
+
 - Form submission → validation → API call → `toast.success()` or `toast.error()`
 - Error display via `form.formState.errors`
 - Loading state: `form.formState.isSubmitting`
@@ -329,6 +361,7 @@ const onSubmit = async (data: FormData) => {
 ## 🚀 Deployment
 
 ### Pre-Deployment Checklist
+
 - [ ] Update `.env` with production secrets (new `BETTER_AUTH_SECRET`, production `DATABASE_URL`)
 - [ ] Change `BETTER_AUTH_URL` to production domain
 - [ ] Change Resend "from" domain from `onboarding@resend.dev` to your verified domain
@@ -338,6 +371,7 @@ const onSubmit = async (data: FormData) => {
 - [ ] Ensure Node.js 20+ in deployment environment
 
 ### Build Output
+
 - Default SSR: `.next/` directory
 - Environment variables must be set before `pnpm build`
 
@@ -345,35 +379,35 @@ const onSubmit = async (data: FormData) => {
 
 ## 🐛 Common Issues & Solutions
 
-| Issue | Solution |
-|-------|----------|
-| Prisma client not found | Run `pnpm prisma generate` to output client to `generated/prisma` |
-| Database connection refused | Verify `DATABASE_URL` in `.env` and ensure PostgreSQL is running |
-| Missing `auth`/`public` schema | Run `CREATE SCHEMA IF NOT EXISTS auth;` in PostgreSQL |
-| Email verification not working | Check `RESEND_API_KEY` is valid; verify sender domain in Resend dashboard |
-| Google OAuth fails | Ensure `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` are set in `.env` |
-| Node.js version error | Upgrade to Node.js 20+ (Resend and other deps require it) |
-| `pnpm install` fails | Delete `node_modules/` and `pnpm-lock.yaml`, then re-run `pnpm install` |
-| Type errors after schema change | Run `pnpm prisma generate` to regenerate types |
+| Issue                           | Solution                                                                  |
+| ------------------------------- | ------------------------------------------------------------------------- |
+| Prisma client not found         | Run `pnpm prisma generate` to output client to `generated/prisma`         |
+| Database connection refused     | Verify `DATABASE_URL` in `.env` and ensure PostgreSQL is running          |
+| Missing `auth`/`public` schema  | Run `CREATE SCHEMA IF NOT EXISTS auth;` in PostgreSQL                     |
+| Email verification not working  | Check `RESEND_API_KEY` is valid; verify sender domain in Resend dashboard |
+| Google OAuth fails              | Ensure `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` are set in `.env`    |
+| Node.js version error           | Upgrade to Node.js 20+ (Resend and other deps require it)                 |
+| `pnpm install` fails            | Delete `node_modules/` and `pnpm-lock.yaml`, then re-run `pnpm install`   |
+| Type errors after schema change | Run `pnpm prisma generate` to regenerate types                            |
 
 ---
 
 ## 📚 Key Files to Know
 
-| File | Purpose |
-|------|---------|
-| `src/app/layout.tsx` | Root layout; wraps app with theme + session providers |
-| `src/middleware.ts` | Next.js middleware for route protection and auth redirects |
-| `src/lib/auth.ts` | Better Auth server configuration (providers, session, plugins) |
-| `src/lib/auth-client.ts` | Better Auth browser client (used in client components) |
-| `src/lib/prisma.ts` | Prisma client singleton with pg adapter |
-| `prisma/schema.prisma` | All data models and schema definitions |
-| `prisma/seed.ts` | Seeds initial admin user (run with `pnpm prisma db seed`) |
-| `tsconfig.json` | TypeScript config with path aliases |
-| `tailwind.config.ts` | Tailwind CSS theme and plugin configuration |
-| `components.json` | shadcn/ui CLI configuration |
-| `eslint.config.mjs` | ESLint rules (Next.js flat config) |
-| `prisma.config.ts` | Prisma seed script configuration |
+| File                     | Purpose                                                        |
+| ------------------------ | -------------------------------------------------------------- |
+| `src/app/layout.tsx`     | Root layout; wraps app with theme + session providers          |
+| `src/middleware.ts`      | Next.js middleware for route protection and auth redirects     |
+| `src/lib/auth.ts`        | Better Auth server configuration (providers, session, plugins) |
+| `src/lib/auth-client.ts` | Better Auth browser client (used in client components)         |
+| `src/lib/prisma.ts`      | Prisma client singleton with pg adapter                        |
+| `prisma/schema.prisma`   | All data models and schema definitions                         |
+| `prisma/seed.ts`         | Seeds initial admin user (run with `pnpm prisma db seed`)      |
+| `tsconfig.json`          | TypeScript config with path aliases                            |
+| `tailwind.config.ts`     | Tailwind CSS theme and plugin configuration                    |
+| `components.json`        | shadcn/ui CLI configuration                                    |
+| `eslint.config.mjs`      | ESLint rules (Next.js flat config)                             |
+| `prisma.config.ts`       | Prisma seed script configuration                               |
 
 ---
 
@@ -381,18 +415,19 @@ const onSubmit = async (data: FormData) => {
 
 Configured in `tsconfig.json`:
 
-| Alias | Maps To |
-|-------|---------|
-| `@/*` | `src/*` |
-| `@/ui/*` | `src/components/ui/*` |
-| `@/forms/*` | `src/components/forms/*` |
-| `@/public/*` | `src/components/public/*` |
-| `@/protected/*` | `src/components/protected/*` |
+| Alias                | Maps To                           |
+| -------------------- | --------------------------------- |
+| `@/*`                | `src/*`                           |
+| `@/ui/*`             | `src/components/ui/*`             |
+| `@/forms/*`          | `src/components/forms/*`          |
+| `@/public/*`         | `src/components/public/*`         |
+| `@/protected/*`      | `src/components/protected/*`      |
 | `@/email-template/*` | `src/components/email-template/*` |
-| `@/prisma/*` | `prisma/*` |
-| `@/generated/*` | `generated/*` |
+| `@/prisma/*`         | `prisma/*`                        |
+| `@/generated/*`      | `generated/*`                     |
 
 ### Example Usage
+
 ```typescript
 import { Button } from "@/ui/button";
 import { LoginForm } from "@/forms/login-form";
@@ -405,6 +440,7 @@ import type { ProfileUser } from "@/generated/prisma";
 ## 🔄 Development Workflow
 
 ### Creating a New Page
+
 ```
 1. Create: src/app/[route]/page.tsx
 2. Add layout if needed: src/app/[route]/layout.tsx
@@ -413,6 +449,7 @@ import type { ProfileUser } from "@/generated/prisma";
 ```
 
 ### Creating a New Protected Page (Role-Based)
+
 ```
 1. Create: src/app/protected/[role]/page.tsx
 2. Add route protection in src/middleware.ts
@@ -420,6 +457,7 @@ import type { ProfileUser } from "@/generated/prisma";
 ```
 
 ### Adding a Database Model
+
 ```
 1. Edit prisma/schema.prisma — add model in public schema
 2. Run: pnpm prisma migrate dev --name add-model-name
@@ -428,6 +466,7 @@ import type { ProfileUser } from "@/generated/prisma";
 ```
 
 ### Adding a New API Route
+
 ```typescript
 // src/app/api/your-route/route.ts
 import { NextRequest, NextResponse } from "next/server";
@@ -446,6 +485,7 @@ export async function POST(req: NextRequest) {
 ```
 
 ### Adding UI Components
+
 ```bash
 # Add a new shadcn/ui component
 npx shadcn@latest add <component-name>
