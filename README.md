@@ -1,36 +1,130 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# PESO Portal
 
-## Getting Started
+Next.js (App Router) + TypeScript + Better Auth + Prisma (PostgreSQL).
 
-First, run the development server:
+## Tech stack
+
+- Next.js 16 (App Router)
+- React 19
+- TypeScript (strict)
+- Prisma (client output: `generated/prisma`)
+- PostgreSQL (`auth` + `public` schemas)
+- Better Auth (email/password + Google)
+- Resend (email verification)
+
+## Requirements
+
+- Node.js:
+  - **Node 20+ recommended**
+  - Note: Some dependencies (e.g., Resend) require modern Node versions.
+- pnpm (recommended, repo includes `pnpm-lock.yaml`)
+
+## 1) Install dependencies
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+pnpm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 2) Environment variables
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Create a `.env` file in the repository root.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Required
 
-## Learn More
+```bash
+# Postgres connection string used by Prisma + Better Auth
+DATABASE_URL="postgresql://USER:PASSWORD@HOST:5432/DBNAME?schema=public"
 
-To learn more about Next.js, take a look at the following resources:
+# Better Auth base URL (used by server + client)
+BETTER_AUTH_URL="http://localhost:3000"
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+# Resend (used for email verification + /api/send test route)
+RESEND_API_KEY="re_..."
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Optional (Google OAuth)
 
-## Deploy on Vercel
+```bash
+GOOGLE_CLIENT_ID="..."
+GOOGLE_CLIENT_SECRET="..."
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## 3) Database setup (PostgreSQL)
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+This project expects PostgreSQL and uses two schemas:
+
+- `auth` (Better Auth tables/models)
+- `public` (application domain tables/models)
+
+Make sure your database exists and that these schemas are available.
+
+Example (psql):
+
+```sql
+CREATE SCHEMA IF NOT EXISTS auth;
+CREATE SCHEMA IF NOT EXISTS public;
+```
+
+## 4) Prisma: generate + migrate + seed
+
+> Prisma client output is configured to `generated/prisma` and is gitignored.
+
+### Run migrations
+
+If you already have migrations, apply them:
+
+```bash
+pnpm prisma migrate dev
+```
+
+### Seed (creates initial admin)
+
+Seeding is configured in `prisma.config.ts` to run:
+
+```bash
+pnpx tsx prisma/seed.ts
+```
+
+You can run seed via Prisma:
+
+```bash
+pnpm prisma db seed
+```
+
+The seed script will create an admin user if it does not already exist.
+
+> Note: The current seed script uses a fixed admin email/password inside `prisma/seed.ts`. Change these before production use.
+
+## 5) Run the app
+
+```bash
+pnpm dev
+```
+
+Open:
+
+- http://localhost:3000
+
+## Auth routes
+
+- `/auth/sign-in`
+- `/auth/sign-up`
+- `/auth/verified` (success page after verification)
+
+## Protected routes (role-based)
+
+- `/protected/admin` (server-guarded; redirects if not admin)
+- `/protected/client`
+- `/protected/employee`
+
+## API routes
+
+- `POST /api/send`
+  - Sends a sample email using Resend and a React email template
+  - Source: `src/app/api/send/route.ts`
+
+## Notes / gotchas
+
+- The repo ignores `.env*` files—do not commit secrets.
+- The generated Prisma client lives in `generated/prisma` (also ignored by git).
+- Resend “from” domain in development uses `onboarding@resend.dev` in code; adjust for your real domain in production.
