@@ -1,7 +1,5 @@
 import React from "react";
-import { Controller } from "react-hook-form";
 import { Input } from "@/ui/input";
-import { Checkbox } from "@/ui/checkbox";
 import {
   Field,
   FieldSet,
@@ -9,13 +7,12 @@ import {
   FieldLabel,
   FieldError,
 } from "@/ui/field";
-import type { FormSectionWithControlProps } from "./types";
+import type { FormSectionProps } from "./types";
 
-const EducationSection: React.FC<FormSectionWithControlProps> = ({
+const EducationSection: React.FC<FormSectionProps> = ({
   register,
   errors,
   isPending,
-  control,
   setSectionRef,
 }) => {
   return (
@@ -34,25 +31,53 @@ const EducationSection: React.FC<FormSectionWithControlProps> = ({
       <FieldGroup>
         <FieldSet className="gap-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Field data-invalid={!!errors.educationLevel}>
-              <FieldLabel htmlFor="educationLevel">Education Level</FieldLabel>
+            <Field data-invalid={!!errors.gradeYear}>
+              <FieldLabel htmlFor="gradeYear">
+                Grade/Year Level
+              </FieldLabel>
               <select
-                {...register("educationLevel")}
-                id="educationLevel"
+                {...register("gradeYear")}
+                id="gradeYear"
                 disabled={isPending}
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                aria-invalid={!!errors.educationLevel}
+                aria-invalid={!!errors.gradeYear}
               >
                 <option value="">Select...</option>
-                <option value="Elementary">Elementary</option>
-                <option value="High School">High School</option>
-                <option value="Senior High School">Senior High School</option>
-                <option value="Vocational">Vocational/Technical</option>
-                <option value="College">College/University</option>
-                <option value="Post Graduate">Post Graduate</option>
+                <optgroup label="Elementary">
+                  <option value="Grade 1">Grade 1</option>
+                  <option value="Grade 2">Grade 2</option>
+                  <option value="Grade 3">Grade 3</option>
+                  <option value="Grade 4">Grade 4</option>
+                  <option value="Grade 5">Grade 5</option>
+                  <option value="Grade 6">Grade 6</option>
+                </optgroup>
+                <optgroup label="Junior High School">
+                  <option value="Grade 7">Grade 7</option>
+                  <option value="Grade 8">Grade 8</option>
+                  <option value="Grade 9">Grade 9</option>
+                  <option value="Grade 10">Grade 10</option>
+                </optgroup>
+                <optgroup label="Senior High School">
+                  <option value="Grade 11">Grade 11</option>
+                  <option value="Grade 12">Grade 12</option>
+                </optgroup>
+                <optgroup label="College/University">
+                  <option value="1st Year College">1st Year College</option>
+                  <option value="2nd Year College">2nd Year College</option>
+                  <option value="3rd Year College">3rd Year College</option>
+                  <option value="4th Year College">4th Year College</option>
+                  <option value="5th Year College">5th Year College</option>
+                </optgroup>
+                <optgroup label="Vocational">
+                  <option value="Vocational/TESDA">Vocational/TESDA</option>
+                </optgroup>
+                <optgroup label="Graduate Studies">
+                  <option value="Masters">Masters</option>
+                  <option value="Doctorate">Doctorate</option>
+                </optgroup>
               </select>
-              {errors.educationLevel && (
-                <FieldError>{errors.educationLevel.message}</FieldError>
+              {errors.gradeYear && (
+                <FieldError>{errors.gradeYear.message}</FieldError>
               )}
             </Field>
 
@@ -88,81 +113,20 @@ const EducationSection: React.FC<FormSectionWithControlProps> = ({
               )}
             </Field>
 
-            <div className="grid grid-cols-2 gap-4">
-              <Field data-invalid={!!errors.startYear}>
-                <FieldLabel htmlFor="startYear">Start Year</FieldLabel>
-                <Input
-                  {...register("startYear")}
-                  type="number"
-                  id="startYear"
-                  disabled={isPending}
-                  placeholder="2020"
-                  aria-invalid={!!errors.startYear}
-                />
-                {errors.startYear && (
-                  <FieldError>{errors.startYear.message}</FieldError>
-                )}
-              </Field>
-
-              <Field data-invalid={!!errors.endYear}>
-                <FieldLabel htmlFor="endYear">End Year</FieldLabel>
-                <Input
-                  {...register("endYear")}
-                  type="number"
-                  id="endYear"
-                  disabled={isPending}
-                  placeholder="2024"
-                  aria-invalid={!!errors.endYear}
-                />
-                {errors.endYear && (
-                  <FieldError>{errors.endYear.message}</FieldError>
-                )}
-              </Field>
-            </div>
-          </div>
-
-          <div className="flex flex-col sm:flex-row gap-6 pt-2">
-            <div className="flex items-center gap-2">
-              <Controller
-                name="isGraduated"
-                control={control}
-                render={({ field }) => (
-                  <Checkbox
-                    id="isGraduated"
-                    checked={field.value}
-                    onCheckedChange={field.onChange}
-                    disabled={isPending}
-                  />
-                )}
+            <Field data-invalid={!!errors.schoolYear}>
+              <FieldLabel htmlFor="schoolYear">School Year</FieldLabel>
+              <Input
+                {...register("schoolYear")}
+                type="text"
+                id="schoolYear"
+                disabled={isPending}
+                placeholder="e.g., 2023-2024"
+                aria-invalid={!!errors.schoolYear}
               />
-              <label
-                htmlFor="isGraduated"
-                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-              >
-                Graduated
-              </label>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <Controller
-                name="isCurrentlyEnrolled"
-                control={control}
-                render={({ field }) => (
-                  <Checkbox
-                    id="isCurrentlyEnrolled"
-                    checked={field.value}
-                    onCheckedChange={field.onChange}
-                    disabled={isPending}
-                  />
-                )}
-              />
-              <label
-                htmlFor="isCurrentlyEnrolled"
-                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-              >
-                Currently Enrolled
-              </label>
-            </div>
+              {errors.schoolYear && (
+                <FieldError>{errors.schoolYear.message}</FieldError>
+              )}
+            </Field>
           </div>
         </FieldSet>
       </FieldGroup>

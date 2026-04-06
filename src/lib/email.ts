@@ -1,0 +1,106 @@
+import { Resend } from "resend";
+import { createElement } from "react";
+import { ApplicationApprovedEmail } from "@/components/email-template/application-approved";
+import { ApplicationRevisionEmail } from "@/components/email-template/application-revision";
+import { ApplicationRejectedEmail } from "@/components/email-template/application-rejected";
+import type {
+  FieldFeedback,
+  DocumentFeedback,
+} from "@/lib/validations/application-review";
+
+const resend = new Resend(process.env.RESEND_API_KEY);
+const FROM_EMAIL = "PESO <noreply@jemgali.tech>";
+
+interface SendApplicationEmailParams {
+  to: string;
+  applicantName: string;
+  submissionNumber: number;
+  decision: "approved" | "needs_revision" | "rejected";
+  overallComments?: string;
+  fieldFeedback?: FieldFeedback[];
+  documentFeedback?: DocumentFeedback[];
+}
+
+export async function sendApplicationReviewEmail({
+  to,
+  applicantName,
+  submissionNumber,
+  decision,
+  overallComments,
+  fieldFeedback = [],
+  documentFeedback = [],
+}: SendApplicationEmailParams): Promise<{ success: boolean; error?: string }> {
+  try {
+    let subject: string;
+    let reactElement: React.ReactElement;
+
+    switch (decision) {
+      case "approved":
+        subject = "Your SPES Application Has Been Approved!";
+        reactElement = createElement(ApplicationApprovedEmail, {
+          applicantName,
+          submissionNumber,
+        });
+        break;
+
+      case "needs_revision":
+        subject = "Your SPES Application Requires Revision";
+        // Filter only invalid fields
+        const fieldIssues = fieldFeedback
+          .filter((f) => f.status === "invalid")
+          .map((f) => ({
+            fieldName: f.fieldName,
+            comment: f.comment,
+          }));
+        // Filter invalid or missing documents
+        const documentIssues = documentFeedback
+          .filter((f) => f.status === "invalid" || f.status === "missing")
+          .map((f) => ({
+            documentType: f.documentType,
+            status: f.status,
+            comment: f.comment,
+          }));
+
+        reactElement = createElement(ApplicationRevisionEmail, {
+          applicantName,
+          submissionNumber,
+          overallComments,
+          fieldIssues,
+          documentIssues,
+        });
+        break;
+
+      case "rejected":
+        subject = "Update on Your SPES Application";
+        reactElement = createElement(ApplicationRejectedEmail, {
+          applicantName,
+          submissionNumber,
+          reason: overallComments,
+        });
+        break;
+
+      default:
+        return { success: false, error: "Invalid decision type" };
+    }
+
+    const { error } = await resend.emails.send({
+      from: FROM_EMAIL,
+      to,
+      subject,
+      react: reactElement,
+    });
+
+    if (error) {
+      console.error("Failed to send email:", error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error sending application review email:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown error",
+    };
+  }
+}

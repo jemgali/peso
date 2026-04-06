@@ -35,6 +35,7 @@ type SignUpFormValues = z.infer<typeof signUpSchema>
 const SignUpForm = () => {
     const router = useRouter()
     const [isPending, setIsPending] = useState(false)
+    const [isGooglePending, setIsGooglePending] = useState(false)
 
     const {
         register,
@@ -74,6 +75,21 @@ const SignUpForm = () => {
             onError: (ctx) => {
                 toast.error(ctx.error.message || "Failed to create account.")
                 setIsPending(false)
+            }
+        })
+    }
+
+    const handleGoogleSignUp = async () => {
+        await authClient.signIn.social({
+            provider: "google",
+            callbackURL: "/",
+        }, {
+            onRequest: () => {
+                setIsGooglePending(true)
+            },
+            onError: (ctx) => {
+                toast.error(ctx.error.message || "Failed to sign up with Google.")
+                setIsGooglePending(false)
             }
         })
     }
@@ -197,15 +213,26 @@ const SignUpForm = () => {
                     variant="outline" 
                     className="w-full" 
                     size="lg"
+                    disabled={isPending || isGooglePending}
+                    onClick={handleGoogleSignUp}
                 >
-                    <Image 
-                        src="/svgs/google.svg" 
-                        alt="Google" 
-                        width={15} 
-                        height={15} 
-                        className="mr-2"
-                    />
-                    Sign up with Google
+                    {isGooglePending ? (
+                        <>
+                            <Spinner className='mr-2 h-4 w-4'/>
+                            Signing up...
+                        </>
+                    ) : (
+                        <>
+                            <Image 
+                                src="/svgs/google.svg" 
+                                alt="Google" 
+                                width={15} 
+                                height={15} 
+                                className="mr-2"
+                            />
+                            Sign up with Google
+                        </>
+                    )}
                 </Button>
             </FieldSet>
         </FieldGroup>

@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { CheckCircle2, Circle, AlertCircle } from "lucide-react";
+import { CheckCircle2, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export interface StepConfig {
@@ -22,7 +22,6 @@ interface VerticalStepperProps {
 
 const VerticalStepper: React.FC<VerticalStepperProps> = ({
   steps,
-  currentStepId,
   stepStatuses,
   onStepClick,
   className,

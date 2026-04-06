@@ -25,13 +25,43 @@ const steps = [
     description: "Current residence",
   },
   {
+    id: "family",
+    title: "Family",
+    description: "Parents and siblings",
+  },
+  {
+    id: "guardian",
+    title: "Guardian",
+    description: "Guardian details",
+  },
+  {
+    id: "benefactor",
+    title: "Benefactor",
+    description: "Supporting person",
+  },
+  {
     id: "education",
     title: "Education",
     description: "Educational background",
   },
   {
+    id: "skills",
+    title: "Skills",
+    description: "Your competencies",
+  },
+  {
+    id: "spes-info",
+    title: "SPES Details",
+    description: "Program information",
+  },
+  {
+    id: "documents",
+    title: "Documents",
+    description: "Required papers",
+  },
+  {
     id: "contact-info",
-    title: "Contact Information",
+    title: "Contact",
     description: "Communication details",
   },
   {
@@ -41,16 +71,19 @@ const steps = [
   },
 ];
 
+// Initialize all step statuses as incomplete
+const initialStepStatuses: Record<string, StepStatus> = steps.reduce(
+  (acc, step) => {
+    acc[step.id] = "incomplete";
+    return acc;
+  },
+  {} as Record<string, StepStatus>
+);
+
 const ApplicationForm = () => {
   const [currentStepId, setCurrentStepId] = useState("basic-info");
-  const [stepStatuses, setStepStatuses] = useState<Record<string, StepStatus>>({
-    "basic-info": "current",
-    "personal-details": "incomplete",
-    address: "incomplete",
-    education: "incomplete",
-    "contact-info": "incomplete",
-    review: "incomplete",
-  });
+  const [stepStatuses, setStepStatuses] =
+    useState<Record<string, StepStatus>>(initialStepStatuses);
 
   const handleStepClick = useCallback((stepId: string) => {
     const section = document.getElementById(stepId);
@@ -61,34 +94,13 @@ const ApplicationForm = () => {
 
   const handleStepChange = useCallback((stepId: string) => {
     setCurrentStepId(stepId);
-    setStepStatuses((prev) => {
-      const newStatuses = { ...prev };
-      Object.keys(newStatuses).forEach((id) => {
-        if (id === stepId) {
-          newStatuses[id] = "current";
-        } else if (newStatuses[id] === "current") {
-          newStatuses[id] = prev[id] === "current" ? "incomplete" : prev[id];
-        }
-      });
-      return newStatuses;
-    });
   }, []);
 
   const handleValidationChange = useCallback(
     (newStatuses: Record<string, StepStatus>) => {
-      setStepStatuses((prev) => {
-        const merged = { ...prev };
-        Object.keys(newStatuses).forEach((key) => {
-          if (key === currentStepId) {
-            merged[key] = "current";
-          } else {
-            merged[key] = newStatuses[key];
-          }
-        });
-        return merged;
-      });
+      setStepStatuses(newStatuses);
     },
-    [currentStepId]
+    []
   );
 
   return (
@@ -104,7 +116,7 @@ const ApplicationForm = () => {
       </div>
 
       {/* Progress Sidebar - Right Side (Desktop only) */}
-      <div className="w-full lg:w-80 shrink-0 hidden lg:block">
+      <div className="w-full lg:w-72 shrink-0 hidden lg:block">
         <ApplicationProgress
           currentStepId={currentStepId}
           stepStatuses={stepStatuses}
@@ -124,18 +136,24 @@ const ApplicationForm = () => {
               {steps.find((s) => s.id === currentStepId)?.title}
             </p>
           </div>
-          <div className="flex gap-1">
+          <div className="flex gap-0.5">
             {steps.map((step) => (
               <button
                 key={step.id}
                 type="button"
                 onClick={() => handleStepClick(step.id)}
                 className={cn(
-                  "h-2 w-6 rounded-full transition-all duration-300",
-                  stepStatuses[step.id] === "complete" && "bg-green-500",
-                  stepStatuses[step.id] === "current" && "bg-primary",
-                  stepStatuses[step.id] === "error" && "bg-red-500",
-                  stepStatuses[step.id] === "incomplete" && "bg-muted"
+                  "h-2 w-4 rounded-full transition-all duration-300",
+                  step.id === currentStepId && "bg-primary",
+                  step.id !== currentStepId &&
+                    stepStatuses[step.id] === "complete" &&
+                    "bg-green-500",
+                  step.id !== currentStepId &&
+                    stepStatuses[step.id] === "error" &&
+                    "bg-red-500",
+                  step.id !== currentStepId &&
+                    stepStatuses[step.id] === "incomplete" &&
+                    "bg-muted"
                 )}
                 aria-label={`Go to ${step.title}`}
               />
@@ -148,4 +166,3 @@ const ApplicationForm = () => {
 };
 
 export default ApplicationForm;
-

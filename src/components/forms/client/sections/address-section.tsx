@@ -31,64 +31,68 @@ const AddressSection: React.FC<FormSectionProps> = ({
 
       <FieldGroup>
         <FieldSet className="gap-4">
-          <Field data-invalid={!!errors.presentAddress}>
-            <FieldLabel htmlFor="presentAddress">Present Address</FieldLabel>
+          <Field data-invalid={!!errors.profileHouseStreet}>
+            <FieldLabel htmlFor="profileHouseStreet">
+              House/Unit No., Street, Subdivision
+            </FieldLabel>
             <Textarea
-              {...register("presentAddress")}
-              id="presentAddress"
+              {...register("profileHouseStreet")}
+              id="profileHouseStreet"
               disabled={isPending}
               placeholder="House/Unit No., Street, Subdivision/Village"
-              aria-invalid={!!errors.presentAddress}
+              aria-invalid={!!errors.profileHouseStreet}
               className="min-h-20"
             />
-            {errors.presentAddress && (
-              <FieldError>{errors.presentAddress.message}</FieldError>
+            {errors.profileHouseStreet && (
+              <FieldError>{errors.profileHouseStreet.message}</FieldError>
             )}
           </Field>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Field data-invalid={!!errors.barangay}>
-              <FieldLabel htmlFor="barangay">Barangay</FieldLabel>
+            <Field data-invalid={!!errors.profileBarangay}>
+              <FieldLabel htmlFor="profileBarangay">Barangay</FieldLabel>
               <Input
-                {...register("barangay")}
+                {...register("profileBarangay")}
                 type="text"
-                id="barangay"
+                id="profileBarangay"
                 disabled={isPending}
                 placeholder="Barangay name"
-                aria-invalid={!!errors.barangay}
+                aria-invalid={!!errors.profileBarangay}
               />
-              {errors.barangay && (
-                <FieldError>{errors.barangay.message}</FieldError>
+              {errors.profileBarangay && (
+                <FieldError>{errors.profileBarangay.message}</FieldError>
               )}
             </Field>
 
-            <Field data-invalid={!!errors.municipality}>
-              <FieldLabel htmlFor="municipality">Municipality/City</FieldLabel>
+            <Field data-invalid={!!errors.profileMunicipality}>
+              <FieldLabel htmlFor="profileMunicipality">
+                Municipality/City
+              </FieldLabel>
               <Input
-                {...register("municipality")}
+                {...register("profileMunicipality")}
                 type="text"
-                id="municipality"
+                id="profileMunicipality"
                 disabled={isPending}
                 placeholder="City or Municipality"
-                aria-invalid={!!errors.municipality}
+                aria-invalid={!!errors.profileMunicipality}
               />
-              {errors.municipality && (
-                <FieldError>{errors.municipality.message}</FieldError>
+              {errors.profileMunicipality && (
+                <FieldError>{errors.profileMunicipality.message}</FieldError>
               )}
             </Field>
 
-            <Field data-invalid={!!errors.province}>
-              <FieldLabel htmlFor="province">Province</FieldLabel>
+            <Field data-invalid={!!errors.profileProvince}>
+              <FieldLabel htmlFor="profileProvince">Province</FieldLabel>
               <Input
-                {...register("province")}
+                {...register("profileProvince")}
                 type="text"
-                id="province"
+                id="profileProvince"
                 disabled={isPending}
                 placeholder="Province name"
-                aria-invalid={!!errors.province}
+                aria-invalid={!!errors.profileProvince}
               />
-              {errors.province && (
-                <FieldError>{errors.province.message}</FieldError>
+              {errors.profileProvince && (
+                <FieldError>{errors.profileProvince.message}</FieldError>
               )}
             </Field>
           </div>

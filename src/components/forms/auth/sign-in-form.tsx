@@ -3,7 +3,6 @@
 import React, { useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -29,8 +28,8 @@ const signInSchema = z.object({
 type SignInFormValues = z.infer<typeof signInSchema>
 
 const SignInForm = () => {
-    const router = useRouter()
     const [isPending, setIsPending] = useState(false)
+    const [isGooglePending, setIsGooglePending] = useState(false)
 
     const {
         register,
@@ -55,11 +54,26 @@ const SignInForm = () => {
             onSuccess: () => {
                 toast.success("Successfully signed in.")
                 setIsPending(false)
-                router.push("/")
+                window.location.href = "/"
             },
             onError: (ctx) => {
                 toast.error(ctx.error.message || "Invalid email or password.")
                 setIsPending(false)
+            }
+        })
+    }
+
+    const handleGoogleSignIn = async () => {
+        await authClient.signIn.social({
+            provider: "google",
+            callbackURL: "/",
+        }, {
+            onRequest: () => {
+                setIsGooglePending(true)
+            },
+            onError: (ctx) => {
+                toast.error(ctx.error.message || "Failed to sign in with Google.")
+                setIsGooglePending(false)
             }
         })
     }
@@ -129,15 +143,26 @@ const SignInForm = () => {
                         variant="outline" 
                         className="w-full" 
                         size="lg"
+                        disabled={isPending || isGooglePending}
+                        onClick={handleGoogleSignIn}
                     >
-                        <Image 
-                            src="/svgs/google.svg" 
-                            alt="Google" 
-                            width={15} 
-                            height={15} 
-                            className="mr-2"
-                        />
-                        Sign in with Google
+                        {isGooglePending ? (
+                            <>
+                                <Spinner className='mr-2 h-4 w-4'/>
+                                Signing in...
+                            </>
+                        ) : (
+                            <>
+                                <Image 
+                                    src="/svgs/google.svg" 
+                                    alt="Google" 
+                                    width={15} 
+                                    height={15} 
+                                    className="mr-2"
+                                />
+                                Sign in with Google
+                            </>
+                        )}
                     </Button>
                 </FieldSet>
 
@@ -145,7 +170,7 @@ const SignInForm = () => {
         </FieldGroup>
 
         <div className="text-center text-sm text-muted-foreground mt-6">
-            Don't have an account?{" "}
+            Don&apos;t have an account?{" "}
             <Link href="/auth/sign-up" className="font-semibold text-primary hover:underline underline-offset-4">
                 Sign up
             </Link>

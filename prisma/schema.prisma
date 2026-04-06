@@ -28,6 +28,8 @@ model User {
   sessions      Session[]
   accounts      Account[]
   profile       ProfileUser?
+  reviews       ApplicationReview[]
+  notifications Notification[]
 
   // Other things
   @@unique([email])
@@ -123,6 +125,7 @@ model ProfileUser {
   skills            ProfileSkills?
   documents         ProfileDocuments?
   spes              ProfileSPES?
+  submissions       ApplicationSubmission[]
 
   @@map("profile_user")
   @@schema("public")
@@ -293,5 +296,160 @@ model ProfileSPES {
   remarks             String?     @map("remarks")
 
   @@map("profile_spes")
+  @@schema("public")
+}
+
+// ----- APPLICATION REVIEW MODELS -----
+
+// Application submission status enum values: pending, in_review, approved, needs_revision, rejected
+model ApplicationSubmission {
+  // Foreign Key
+  profileId       String              @map("profile_id")
+  profile         ProfileUser         @relation(fields: [profileId], references: [profileId], onDelete: Cascade)
+  // Primary Key
+  submissionId    String              @id @map("submission_id")
+  // Status fields
+  status          String              @default("pending") @map("status") // pending, in_review, approved, needs_revision, rejected
+  submissionNumber Int                @default(1) @map("submission_number") // Track resubmission count
+  // Timestamps
+  submittedAt     DateTime            @default(now()) @map("submitted_at")
+  updatedAt       DateTime            @updatedAt @map("updated_at")
+  // Relationships
+  reviews         ApplicationReview[]
+
+  @@index([profileId])
+  @@index([status])
+  @@map("application_submission")
+  @@schema("public")
+}
+
+// Application review by admin
+model ApplicationReview {
+  // Foreign Key - Submission being reviewed
+  submissionId          String                   @map("submission_id")
+  submission            ApplicationSubmission    @relation(fields: [submissionId], references: [submissionId], onDelete: Cascade)
+  // Foreign Key - Admin who reviewed
+  reviewerId            String                   @map("reviewer_id")
+  reviewer              User                     @relation(fields: [reviewerId], references: [id], onDelete: Cascade)
+  // Primary Key
+  reviewId              String                   @id @map("review_id")
+  // Review decision
+  decision              String                   @map("decision") // approved, needs_revision, rejected
+  overallComments       String?                  @map("overall_comments")
+  // Timestamps
+  reviewedAt            DateTime                 @default(now()) @map("reviewed_at")
+  // Relationships
+  fieldFeedback         ReviewFieldFeedback[]
+  documentFeedback      ReviewDocumentFeedback[]
+
+  @@index([submissionId])
+  @@index([reviewerId])
+  @@map("application_review")
+  @@schema("public")
+}
+
+// Per-field feedback from admin review
+model ReviewFieldFeedback {
+  // Foreign Key
+  reviewId    String            @map("review_id")
+  review      ApplicationReview @relation(fields: [reviewId], references: [reviewId], onDelete: Cascade)
+  // Primary Key
+  feedbackId  String            @id @map("feedback_id")
+  // Field identification
+  sectionId   String            @map("section_id") // e.g., "basic-info", "personal-details"
+  fieldName   String            @map("field_name") // e.g., "profileLastName", "profileBirthdate"
+  // Feedback
+  status      String            @map("status") // valid, invalid
+  comment     String?           @map("comment")
+
+  @@index([reviewId])
+  @@map("review_field_feedback")
+  @@schema("public")
+}
+
+// Per-document verification from admin review
+model ReviewDocumentFeedback {
+  // Foreign Key
+  reviewId     String            @map("review_id")
+  review       ApplicationReview @relation(fields: [reviewId], references: [reviewId], onDelete: Cascade)
+  // Primary Key
+  feedbackId   String            @id @map("feedback_id")
+  // Document identification
+  documentType String            @map("document_type") // e.g., "psaCertificate", "schoolId", "grades"
+  // Verification status
+  status       String            @map("status") // valid, invalid, missing
+  comment      String?           @map("comment")
+
+  @@index([reviewId])
+  @@map("review_document_feedback")
+  @@schema("public")
+}
+
+// In-app notifications
+model Notification {
+  // Foreign Key - User receiving notification
+  userId        String    @map("user_id")
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // Primary Key
+  notificationId String   @id @map("notification_id")
+  // Notification content
+  type          String    @map("type") // application_approved, application_revision, application_rejected
+  title         String    @map("title")
+  message       String    @map("message")
+  link          String?   @map("link") // Optional link to related page
+  // Status
+  isRead        Boolean   @default(false) @map("is_read")
+  // Timestamps
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@index([isRead])
+  @@map("notification")
+  @@schema("public")
+}
+
+// ----- PROGRAM MODELS -----
+
+// PESO Programs (GIP, SPES, NSRP, DILP, Jobstart, TUPAD, etc.)
+model Program {
+  // Primary Key
+  id          String   @id @default(cuid())
+  // Program details
+  title       String
+  description String?
+  image       String?  // URL to program logo/image
+  link        String?  // URL to program details page
+  // Status and ordering
+  status      String   @default("active") // active, inactive
+  order       Int      @default(0) // Display order
+  // Timestamps
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("program")
+  @@schema("public")
+}
+
+// ----- SCHEDULE MODELS -----
+
+// Schedule events (announcements, deadlines, schedules)
+model ScheduleEvent {
+  // Primary Key
+  id          String    @id @default(cuid())
+  // Event details
+  title       String
+  description String?
+  type        String    // announcement, schedule, deadline
+  // Date/Time
+  startDate   DateTime  @map("start_date")
+  endDate     DateTime? @map("end_date")
+  allDay      Boolean   @default(false) @map("all_day")
+  // Timestamps
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  @@index([startDate])
+  @@index([type])
+  @@map("schedule_event")
   @@schema("public")
 }

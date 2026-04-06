@@ -1,7 +1,17 @@
-import React from "react";
+import React, { useState } from "react";
 import { Button } from "@/ui/button";
 import { Card } from "@/ui/card";
 import { Spinner } from "@/ui/spinner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/ui/alert-dialog";
 import type { ReviewSectionProps } from "./types";
 
 const ReviewSection: React.FC<ReviewSectionProps> = ({
@@ -9,7 +19,66 @@ const ReviewSection: React.FC<ReviewSectionProps> = ({
   isPending,
   isValid,
   setSectionRef,
+  onSubmitRequest,
 }) => {
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+
+  const handleSubmitClick = () => {
+    if (isValid) {
+      setShowConfirmDialog(true);
+    }
+  };
+
+  const handleConfirmSubmit = () => {
+    setShowConfirmDialog(false);
+    onSubmitRequest();
+  };
+
+  // Helper to format name
+  const formatName = () => {
+    return [
+      formValues.profileFirstName,
+      formValues.profileMiddleName,
+      formValues.profileLastName,
+      formValues.profileSuffix,
+    ]
+      .filter(Boolean)
+      .join(" ") || "Not provided";
+  };
+
+  // Helper to format address
+  const formatAddress = () => {
+    const parts = [
+      formValues.profileHouseStreet,
+      formValues.profileBarangay,
+      formValues.profileMunicipality,
+      formValues.profileProvince,
+    ].filter(Boolean);
+    return parts.length > 0 ? parts.join(", ") : "Not provided";
+  };
+
+  // Helper to format languages
+  const formatLanguages = () => {
+    if (!formValues.profileLanguageDialect || formValues.profileLanguageDialect.length === 0) {
+      return "Not provided";
+    }
+    return formValues.profileLanguageDialect
+      .map((item) => item.value)
+      .filter(Boolean)
+      .join(", ") || "Not provided";
+  };
+
+  // Helper to format skills
+  const formatSkills = () => {
+    if (!formValues.skills || formValues.skills.length === 0) {
+      return "Not provided";
+    }
+    return formValues.skills
+      .map((item) => item.value)
+      .filter(Boolean)
+      .join(", ") || "Not provided";
+  };
+
   return (
     <div
       id="review"
@@ -24,21 +93,13 @@ const ReviewSection: React.FC<ReviewSectionProps> = ({
       </div>
 
       <div className="space-y-4">
+        {/* Basic Information */}
         <Card className="p-4 bg-muted/30">
           <h3 className="text-sm font-semibold mb-3">Basic Information</h3>
           <div className="grid grid-cols-2 gap-2 text-sm">
             <div>
               <p className="text-muted-foreground">Legal Name</p>
-              <p className="font-medium">
-                {[
-                  formValues.firstName,
-                  formValues.middleName,
-                  formValues.lastName,
-                  formValues.suffix,
-                ]
-                  .filter(Boolean)
-                  .join(" ") || "Not provided"}
-              </p>
+              <p className="font-medium">{formatName()}</p>
             </div>
             <div>
               <p className="text-muted-foreground">Role</p>
@@ -49,87 +110,61 @@ const ReviewSection: React.FC<ReviewSectionProps> = ({
           </div>
         </Card>
 
+        {/* Personal Details */}
         <Card className="p-4 bg-muted/30">
           <h3 className="text-sm font-semibold mb-3">Personal Details</h3>
-          <div className="grid grid-cols-2 gap-2 text-sm">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-sm">
             <div>
               <p className="text-muted-foreground">Birthdate</p>
               <p className="font-medium">
-                {formValues.birthdate || "Not provided"}
+                {formValues.profileBirthdate || "Not provided"}
               </p>
             </div>
             <div>
               <p className="text-muted-foreground">Age</p>
               <p className="font-medium">
-                {formValues.age || "Not provided"}
-              </p>
-            </div>
-            <div>
-              <p className="text-muted-foreground">Place of Birth</p>
-              <p className="font-medium">
-                {formValues.placeOfBirth || "Not provided"}
+                {formValues.profileAge || "Not provided"}
               </p>
             </div>
             <div>
               <p className="text-muted-foreground">Sex</p>
               <p className="font-medium">
-                {formValues.sex || "Not provided"}
-              </p>
-            </div>
-            <div>
-              <p className="text-muted-foreground">Height</p>
-              <p className="font-medium">
-                {formValues.height ? `${formValues.height} cm` : "Not provided"}
+                {formValues.profileSex || "Not provided"}
               </p>
             </div>
             <div>
               <p className="text-muted-foreground">Civil Status</p>
               <p className="font-medium">
-                {formValues.civilStatus || "Not provided"}
+                {formValues.profileCivilStatus || "Not provided"}
               </p>
+            </div>
+            <div>
+              <p className="text-muted-foreground">Religion</p>
+              <p className="font-medium">
+                {formValues.profileReligion || "Not provided"}
+              </p>
+            </div>
+            <div>
+              <p className="text-muted-foreground">Languages</p>
+              <p className="font-medium">{formatLanguages()}</p>
             </div>
           </div>
         </Card>
 
+        {/* Address */}
         <Card className="p-4 bg-muted/30">
           <h3 className="text-sm font-semibold mb-3">Address</h3>
-          <div className="grid grid-cols-1 gap-2 text-sm">
-            <div>
-              <p className="text-muted-foreground">Present Address</p>
-              <p className="font-medium">
-                {formValues.presentAddress || "Not provided"}
-              </p>
-            </div>
-            <div className="grid grid-cols-3 gap-2">
-              <div>
-                <p className="text-muted-foreground">Barangay</p>
-                <p className="font-medium">
-                  {formValues.barangay || "Not provided"}
-                </p>
-              </div>
-              <div>
-                <p className="text-muted-foreground">Municipality</p>
-                <p className="font-medium">
-                  {formValues.municipality || "Not provided"}
-                </p>
-              </div>
-              <div>
-                <p className="text-muted-foreground">Province</p>
-                <p className="font-medium">
-                  {formValues.province || "Not provided"}
-                </p>
-              </div>
-            </div>
-          </div>
+          <p className="text-sm font-medium">{formatAddress()}</p>
         </Card>
 
+        {/* Education */}
         <Card className="p-4 bg-muted/30">
           <h3 className="text-sm font-semibold mb-3">Education</h3>
           <div className="grid grid-cols-2 gap-2 text-sm">
             <div>
-              <p className="text-muted-foreground">Education Level</p>
+              <p className="text-muted-foreground">Grade/Year Level</p>
               <p className="font-medium">
-                {formValues.educationLevel || "Not provided"}
+                {formValues.gradeYear || "Not provided"}
               </p>
             </div>
             <div>
@@ -145,50 +180,121 @@ const ReviewSection: React.FC<ReviewSectionProps> = ({
               </p>
             </div>
             <div>
-              <p className="text-muted-foreground">Years</p>
+              <p className="text-muted-foreground">School Year</p>
               <p className="font-medium">
-                {formValues.startYear && formValues.endYear
-                  ? `${formValues.startYear} - ${formValues.endYear}`
-                  : "Not provided"}
-              </p>
-            </div>
-            <div>
-              <p className="text-muted-foreground">Status</p>
-              <p className="font-medium">
-                {formValues.isGraduated
-                  ? "Graduated"
-                  : formValues.isCurrentlyEnrolled
-                    ? "Currently Enrolled"
-                    : "Not specified"}
+                {formValues.schoolYear || "Not provided"}
               </p>
             </div>
           </div>
         </Card>
 
+        {/* Family Information */}
+        <Card className="p-4 bg-muted/30">
+          <h3 className="text-sm font-semibold mb-3">Family Information</h3>
+          <div className="grid grid-cols-2 gap-4 text-sm">
+            <div>
+              <p className="text-muted-foreground">Father</p>
+              <p className="font-medium">
+                {formValues.fatherName || "Not provided"}
+              </p>
+              {formValues.fatherOccupation && (
+                <p className="text-xs text-muted-foreground">
+                  {formValues.fatherOccupation}
+                </p>
+              )}
+            </div>
+            <div>
+              <p className="text-muted-foreground">Mother</p>
+              <p className="font-medium">
+                {formValues.motherMaidenName || "Not provided"}
+              </p>
+              {formValues.motherOccupation && (
+                <p className="text-xs text-muted-foreground">
+                  {formValues.motherOccupation}
+                </p>
+              )}
+            </div>
+          </div>
+          {formValues.numberOfSiblings !== undefined && formValues.numberOfSiblings > 0 && (
+            <div className="mt-2 text-sm">
+              <p className="text-muted-foreground">
+                Number of Siblings: {formValues.numberOfSiblings}
+              </p>
+            </div>
+          )}
+        </Card>
+
+        {/* Guardian */}
+        {formValues.guardianName && (
+          <Card className="p-4 bg-muted/30">
+            <h3 className="text-sm font-semibold mb-3">Guardian</h3>
+            <div className="grid grid-cols-2 gap-2 text-sm">
+              <div>
+                <p className="text-muted-foreground">Name</p>
+                <p className="font-medium">{formValues.guardianName}</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground">Relationship</p>
+                <p className="font-medium">
+                  {formValues.guardianRelationship || "Not provided"}
+                </p>
+              </div>
+            </div>
+          </Card>
+        )}
+
+        {/* Skills */}
+        <Card className="p-4 bg-muted/30">
+          <h3 className="text-sm font-semibold mb-3">Skills</h3>
+          <p className="text-sm font-medium">{formatSkills()}</p>
+        </Card>
+
+        {/* Contact Information */}
         <Card className="p-4 bg-muted/30">
           <h3 className="text-sm font-semibold mb-3">Contact Information</h3>
           <div className="grid grid-cols-2 gap-2 text-sm">
             <div>
               <p className="text-muted-foreground">Contact Number</p>
               <p className="font-medium">
-                {formValues.contact || "Not provided"}
+                {formValues.profileContact || "Not provided"}
+              </p>
+            </div>
+            <div>
+              <p className="text-muted-foreground">Email</p>
+              <p className="font-medium">
+                {formValues.profileEmail || "Not provided"}
               </p>
             </div>
             <div>
               <p className="text-muted-foreground">Facebook</p>
               <p className="font-medium truncate">
-                {formValues.facebook || "Not provided"}
+                {formValues.profileFacebook || "Not provided"}
               </p>
             </div>
           </div>
-          {formValues.languageDialect && (
-            <div className="mt-4">
-              <p className="text-muted-foreground text-sm">
-                Languages / Dialects
+        </Card>
+
+        {/* SPES Information */}
+        <Card className="p-4 bg-muted/30">
+          <h3 className="text-sm font-semibold mb-3">SPES Information</h3>
+          <div className="grid grid-cols-2 gap-2 text-sm">
+            <div>
+              <p className="text-muted-foreground">4Ps Beneficiary</p>
+              <p className="font-medium">
+                {formValues.isFourPsBeneficiary ? "Yes" : "No"}
               </p>
-              <p className="font-medium text-sm">
-                {formValues.languageDialect}
+            </div>
+            <div>
+              <p className="text-muted-foreground">Application Year</p>
+              <p className="font-medium">
+                {formValues.applicationYear || "Not provided"}
               </p>
+            </div>
+          </div>
+          {formValues.motivation && (
+            <div className="mt-2">
+              <p className="text-muted-foreground text-sm">Motivation</p>
+              <p className="text-sm font-medium">{formValues.motivation}</p>
             </div>
           )}
         </Card>
@@ -197,7 +303,8 @@ const ReviewSection: React.FC<ReviewSectionProps> = ({
       {/* Submit Button */}
       <div className="pt-6">
         <Button
-          type="submit"
+          type="button"
+          onClick={handleSubmitClick}
           disabled={isPending || !isValid}
           className="w-full sm:w-auto"
         >
@@ -216,6 +323,26 @@ const ReviewSection: React.FC<ReviewSectionProps> = ({
           </p>
         )}
       </div>
+
+      {/* Confirmation Dialog */}
+      <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Submit Application?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to submit this SPES application? Please make
+              sure all the information you provided is accurate and complete.
+              You may not be able to edit your application after submission.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmSubmit} disabled={isPending}>
+              {isPending ? "Submitting..." : "Yes, Submit Application"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

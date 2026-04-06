@@ -31,13 +31,43 @@ const steps: ProgressStep[] = [
     description: "Current residence",
   },
   {
+    id: "family",
+    title: "Family",
+    description: "Parents and siblings",
+  },
+  {
+    id: "guardian",
+    title: "Guardian",
+    description: "Guardian details",
+  },
+  {
+    id: "benefactor",
+    title: "Benefactor",
+    description: "Supporting person",
+  },
+  {
     id: "education",
     title: "Education",
     description: "Educational background",
   },
   {
+    id: "skills",
+    title: "Skills",
+    description: "Your competencies",
+  },
+  {
+    id: "spes-info",
+    title: "SPES Details",
+    description: "Program information",
+  },
+  {
+    id: "documents",
+    title: "Documents",
+    description: "Required papers",
+  },
+  {
     id: "contact-info",
-    title: "Contact Information",
+    title: "Contact",
     description: "Communication details",
   },
   {
@@ -63,6 +93,7 @@ const ApplicationProgress: React.FC<ApplicationProgressProps> = ({
 
   const getStepStatus = (stepId: string): StepStatus => {
     if (stepId === currentStepId) return "current";
+    // Return the actual status from stepStatuses, defaulting to incomplete
     return stepStatuses[stepId] || "incomplete";
   };
 
@@ -109,7 +140,7 @@ const ApplicationProgress: React.FC<ApplicationProgressProps> = ({
   };
 
   return (
-    <Card className="p-4 fixed">
+    <Card className="p-4 fixed max-h-[calc(100vh-8rem)] overflow-y-auto">
       <div className="space-y-4">
         <div>
           <h3 className="font-semibold text-sm mb-2">Application Progress</h3>
@@ -119,7 +150,7 @@ const ApplicationProgress: React.FC<ApplicationProgressProps> = ({
           </p>
         </div>
 
-        <div className="space-y-2">
+        <div className="space-y-1">
           {steps.map((step, index) => {
             const status = getStepStatus(step.id);
 
@@ -129,9 +160,9 @@ const ApplicationProgress: React.FC<ApplicationProgressProps> = ({
                 type="button"
                 onClick={() => onStepClick?.(step.id)}
                 className={cn(
-                  "flex items-start gap-3 p-3 rounded-lg transition-colors w-full text-left",
+                  "flex items-start gap-2.5 p-2.5 rounded-lg transition-colors w-full text-left",
                   getStepBackground(step.id),
-                  onStepClick && "hover:opacity-80 cursor-pointer",
+                  onStepClick && "hover:opacity-80 cursor-pointer"
                 )}
               >
                 <div className="shrink-0 mt-0.5">
@@ -140,15 +171,15 @@ const ApplicationProgress: React.FC<ApplicationProgressProps> = ({
                 <div className="min-w-0">
                   <p
                     className={cn(
-                      "text-sm font-medium",
+                      "text-sm font-medium leading-tight",
                       status === "current" || status === "complete"
                         ? "text-foreground"
-                        : "text-muted-foreground",
+                        : "text-muted-foreground"
                     )}
                   >
                     {step.title}
                   </p>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-muted-foreground leading-tight">
                     {step.description}
                   </p>
                 </div>

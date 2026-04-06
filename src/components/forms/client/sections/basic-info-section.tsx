@@ -31,67 +31,67 @@ const BasicInfoSection: React.FC<FormSectionProps> = ({
       <FieldGroup>
         <FieldSet className="gap-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Field data-invalid={!!errors.lastName}>
-              <FieldLabel htmlFor="lastName">Last Name *</FieldLabel>
+            <Field data-invalid={!!errors.profileLastName}>
+              <FieldLabel htmlFor="profileLastName">Last Name *</FieldLabel>
               <Input
-                {...register("lastName")}
+                {...register("profileLastName")}
                 type="text"
-                id="lastName"
+                id="profileLastName"
                 disabled={isPending}
                 autoCapitalize="words"
                 placeholder="Dela Cruz"
-                aria-invalid={!!errors.lastName}
+                aria-invalid={!!errors.profileLastName}
               />
-              {errors.lastName && (
-                <FieldError>{errors.lastName.message}</FieldError>
+              {errors.profileLastName && (
+                <FieldError>{errors.profileLastName.message}</FieldError>
               )}
             </Field>
 
-            <Field data-invalid={!!errors.firstName}>
-              <FieldLabel htmlFor="firstName">First Name *</FieldLabel>
+            <Field data-invalid={!!errors.profileFirstName}>
+              <FieldLabel htmlFor="profileFirstName">First Name *</FieldLabel>
               <Input
-                {...register("firstName")}
+                {...register("profileFirstName")}
                 type="text"
-                id="firstName"
+                id="profileFirstName"
                 disabled={isPending}
                 autoCapitalize="words"
                 placeholder="Juan"
-                aria-invalid={!!errors.firstName}
+                aria-invalid={!!errors.profileFirstName}
               />
-              {errors.firstName && (
-                <FieldError>{errors.firstName.message}</FieldError>
+              {errors.profileFirstName && (
+                <FieldError>{errors.profileFirstName.message}</FieldError>
               )}
             </Field>
 
-            <Field data-invalid={!!errors.middleName}>
-              <FieldLabel htmlFor="middleName">Middle Name</FieldLabel>
+            <Field data-invalid={!!errors.profileMiddleName}>
+              <FieldLabel htmlFor="profileMiddleName">Middle Name</FieldLabel>
               <Input
-                {...register("middleName")}
+                {...register("profileMiddleName")}
                 type="text"
-                id="middleName"
+                id="profileMiddleName"
                 disabled={isPending}
                 autoCapitalize="words"
                 placeholder="Antonio"
-                aria-invalid={!!errors.middleName}
+                aria-invalid={!!errors.profileMiddleName}
               />
-              {errors.middleName && (
-                <FieldError>{errors.middleName.message}</FieldError>
+              {errors.profileMiddleName && (
+                <FieldError>{errors.profileMiddleName.message}</FieldError>
               )}
             </Field>
 
-            <Field data-invalid={!!errors.suffix}>
-              <FieldLabel htmlFor="suffix">Suffix</FieldLabel>
+            <Field data-invalid={!!errors.profileSuffix}>
+              <FieldLabel htmlFor="profileSuffix">Suffix</FieldLabel>
               <Input
-                {...register("suffix")}
+                {...register("profileSuffix")}
                 type="text"
-                id="suffix"
+                id="profileSuffix"
                 disabled={isPending}
                 autoCapitalize="words"
                 placeholder="Jr, Sr"
-                aria-invalid={!!errors.suffix}
+                aria-invalid={!!errors.profileSuffix}
               />
-              {errors.suffix && (
-                <FieldError>{errors.suffix.message}</FieldError>
+              {errors.profileSuffix && (
+                <FieldError>{errors.profileSuffix.message}</FieldError>
               )}
             </Field>
           </div>

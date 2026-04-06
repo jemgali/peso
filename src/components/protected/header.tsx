@@ -1,6 +1,7 @@
 import React from 'react'
 import Image from 'next/image'
 import UserProfile from './user-profile'
+import { NotificationBell } from '@/components/notifications'
 
 const Header = () => {
   return (
@@ -12,7 +13,10 @@ const Header = () => {
             <h2 className="text-sm">City Government of Baguio</h2>
         </div>
       </div>
-      <UserProfile />
+      <div className="flex items-center gap-2">
+        <NotificationBell />
+        <UserProfile />
+      </div>
     </header>
   )
 }
