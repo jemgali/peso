@@ -100,65 +100,198 @@ model Verification {
 
 // ----- PROFILE MODELS -----
 
+// SPES Applicant Name + Role
 model ProfileUser {
   // Foreign Key
-  userId            String            @unique @map("user_id")
-  user              User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId            String             @unique @map("user_id")
+  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
   // Primary Key
-  profileId         String            @id @map("profile_id")
+  profileId         String             @id @map("profile_id")
   // Other fields
-  profileLastName   String            @map("profile_last_name")
-  profileFirstName  String            @map("profile_first_name")
-  profileMiddleName String?           @map("profile_middle_name")
-  profileSuffix     String?           @map("profile_suffix")
-  profileRole       String            @map("profile_role")
+  profileLastName   String             @map("profile_last_name")
+  profileFirstName  String             @map("profile_first_name")
+  profileMiddleName String?            @map("profile_middle_name")
+  profileSuffix     String?            @map("profile_suffix")
+  profileRole       String             @map("profile_role")
   // Relationships
-  personal          ProfilePersonal[]
+  personal          ProfilePersonal?
+  address           ProfileAddress?
+  family            ProfileFamily?
+  guardian          ProfileGuardian?
+  benefactor        ProfileBenefactor?
+  education         ProfileEducation?
+  skills            ProfileSkills?
+  documents         ProfileDocuments?
+  spes              ProfileSPES?
 
-  //Other things
   @@map("profile_user")
   @@schema("public")
 }
 
+// SPES Applicant Personal Information (birth, sex, height, civil status, religion, language, contact, disability)
 model ProfilePersonal {
   // Foreign Key
   profileId              String      @unique @map("profile_id")
   profile                ProfileUser @relation(fields: [profileId], references: [profileId], onDelete: Cascade)
   // Primary Key
   personalId             String      @id @map("personal_id")
-  // Other fields
+  // Birth information
   profileBirthdate       DateTime?   @map("profile_birthdate") @db.Date
   profileAge             Int?        @map("profile_age")
   profilePlaceOfBirth    String?     @map("profile_place_of_birth")
+  // Personal information
   profileSex             String?     @map("profile_sex")
   profileHeight          Int?        @map("profile_height")
   profileCivilStatus     String?     @map("profile_civil_status")
+  profileReligion        String?     @map("profile_religion")
   profileLanguageDialect Json?       @map("profile_language_dialect")
+  profileEmail           String?     @map("profile_email")
   profileContact         String?     @map("profile_contact")
   profileFacebook        String?     @map("profile_facebook")
+  // Disability (if applicable)
+  profileDisability      String?     @map("profile_disability")
+  profilePwdId           String?     @map("profile_pwd_id")
 
-  //Other things
   @@map("profile_personal")
   @@schema("public")
 }
 
-// model ProfileAddress {
-//   addressId             String  @id @map("address_id")
-//   addressPresentAddress String? @map("profile_present_address")
-//   addressBarangay       String? @map("profile_barangay")
-//   addressMunicipality   String? @map("profile_municipality")
-//   addressProvince       String? @map("profile_province")
-// @@map("profile_address")
-// }
+// SPES Applicant Address
+model ProfileAddress {
+  // Foreign Key
+  profileId          String      @unique @map("profile_id")
+  profile            ProfileUser @relation(fields: [profileId], references: [profileId], onDelete: Cascade)
+  // Primary Key
+  addressId          String      @id @map("address_id")
+  // Other fields
+  profileHouseStreet String?     @map("profile_house_street")
+  profileBarangay    String?     @map("profile_barangay")
+  profileMunicipality String?    @map("profile_municipality")
+  profileProvince    String?     @map("profile_province")
 
-// model ProfileEducation {
-//   educationId         String   @id @map("education_id")
-//   level               String   @map("profile_level")
-//   schoolName          String?  @map("profile_school_name")
-//   trackCourse         String?  @map("profile_track_course")
-//   startYear           Int?     @map("profile_start_year")
-//   endYear             Int?     @map("profile_end_year")
-//   isGraduated         Boolean? @map("profile_is_graduated")
-//   isCurrentlyEnrolled Boolean? @map("profile_is_currently_enrolled")
-// @@map("profile_education")
-// }
+  @@map("profile_address")
+  @@schema("public")
+}
+
+// SPES Applicant Family Information (father, mother, siblings)
+model ProfileFamily {
+  // Foreign Key
+  profileId           String      @unique @map("profile_id")
+  profile             ProfileUser @relation(fields: [profileId], references: [profileId], onDelete: Cascade)
+  // Primary Key
+  familyId            String      @id @map("family_id")
+  // Father information
+  fatherName          String?     @map("father_name")
+  fatherOccupation    String?     @map("father_occupation")
+  fatherContact       String?     @map("father_contact")
+  // Mother information
+  motherMaidenName    String?     @map("mother_maiden_name")
+  motherOccupation    String?     @map("mother_occupation")
+  motherContact       String?     @map("mother_contact")
+  // Siblings information
+  numberOfSiblings    Int?        @map("number_of_siblings")
+  // siblings: [{ name: String, age: Int?, sex: String? }, ...]
+  siblings            Json?       @map("siblings")
+
+  @@map("profile_family")
+  @@schema("public")
+}
+
+// SPES Applicant Guardian Information
+model ProfileGuardian {
+  // Foreign Key
+  profileId              String      @unique @map("profile_id")
+  profile                ProfileUser @relation(fields: [profileId], references: [profileId], onDelete: Cascade)
+  // Primary Key
+  guardianId             String      @id @map("guardian_id")
+  // Other fields
+  guardianName           String?     @map("guardian_name")
+  guardianContact        String?     @map("guardian_contact")
+  guardianAddress        String?     @map("guardian_address")
+  guardianAge            Int?        @map("guardian_age")
+  guardianOccupation     String?     @map("guardian_occupation")
+  guardianRelationship   String?     @map("guardian_relationship")
+
+  @@map("profile_guardian")
+  @@schema("public")
+}
+
+// SPES Applicant Benefactor Information (if applicable)
+model ProfileBenefactor {
+  // Foreign Key
+  profileId                String      @unique @map("profile_id")
+  profile                  ProfileUser @relation(fields: [profileId], references: [profileId], onDelete: Cascade)
+  // Primary Key
+  benefactorId             String      @id @map("benefactor_id")
+  // Other fields
+  benefactorName           String?     @map("benefactor_name")
+  benefactorRelationship   String?     @map("benefactor_relationship")
+
+  @@map("profile_benefactor")
+  @@schema("public")
+}
+
+// SPES Applicant Education
+model ProfileEducation {
+  // Foreign Key
+  profileId       String      @unique @map("profile_id")
+  profile         ProfileUser @relation(fields: [profileId], references: [profileId], onDelete: Cascade)
+  // Primary Key
+  educationId     String      @id @map("education_id")
+  // Other fields
+  gradeYear       String?     @map("grade_year")
+  schoolName      String?     @map("school_name")
+  trackCourse     String?     @map("track_course")
+  schoolYear      String?     @map("school_year")
+
+  @@map("profile_education")
+  @@schema("public")
+}
+
+// SPES Applicant Skills
+model ProfileSkills {
+  // Foreign Key
+  profileId   String      @unique @map("profile_id")
+  profile     ProfileUser @relation(fields: [profileId], references: [profileId], onDelete: Cascade)
+  // Primary Key
+  skillsId    String      @id @map("skills_id")
+  // Other fields
+  // skills: ["skill1", "skill2", ...]
+  skills      Json?       @map("skills")
+
+  @@map("profile_skills")
+  @@schema("public")
+}
+
+// SPES Applicant Documents (PSA Certificate, Grades, Affidavits, Death Certificate, Income Tax Return, etc.)
+model ProfileDocuments {
+  // Foreign Key
+  profileId   String      @unique @map("profile_id")
+  profile     ProfileUser @relation(fields: [profileId], references: [profileId], onDelete: Cascade)
+  // Primary Key
+  documentId  String      @id @map("document_id")
+  // Other fields (stored as JSON for flexibility)
+  // documents: { [documentType: string]: { url: String, uploadDate: DateTime, verified: Boolean } }
+  // e.g., "psaCertificate", "grades", "affidavit", "deathCertificate", "incomeTaxReturn"
+  documents   Json?       @map("documents")
+
+  @@map("profile_documents")
+  @@schema("public")
+}
+
+// SPES-Specific Information (4Ps beneficiary, application year, motivation, remarks)
+model ProfileSPES {
+  // Foreign Key
+  profileId           String      @unique @map("profile_id")
+  profile             ProfileUser @relation(fields: [profileId], references: [profileId], onDelete: Cascade)
+  // Primary Key
+  spesId              String      @id @map("spes_id")
+  // Other fields
+  isFourPsBeneficiary Boolean?    @map("is_four_ps_beneficiary")
+  applicationYear     Int?        @map("application_year")
+  motivation          String?     @map("motivation")
+  remarks             String?     @map("remarks")
+
+  @@map("profile_spes")
+  @@schema("public")
+}
