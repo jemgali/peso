@@ -1,16 +1,18 @@
 "use client"
 
-import React from 'react'
-import Link from 'next/link'
-import { Blocks, CalendarDays, Users, Megaphone, Handshake, FolderPlus, FileText } from "lucide-react"
-import { useActivePath } from '@/hooks/use-active-path'
+import React from "react"
 import {
-  SidebarMenu,
-  SidebarMenuItem,
-  SidebarMenuButton,
-} from '@/components/ui/sidebar'
+  Blocks,
+  CalendarDays,
+  Users,
+  Megaphone,
+  Handshake,
+  FolderPlus,
+  FileText,
+} from "lucide-react"
+import { SideNav as SharedSideNav, type NavItem } from "@/components/shared/side-nav"
 
-const navItems = [
+const navItems: NavItem[] = [
   { title: "Dashboard", url: "/protected/admin", icon: Blocks },
   { title: "Programs", url: "/protected/admin/programs", icon: Handshake },
   { title: "Announcements", url: "/protected/admin/announcements", icon: Megaphone },
@@ -21,22 +23,7 @@ const navItems = [
 ]
 
 const SideNav = () => {
-  const checkActive = useActivePath()
-
-  return (
-    <SidebarMenu>
-      {navItems.map((item) => (
-        <SidebarMenuItem key={item.title}>
-          <SidebarMenuButton asChild tooltip={item.title} isActive={checkActive(item.url)}>
-            <Link href={item.url}>
-              <item.icon />
-              <span>{item.title}</span>
-            </Link>
-          </SidebarMenuButton>
-        </SidebarMenuItem>
-      ))}
-    </SidebarMenu>
-  )
+  return <SharedSideNav items={navItems} />
 }
 
 export default SideNav

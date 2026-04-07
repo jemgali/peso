@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
-import { PrismaClient } from "@/generated/prisma/client";
+import { PrismaClient, Prisma } from "@/generated/prisma/client";
 import { Pool } from "pg";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { deleteFile } from "@/lib/r2";
@@ -83,7 +83,7 @@ export async function DELETE(
       
       await prisma.profileDocuments.update({
         where: { profileId: profile.profileId },
-        data: { documents: remainingDocuments },
+        data: { documents: remainingDocuments as Prisma.InputJsonValue },
       });
     }
 

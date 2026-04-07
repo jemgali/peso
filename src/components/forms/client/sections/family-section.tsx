@@ -15,15 +15,10 @@ const FamilySection: React.FC<FormSectionWithFieldArrayProps> = ({
   register,
   errors,
   isPending,
-  setSectionRef,
   siblingsFieldArray,
 }) => {
   return (
-    <div
-      id="family"
-      ref={setSectionRef("family")}
-      className="scroll-mt-24"
-    >
+    <div id="family" className="scroll-mt-24">
       <div className="mb-4">
         <h2 className="text-lg font-semibold">Family Information</h2>
         <p className="text-sm text-muted-foreground">

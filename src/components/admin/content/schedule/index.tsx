@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from "react"
 import { toast } from "sonner"
 import { Plus } from "lucide-react"
 import { Button } from "@/ui/button"
-import { Spinner } from "@/ui/spinner"
+import { ScheduleCalendarSkeleton } from "@/ui/skeletons"
 import { Calendar } from "./calendar"
 import { EventDialog } from "./event-dialog"
 import { EventDetailsDialog } from "./event-details-dialog"
@@ -100,11 +100,7 @@ export default function Schedule() {
   }
 
   if (isLoading && events.length === 0) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <Spinner className="h-8 w-8" />
-      </div>
-    )
+    return <ScheduleCalendarSkeleton />
   }
 
   return (

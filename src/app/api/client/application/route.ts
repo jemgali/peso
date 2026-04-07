@@ -96,7 +96,7 @@ export async function POST(
             profileFirstName: data.profileFirstName,
             profileMiddleName: data.profileMiddleName || null,
             profileSuffix: data.profileSuffix || null,
-            profileRole: data.profileRole,
+            profileRole: session.user.role || "client", // Auto-set from auth context
           },
         });
       }

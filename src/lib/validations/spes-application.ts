@@ -7,7 +7,7 @@ import { z } from "zod";
 
 // Language item schema (defined first for use in personalDetailsSchema)
 export const languageItemSchema = z.object({
-  value: z.string().optional(),
+  value: z.string().min(1, "Language name is required"),
 });
 
 // ProfileUser - Basic Information
@@ -16,22 +16,22 @@ export const basicInfoSchema = z.object({
   profileFirstName: z.string().min(1, "First name is required"),
   profileMiddleName: z.string().optional(),
   profileSuffix: z.string().optional(),
-  profileRole: z.string().min(1, "Role is required"),
+  profileRole: z.string().optional(), // Auto-set from auth context, not user input
 });
 
 // ProfilePersonal - Personal Details
 export const personalDetailsSchema = z.object({
-  profileBirthdate: z.string().optional(),
-  profileAge: z.coerce.number().optional(),
+  profileBirthdate: z.string().min(1, "Date of birth is required"),
+  profileAge: z.coerce.number().optional(), // Auto-calculated, stays optional
   profilePlaceOfBirth: z.string().optional(),
-  profileSex: z.string().optional(),
-  profileHeight: z.coerce.number().optional(),
-  profileCivilStatus: z.string().optional(),
-  profileReligion: z.string().optional(),
-  profileLanguageDialect: z.array(languageItemSchema).optional(),
-  profileEmail: z.string().email().optional().or(z.literal("")),
-  profileContact: z.string().optional(),
-  profileFacebook: z.string().optional(),
+  profileSex: z.string().min(1, "Sex is required"),
+  profileHeight: z.coerce.number().min(1, "Height is required"),
+  profileCivilStatus: z.string().min(1, "Civil status is required"),
+  profileReligion: z.string().min(1, "Religion is required"),
+  profileLanguageDialect: z.array(languageItemSchema).min(1, "At least one language is required"),
+  profileEmail: z.string().email("Valid email is required"),
+  profileContact: z.string().min(1, "Contact number is required"),
+  profileFacebook: z.string().url("Please enter a valid Facebook URL").optional().or(z.literal("")),
   profileDisability: z.string().optional(),
   profilePwdId: z.string().optional(),
 });
@@ -143,8 +143,21 @@ export type SPESApplicationFormValues = z.infer<typeof spesApplicationSchema>;
 // Used for validation status checking
 // ============================================
 export const sectionRequiredFields: Record<string, string[]> = {
-  "basic-info": ["profileLastName", "profileFirstName", "profileRole"],
-  "personal-details": [], // All optional
+  "basic-info": [
+    "profileLastName",
+    "profileFirstName",
+    // profileRole is auto-set from auth context
+    "profileBirthdate",
+    "profileSex",
+    "profileHeight",
+    "profileCivilStatus",
+    "profileReligion",
+    "profileEmail",
+    "profileContact",
+    // profileFacebook is now optional
+    "profileLanguageDialect",
+  ],
+  "personal-details": [], // Not used (merged into basic-info)
   address: [], // All optional
   family: [], // All optional
   guardian: [], // All optional
@@ -174,6 +187,10 @@ export function validateSection(
     const value = formValues[field as keyof SPESApplicationFormValues];
     if (typeof value === "string") {
       return value.trim().length > 0;
+    }
+    // Check for non-empty arrays (e.g., profileLanguageDialect)
+    if (Array.isArray(value)) {
+      return value.length > 0;
     }
     return value !== undefined && value !== null;
   });

@@ -72,7 +72,6 @@ function formatFileSize(bytes: number): string {
 
 const DocumentsSection: React.FC<FormSectionProps> = ({
   isPending,
-  setSectionRef,
 }) => {
   const [uploadedDocs, setUploadedDocs] = useState<DocumentsMap>({});
   const [uploading, setUploading] = useState<Record<string, boolean>>({});
@@ -190,11 +189,7 @@ const DocumentsSection: React.FC<FormSectionProps> = ({
   };
 
   return (
-    <div
-      id="documents"
-      ref={setSectionRef("documents")}
-      className="scroll-mt-24"
-    >
+    <div id="documents" className="scroll-mt-24">
       <div className="mb-4">
         <h2 className="text-lg font-semibold">Required Documents</h2>
         <p className="text-sm text-muted-foreground">

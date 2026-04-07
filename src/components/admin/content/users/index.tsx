@@ -5,8 +5,8 @@ import { toast } from "sonner"
 import { Plus, Search, ChevronLeft, ChevronRight } from "lucide-react"
 import { Input } from "@/ui/input"
 import { Button } from "@/ui/button"
-import { Spinner } from "@/ui/spinner"
 import { Badge } from "@/ui/badge"
+import { UsersListSkeleton } from "@/ui/skeletons"
 import {
   Table,
   TableBody,
@@ -115,11 +115,7 @@ export default function Users() {
   }
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <Spinner className="h-8 w-8" />
-      </div>
-    )
+    return <UsersListSkeleton />
   }
 
   return (

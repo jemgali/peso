@@ -18,12 +18,7 @@ const steps: ProgressStep[] = [
   {
     id: "basic-info",
     title: "Basic Information",
-    description: "Name and role",
-  },
-  {
-    id: "personal-details",
-    title: "Personal Details",
-    description: "Birthdate and demographics",
+    description: "Name and personal details",
   },
   {
     id: "address",
@@ -66,11 +61,6 @@ const steps: ProgressStep[] = [
     description: "Required papers",
   },
   {
-    id: "contact-info",
-    title: "Contact",
-    description: "Communication details",
-  },
-  {
     id: "review",
     title: "Review & Submit",
     description: "Verify and submit",
@@ -78,21 +68,24 @@ const steps: ProgressStep[] = [
 ];
 
 interface ApplicationProgressProps {
+  currentStep?: number;
   currentStepId?: string;
   stepStatuses?: Record<string, StepStatus>;
   onStepClick?: (stepId: string) => void;
 }
 
 const ApplicationProgress: React.FC<ApplicationProgressProps> = ({
-  currentStepId = "basic-info",
+  currentStep = 0,
+  currentStepId,
   stepStatuses = {},
   onStepClick,
 }) => {
-  const currentStepIndex = steps.findIndex((s) => s.id === currentStepId);
-  const progressPercentage = (currentStepIndex / (steps.length - 1)) * 100;
+  // Use currentStepId if provided, otherwise derive from currentStep
+  const activeStepId = currentStepId ?? steps[currentStep]?.id ?? "basic-info";
+  const progressPercentage = (currentStep / (steps.length - 1)) * 100;
 
   const getStepStatus = (stepId: string): StepStatus => {
-    if (stepId === currentStepId) return "current";
+    if (stepId === activeStepId) return "current";
     // Return the actual status from stepStatuses, defaulting to incomplete
     return stepStatuses[stepId] || "incomplete";
   };
@@ -139,6 +132,14 @@ const ApplicationProgress: React.FC<ApplicationProgressProps> = ({
     }
   };
 
+  // Determine if a step is clickable (can go back or forward with validation)
+  const isStepClickable = (index: number): boolean => {
+    // Can always go back or click current step
+    if (index <= currentStep) return true;
+    // For forward navigation, allow clicking but the form will validate
+    return true;
+  };
+
   return (
     <Card className="p-4 fixed max-h-[calc(100vh-8rem)] overflow-y-auto">
       <div className="space-y-4">
@@ -146,23 +147,26 @@ const ApplicationProgress: React.FC<ApplicationProgressProps> = ({
           <h3 className="font-semibold text-sm mb-2">Application Progress</h3>
           <Progress value={progressPercentage} className="h-2" />
           <p className="text-xs text-muted-foreground mt-2">
-            Step {currentStepIndex + 1} of {steps.length}
+            Step {currentStep + 1} of {steps.length}
           </p>
         </div>
 
         <div className="space-y-1">
           {steps.map((step, index) => {
             const status = getStepStatus(step.id);
+            const clickable = isStepClickable(index);
 
             return (
               <button
                 key={step.id}
                 type="button"
                 onClick={() => onStepClick?.(step.id)}
+                disabled={!clickable}
                 className={cn(
                   "flex items-start gap-2.5 p-2.5 rounded-lg transition-colors w-full text-left",
                   getStepBackground(step.id),
-                  onStepClick && "hover:opacity-80 cursor-pointer"
+                  clickable && onStepClick && "hover:opacity-80 cursor-pointer",
+                  !clickable && "opacity-50 cursor-not-allowed"
                 )}
               >
                 <div className="shrink-0 mt-0.5">

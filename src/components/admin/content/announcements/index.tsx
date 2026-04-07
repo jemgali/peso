@@ -5,8 +5,8 @@ import { toast } from "sonner"
 import { Plus, Search, Calendar, Clock, Bell } from "lucide-react"
 import { Input } from "@/ui/input"
 import { Button } from "@/ui/button"
-import { Spinner } from "@/ui/spinner"
 import { Badge } from "@/ui/badge"
+import { AnnouncementsListSkeleton } from "@/ui/skeletons"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/ui/card"
 import { AnnouncementDialog } from "./announcement-dialog"
 import { AnnouncementDeleteDialog } from "./announcement-delete-dialog"
@@ -121,11 +121,7 @@ export default function Announcements() {
   }
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <Spinner className="h-8 w-8" />
-      </div>
-    )
+    return <AnnouncementsListSkeleton />
   }
 
   return (
