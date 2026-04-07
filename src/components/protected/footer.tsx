@@ -2,8 +2,8 @@ import React from 'react'
 
 const Footer = () => {
   return (
-    <footer className="w-full bg-white flex items-center justify-center text-center text-xs text-gray-500 border-t-2">
-        <p className="py-1">© 2026 Public Employment Service Office - City Government of Baguio | All Rights Reserveds</p>
+    <footer className="flex w-full items-center justify-center border-t bg-background px-4 py-2 text-center text-xs text-muted-foreground">
+      <p>© {new Date().getFullYear()} Public Employment Service Office - City Government of Baguio | All Rights Reserved</p>
     </footer>
   )
 }

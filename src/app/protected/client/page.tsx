@@ -1,53 +1,59 @@
-"use client";
+"use client"
 
-import React, { useEffect, useState } from "react";
-import { Card } from "@/ui/card";
-import { Button } from "@/ui/button";
-import Link from "next/link";
-import { FileText, CheckCircle2, Clock, Loader2 } from "lucide-react";
-import { ApplicationStatusCard } from "@/components/client";
-import type { ClientApplicationStatusResponse } from "@/lib/validations/application-review";
+import React, { useEffect, useState } from "react"
+import Link from "next/link"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Spinner } from "@/components/ui/spinner"
+import { FileText, CheckCircle2, Clock } from "lucide-react"
+import { ApplicationStatusCard } from "@/components/client"
+import type { ClientApplicationStatusResponse } from "@/lib/validations/application-review"
 
 const Page = () => {
-  const [loading, setLoading] = useState(true);
-  const [statusData, setStatusData] = useState<ClientApplicationStatusResponse["data"] | null>(null);
+  const [loading, setLoading] = useState(true)
+  const [statusData, setStatusData] = useState<ClientApplicationStatusResponse["data"] | null>(null)
 
   useEffect(() => {
     const fetchStatus = async () => {
       try {
-        const response = await fetch("/api/client/application/status");
-        const data = await response.json();
+        const response = await fetch("/api/client/application/status")
+        const data = await response.json()
         if (data.success) {
-          setStatusData(data.data);
+          setStatusData(data.data)
         }
       } catch (error) {
-        console.error("Error fetching status:", error);
+        console.error("Error fetching status:", error)
       } finally {
-        setLoading(false);
+        setLoading(false)
       }
-    };
+    }
 
-    fetchStatus();
-  }, []);
+    fetchStatus()
+  }, [])
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[300px]">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      <div className="flex min-h-[300px] items-center justify-center">
+        <Spinner className="size-8 text-muted-foreground" />
       </div>
-    );
+    )
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Welcome to PESO System</h1>
+    <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-1">
+        <h1 className="text-3xl font-bold tracking-tight">Welcome to PESO System</h1>
         <p className="text-muted-foreground">
           Manage your SPES application and track your progress
         </p>
       </div>
 
-      {/* Application Status */}
       {statusData?.hasApplication && statusData.submission && (
         <ApplicationStatusCard
           status={statusData.submission.status}
@@ -57,91 +63,89 @@ const Page = () => {
         />
       )}
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-muted-foreground">
-                Active Applications
-              </p>
-              <p className="text-3xl font-bold">
-                {statusData?.hasApplication ? 1 : 0}
-              </p>
-            </div>
-            <FileText className="w-12 h-12 text-blue-500 opacity-20" />
-          </div>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium">Active Applications</CardTitle>
+            <FileText className="size-5 text-primary/40" />
+          </CardHeader>
+          <CardContent>
+            <p className="text-3xl font-bold">
+              {statusData?.hasApplication ? 1 : 0}
+            </p>
+          </CardContent>
         </Card>
 
-        <Card className="p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-muted-foreground">Status</p>
-              <p className="text-3xl font-bold capitalize">
-                {statusData?.submission?.status?.replace("_", " ") || "None"}
-              </p>
-            </div>
-            <Clock className="w-12 h-12 text-yellow-500 opacity-20" />
-          </div>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium">Status</CardTitle>
+            <Clock className="size-5 text-primary/40" />
+          </CardHeader>
+          <CardContent>
+            <p className="text-3xl font-bold capitalize">
+              {statusData?.submission?.status?.replace("_", " ") || "None"}
+            </p>
+          </CardContent>
         </Card>
 
-        <Card className="p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-muted-foreground">Submissions</p>
-              <p className="text-3xl font-bold">
-                {statusData?.submission?.submissionNumber || 0}
-              </p>
-            </div>
-            <CheckCircle2 className="w-12 h-12 text-green-500 opacity-20" />
-          </div>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium">Submissions</CardTitle>
+            <CheckCircle2 className="size-5 text-primary/40" />
+          </CardHeader>
+          <CardContent>
+            <p className="text-3xl font-bold">
+              {statusData?.submission?.submissionNumber || 0}
+            </p>
+          </CardContent>
         </Card>
       </div>
 
-      {/* Get Started Card - only show if no application */}
       {!statusData?.hasApplication && (
-        <Card className="p-6">
-          <div className="space-y-4">
-            <h2 className="text-lg font-semibold">Get Started</h2>
-            <p className="text-muted-foreground">
-              Start your SPES application process by filling out the application
-              form below.
-            </p>
-            <Link href="/protected/client/application">
-              <Button className="w-full md:w-auto">
-                <FileText className="w-4 h-4 mr-2" />
+        <Card>
+          <CardHeader>
+            <CardTitle>Get Started</CardTitle>
+            <CardDescription>
+              Start your SPES application process by filling out the application form below.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button asChild>
+              <Link href="/protected/client/application">
+                <FileText data-icon="inline-start" />
                 Start Application Form
-              </Button>
-            </Link>
-          </div>
+              </Link>
+            </Button>
+          </CardContent>
         </Card>
       )}
 
-      {/* Quick Actions */}
       {statusData?.hasApplication && statusData.submission?.status !== "approved" && (
-        <Card className="p-6">
-          <div className="space-y-4">
-            <h2 className="text-lg font-semibold">Quick Actions</h2>
+        <Card>
+          <CardHeader>
+            <CardTitle>Quick Actions</CardTitle>
+          </CardHeader>
+          <CardContent>
             <div className="flex flex-wrap gap-3">
-              <Link href="/protected/client/application/status">
-                <Button variant="outline">
+              <Button variant="outline" asChild>
+                <Link href="/protected/client/application/status">
                   View Application Status
-                </Button>
-              </Link>
-              {statusData.submission?.status === "needs_revision" && (
-                <Link href="/protected/client/application">
-                  <Button>
-                    <FileText className="w-4 h-4 mr-2" />
-                    Edit & Resubmit
-                  </Button>
                 </Link>
+              </Button>
+              {statusData.submission?.status === "needs_revision" && (
+                <Button asChild>
+                  <Link href="/protected/client/application">
+                    <FileText data-icon="inline-start" />
+                    Edit & Resubmit
+                  </Link>
+                </Button>
               )}
             </div>
-          </div>
+          </CardContent>
         </Card>
       )}
     </div>
-  );
-};
+  )
+}
 
-export default Page;
+export default Page

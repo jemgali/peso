@@ -45,6 +45,10 @@
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
+  /* Government header/banner semantic colors */
+  --color-gov-header: var(--gov-header);
+  --color-gov-header-foreground: var(--gov-header-foreground);
+  --color-section-alt: var(--section-alt);
 }
 
 :root {
@@ -80,6 +84,11 @@
   --sidebar-ring: oklch(0.708 0 0);
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
+  /* Government header semantic colors - uses chart-3 green */
+  --gov-header: oklch(0.648 0.2 131.684);
+  --gov-header-foreground: oklch(1 0 0);
+  /* Alternating section background */
+  --section-alt: oklch(0.975 0 0);
 }
 
 .dark {
@@ -114,6 +123,10 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
+  /* Dark mode government header */
+  --gov-header: oklch(0.532 0.157 131.589);
+  --gov-header-foreground: oklch(1 0 0);
+  --section-alt: oklch(0.185 0 0);
 }
 
 @layer base {

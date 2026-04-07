@@ -3,10 +3,10 @@
 import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Spinner } from '@/components/ui/spinner'
 import { useActivePath } from '@/hooks/use-active-path'
 import { authClient } from '@/lib/auth-client'
 import UserProfile from '@/components/protected/user-profile'
-import { Loader2 } from 'lucide-react'
 
 const NAV_LINKS = [
   { label: 'Home', href: '/#home', id: 'home' },
@@ -18,7 +18,6 @@ const NAV_LINKS = [
 const HeaderNav = () => {
   const checkActive = useActivePath()
   const [activeTab, setActiveTab] = useState('home')
-
   const { data: session, isPending } = authClient.useSession()
 
   useEffect(() => {
@@ -41,28 +40,40 @@ const HeaderNav = () => {
   }, [checkActive])
 
   return (
-    <Tabs value={activeTab} onValueChange={setActiveTab} className="ml-auto">
-      <TabsList variant="line">
-        {NAV_LINKS.map((link) => (
-          <Link key={link.id} href={link.href} passHref>
-            <TabsTrigger value={link.id} className="text-white hover:text-white/80 transition-colors">
-              {link.label}
+    <nav className="ml-auto flex items-center gap-4">
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList variant="line" className="gap-1">
+          {NAV_LINKS.map((link) => (
+            <TabsTrigger 
+              key={link.id} 
+              value={link.id} 
+              asChild
+              className="text-gov-header-foreground/80 hover:text-gov-header-foreground data-active:text-gov-header-foreground"
+            >
+              <Link href={link.href}>
+                {link.label}
+              </Link>
             </TabsTrigger>
-          </Link>
-        ))}
-        {isPending ? (
-            <Loader2 className="h-4 w-4 animate-spin text-white/70" />
-        ) : session?.user ? (
-            <UserProfile />
-        ) : (
-            <Link href="/auth/sign-in" passHref>
-                <TabsTrigger value="sign-in" className="text-white hover:text-white/80 transition-colors">
-                    Login
-                </TabsTrigger>
-            </Link>
-        )}
-      </TabsList>
-    </Tabs>
+          ))}
+          {!isPending && !session?.user && (
+            <TabsTrigger 
+              value="sign-in" 
+              asChild
+              className="text-gov-header-foreground/80 hover:text-gov-header-foreground data-active:text-gov-header-foreground"
+            >
+              <Link href="/auth/sign-in">
+                Login
+              </Link>
+            </TabsTrigger>
+          )}
+        </TabsList>
+      </Tabs>
+      {isPending ? (
+        <Spinner className="size-4 text-gov-header-foreground/70" />
+      ) : session?.user ? (
+        <UserProfile />
+      ) : null}
+    </nav>
   )
 }
 

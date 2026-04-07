@@ -1,5 +1,5 @@
-import React from "react";
-import { Briefcase } from "lucide-react";
+import React from "react"
+import { Briefcase } from "lucide-react"
 import {
   Sidebar,
   SidebarContent,
@@ -8,8 +8,8 @@ import {
   SidebarGroupLabel,
   SidebarHeader,
   SidebarTrigger,
-} from "@/ui/sidebar";
-import SideNav from "./side-nav";
+} from "@/components/ui/sidebar"
+import SideNav from "./side-nav"
 
 const Side = () => {
   return (
@@ -22,24 +22,24 @@ const Side = () => {
       <SidebarHeader className="p-3">
         <div className="flex items-center justify-between group-data-[collapsible=icon]:justify-center">
           <div className="flex items-center gap-2 group-data-[collapsible=icon]:hidden">
-            <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-chart-1 text-primary-foreground">
+            <div className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
               <Briefcase className="size-4" />
             </div>
-            <span className="truncate font-semibold text-sm">PESO System</span>
+            <span className="truncate text-sm font-semibold">PESO Portal</span>
           </div>
           <SidebarTrigger />
         </div>
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Menu</SidebarGroupLabel>
+          <SidebarGroupLabel>Navigation</SidebarGroupLabel>
           <SidebarGroupContent>
             <SideNav />
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
     </Sidebar>
-  );
-};
+  )
+}
 
-export default Side;
+export default Side
