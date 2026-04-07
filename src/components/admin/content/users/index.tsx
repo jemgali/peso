@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from "react"
 import { toast } from "sonner"
-import { Plus, Search } from "lucide-react"
+import { Plus, Search, ChevronLeft, ChevronRight } from "lucide-react"
 import { Input } from "@/ui/input"
 import { Button } from "@/ui/button"
 import { Spinner } from "@/ui/spinner"
@@ -20,10 +20,13 @@ import { UserEditDialog } from "./user-edit-dialog"
 import { UserArchiveDialog } from "./user-archive-dialog"
 import { type UserData } from "@/lib/validations/user"
 
+const PAGE_SIZE = 10
+
 export default function Users() {
   const [users, setUsers] = useState<UserData[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
+  const [currentPage, setCurrentPage] = useState(1)
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
   const [editDialogOpen, setEditDialogOpen] = useState(false)
   const [archiveDialogOpen, setArchiveDialogOpen] = useState(false)
@@ -60,6 +63,17 @@ export default function Users() {
         (user.role && user.role.toLowerCase().includes(query))
     )
   }, [users, searchQuery])
+
+  // Reset to first page when search changes
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [searchQuery])
+
+  // Pagination calculations
+  const totalPages = Math.ceil(filteredUsers.length / PAGE_SIZE)
+  const startIndex = (currentPage - 1) * PAGE_SIZE
+  const endIndex = Math.min(startIndex + PAGE_SIZE, filteredUsers.length)
+  const paginatedUsers = filteredUsers.slice(startIndex, endIndex)
 
   const handleEditClick = (user: UserData) => {
     setSelectedUser(user)
@@ -109,7 +123,16 @@ export default function Users() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
+      {/* Page Header */}
+      <div>
+        <h1 className="text-3xl font-bold">User Management</h1>
+        <p className="text-muted-foreground">
+          Manage employee and client user accounts
+        </p>
+      </div>
+
+      {/* Search and Add */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -127,6 +150,7 @@ export default function Users() {
         </Button>
       </div>
 
+      {/* Table */}
       <div className="rounded-lg border">
         <Table>
           <TableHeader>
@@ -140,14 +164,14 @@ export default function Users() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredUsers.length === 0 ? (
+            {paginatedUsers.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={6} className="text-center py-8">
                   {searchQuery ? "No users found matching your search." : "No users found."}
                 </TableCell>
               </TableRow>
             ) : (
-              filteredUsers.map((user) => (
+              paginatedUsers.map((user) => (
                 <TableRow key={user.id}>
                   <TableCell className="font-medium">{user.name}</TableCell>
                   <TableCell>{user.email}</TableCell>
@@ -189,6 +213,33 @@ export default function Users() {
             )}
           </TableBody>
         </Table>
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between px-4 py-3 border-t">
+            <p className="text-sm text-muted-foreground">
+              Showing {startIndex + 1} to {endIndex} of {filteredUsers.length} users
+            </p>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
 
       <UserCreateDialog

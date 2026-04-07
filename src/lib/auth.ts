@@ -1,5 +1,6 @@
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
+import { createAuthMiddleware } from "better-auth/api";
 // If your Prisma file is located elsewhere, you can change the path
 import { PrismaClient } from "@/generated/prisma/client";
 import { Pool } from "pg";
@@ -52,6 +53,73 @@ export const auth = betterAuth({
       clientId: process.env.GOOGLE_CLIENT_ID as string,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
     }
+  },
+  
+  user: {
+    additionalFields: {
+      role: {
+        type: "string",
+        defaultValue: "client",
+      },
+    },
+  },
+  
+  databaseHooks: {
+    user: {
+      create: {
+        before: async (user, ctx) => {
+          // For OAuth signups (callback path), set emailVerified to false
+          if (ctx?.path?.startsWith("/callback")) {
+            return {
+              data: {
+                ...user,
+                emailVerified: false,
+              },
+            };
+          }
+          return { data: user };
+        },
+      },
+    },
+  },
+  
+  hooks: {
+    after: createAuthMiddleware(async (ctx) => {
+      // After OAuth callback, if a new user was created, send verification email
+      if (ctx.path.startsWith("/callback")) {
+        const newSession = ctx.context.newSession;
+        if (newSession && !newSession.user.emailVerified) {
+          // Generate verification token and send email
+          const token = crypto.randomUUID();
+          const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+          
+          // Store verification token
+          await prisma.verification.create({
+            data: {
+              id: crypto.randomUUID(),
+              identifier: newSession.user.email,
+              value: token,
+              expiresAt,
+            },
+          });
+          
+          // Build verification URL
+          const baseUrl = process.env.BETTER_AUTH_URL || "http://localhost:3000";
+          const verifyUrl = `${baseUrl}/api/auth/verify-email?token=${token}&callbackURL=/auth/verified`;
+          
+          // Send verification email
+          await resend.emails.send({
+            from: "PESO <noreply@jemgali.tech>",
+            to: newSession.user.email,
+            subject: "Verify your email address",
+            html: `<p>Hi ${newSession.user.name},</p><p>Please click <a href="${verifyUrl}">here</a> to verify your email address.</p>`,
+          });
+          
+          // Redirect to verify-email page instead of callback URL
+          return ctx.redirect("/auth/verify-email");
+        }
+      }
+    }),
   },
   
   plugins: [

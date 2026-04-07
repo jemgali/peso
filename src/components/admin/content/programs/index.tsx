@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from "react"
 import { toast } from "sonner"
-import { Plus, Search, GripVertical } from "lucide-react"
+import { Plus, Search, GripVertical, ChevronLeft, ChevronRight } from "lucide-react"
 import Image from "next/image"
 import { Input } from "@/ui/input"
 import { Button } from "@/ui/button"
@@ -21,10 +21,13 @@ import { ProgramEditDialog } from "./program-edit-dialog"
 import { ProgramDeleteDialog } from "./program-delete-dialog"
 import { type ProgramData } from "@/lib/validations/program"
 
+const PAGE_SIZE = 10
+
 export default function Programs() {
   const [programs, setPrograms] = useState<ProgramData[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
+  const [currentPage, setCurrentPage] = useState(1)
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
   const [editDialogOpen, setEditDialogOpen] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
@@ -60,6 +63,17 @@ export default function Programs() {
         (program.description && program.description.toLowerCase().includes(query))
     )
   }, [programs, searchQuery])
+
+  // Reset to first page when search changes
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [searchQuery])
+
+  // Pagination calculations
+  const totalPages = Math.ceil(filteredPrograms.length / PAGE_SIZE)
+  const startIndex = (currentPage - 1) * PAGE_SIZE
+  const endIndex = Math.min(startIndex + PAGE_SIZE, filteredPrograms.length)
+  const paginatedPrograms = filteredPrograms.slice(startIndex, endIndex)
 
   const handleEditClick = (program: ProgramData) => {
     setSelectedProgram(program)
@@ -100,7 +114,16 @@ export default function Programs() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
+      {/* Page Header */}
+      <div>
+        <h1 className="text-3xl font-bold">Programs Management</h1>
+        <p className="text-muted-foreground">
+          Manage PESO programs and services displayed on the portal
+        </p>
+      </div>
+
+      {/* Search and Add */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -118,6 +141,7 @@ export default function Programs() {
         </Button>
       </div>
 
+      {/* Table */}
       <div className="rounded-lg border">
         <Table>
           <TableHeader>
@@ -132,14 +156,14 @@ export default function Programs() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredPrograms.length === 0 ? (
+            {paginatedPrograms.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={7} className="text-center py-8">
                   {searchQuery ? "No programs found matching your search." : "No programs found. Add your first program!"}
                 </TableCell>
               </TableRow>
             ) : (
-              filteredPrograms.map((program) => (
+              paginatedPrograms.map((program) => (
                 <TableRow key={program.id}>
                   <TableCell>
                     <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab" />
@@ -195,6 +219,33 @@ export default function Programs() {
             )}
           </TableBody>
         </Table>
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between px-4 py-3 border-t">
+            <p className="text-sm text-muted-foreground">
+              Showing {startIndex + 1} to {endIndex} of {filteredPrograms.length} programs
+            </p>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
 
       <ProgramCreateDialog

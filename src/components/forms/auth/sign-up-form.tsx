@@ -82,7 +82,7 @@ const SignUpForm = () => {
     const handleGoogleSignUp = async () => {
         await authClient.signIn.social({
             provider: "google",
-            callbackURL: "/",
+            callbackURL: "/auth/verify-email",
         }, {
             onRequest: () => {
                 setIsGooglePending(true)
