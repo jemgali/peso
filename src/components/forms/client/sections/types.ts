@@ -3,6 +3,8 @@ import type {
   FieldErrors,
   Control,
   UseFieldArrayReturn,
+  UseFormWatch,
+  UseFormSetValue,
 } from "react-hook-form";
 import type { SPESApplicationFormValues } from "@/lib/validations/spes-application";
 
@@ -11,7 +13,6 @@ export interface FormSectionProps {
   register: UseFormRegister<SPESApplicationFormValues>;
   errors: FieldErrors<SPESApplicationFormValues>;
   isPending: boolean;
-  setSectionRef: (id: string) => (el: HTMLDivElement | null) => void;
 }
 
 // Extended props for sections that need control (for Controller components)
@@ -24,6 +25,8 @@ export interface FormSectionWithFieldArrayProps extends FormSectionWithControlPr
   siblingsFieldArray?: UseFieldArrayReturn<SPESApplicationFormValues, "siblings">;
   skillsFieldArray?: UseFieldArrayReturn<SPESApplicationFormValues, "skills">;
   languageFieldArray?: UseFieldArrayReturn<SPESApplicationFormValues, "profileLanguageDialect">;
+  watch?: UseFormWatch<SPESApplicationFormValues>;
+  setValue?: UseFormSetValue<SPESApplicationFormValues>;
 }
 
 // Props for the review section which needs form values
@@ -31,7 +34,6 @@ export interface ReviewSectionProps {
   formValues: SPESApplicationFormValues;
   isPending: boolean;
   isValid: boolean;
-  setSectionRef: (id: string) => (el: HTMLDivElement | null) => void;
   onSubmitRequest: () => void;
 }
 

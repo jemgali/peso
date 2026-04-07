@@ -1,100 +1,45 @@
 "use client";
 
 import React, { useState, useCallback } from "react";
-import SPESApplicationForm from "@/components/forms/client/spes-application-form";
+import SPESApplicationForm, {
+  SECTION_IDS,
+  SECTION_TITLES,
+} from "@/components/forms/client/spes-application-form";
 import ApplicationProgress, {
   type StepStatus,
 } from "@/components/client/application-progress";
 import { Card } from "@/ui/card";
 import { cn } from "@/lib/utils";
 
-const steps = [
-  {
-    id: "basic-info",
-    title: "Basic Information",
-    description: "Name and role",
-  },
-  {
-    id: "personal-details",
-    title: "Personal Details",
-    description: "Birthdate and demographics",
-  },
-  {
-    id: "address",
-    title: "Address",
-    description: "Current residence",
-  },
-  {
-    id: "family",
-    title: "Family",
-    description: "Parents and siblings",
-  },
-  {
-    id: "guardian",
-    title: "Guardian",
-    description: "Guardian details",
-  },
-  {
-    id: "benefactor",
-    title: "Benefactor",
-    description: "Supporting person",
-  },
-  {
-    id: "education",
-    title: "Education",
-    description: "Educational background",
-  },
-  {
-    id: "skills",
-    title: "Skills",
-    description: "Your competencies",
-  },
-  {
-    id: "spes-info",
-    title: "SPES Details",
-    description: "Program information",
-  },
-  {
-    id: "documents",
-    title: "Documents",
-    description: "Required papers",
-  },
-  {
-    id: "contact-info",
-    title: "Contact",
-    description: "Communication details",
-  },
-  {
-    id: "review",
-    title: "Review & Submit",
-    description: "Verify and submit",
-  },
-];
+const steps = SECTION_IDS.map((id) => ({
+  id,
+  title: SECTION_TITLES[id],
+  description: "",
+}));
 
 // Initialize all step statuses as incomplete
-const initialStepStatuses: Record<string, StepStatus> = steps.reduce(
-  (acc, step) => {
-    acc[step.id] = "incomplete";
+const initialStepStatuses: Record<string, StepStatus> = SECTION_IDS.reduce(
+  (acc, id) => {
+    acc[id] = "incomplete";
     return acc;
   },
   {} as Record<string, StepStatus>
 );
 
 const ApplicationForm = () => {
-  const [currentStepId, setCurrentStepId] = useState("basic-info");
+  const [currentStep, setCurrentStep] = useState(0);
   const [stepStatuses, setStepStatuses] =
     useState<Record<string, StepStatus>>(initialStepStatuses);
+  const [goToStepFn, setGoToStepFn] = useState<
+    ((stepIndex: number) => Promise<void>) | null
+  >(null);
 
-  const handleStepClick = useCallback((stepId: string) => {
-    const section = document.getElementById(stepId);
-    if (section) {
-      section.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
-  }, []);
-
-  const handleStepChange = useCallback((stepId: string) => {
-    setCurrentStepId(stepId);
-  }, []);
+  const handleStepChange = useCallback(
+    (stepIndex: number) => {
+      setCurrentStep(stepIndex);
+    },
+    []
+  );
 
   const handleValidationChange = useCallback(
     (newStatuses: Record<string, StepStatus>) => {
@@ -103,14 +48,38 @@ const ApplicationForm = () => {
     []
   );
 
+  const handleStepClick = useCallback(
+    async (stepId: string) => {
+      const stepIndex = SECTION_IDS.indexOf(
+        stepId as (typeof SECTION_IDS)[number]
+      );
+      if (stepIndex !== -1 && goToStepFn) {
+        await goToStepFn(stepIndex);
+      }
+    },
+    [goToStepFn]
+  );
+
+  // Expose goToStep function from form to container
+  const handleFormMount = useCallback(
+    (goToStep: (stepIndex: number) => Promise<void>) => {
+      setGoToStepFn(() => goToStep);
+    },
+    []
+  );
+
+  const currentStepId = SECTION_IDS[currentStep];
+
   return (
     <div className="flex flex-col lg:flex-row gap-6 items-start">
       {/* Form Content */}
       <div className="flex-1 min-w-0 w-full lg:pb-20">
         <Card className="p-4 sm:p-6">
           <SPESApplicationForm
+            currentStep={currentStep}
             onStepChange={handleStepChange}
             onValidationChange={handleValidationChange}
+            onMount={handleFormMount}
           />
         </Card>
       </div>
@@ -118,6 +87,7 @@ const ApplicationForm = () => {
       {/* Progress Sidebar - Right Side (Desktop only) */}
       <div className="w-full lg:w-72 shrink-0 hidden lg:block">
         <ApplicationProgress
+          currentStep={currentStep}
           currentStepId={currentStepId}
           stepStatuses={stepStatuses}
           onStepClick={handleStepClick}
@@ -129,29 +99,28 @@ const ApplicationForm = () => {
         <div className="flex items-center justify-between max-w-2xl mx-auto">
           <div className="flex-1">
             <p className="text-xs text-muted-foreground mb-1">
-              Step {steps.findIndex((s) => s.id === currentStepId) + 1} of{" "}
-              {steps.length}
+              Step {currentStep + 1} of {steps.length}
             </p>
             <p className="text-sm font-medium">
-              {steps.find((s) => s.id === currentStepId)?.title}
+              {steps[currentStep]?.title}
             </p>
           </div>
           <div className="flex gap-0.5">
-            {steps.map((step) => (
+            {steps.map((step, index) => (
               <button
                 key={step.id}
                 type="button"
                 onClick={() => handleStepClick(step.id)}
                 className={cn(
                   "h-2 w-4 rounded-full transition-all duration-300",
-                  step.id === currentStepId && "bg-primary",
-                  step.id !== currentStepId &&
+                  index === currentStep && "bg-primary",
+                  index !== currentStep &&
                     stepStatuses[step.id] === "complete" &&
                     "bg-green-500",
-                  step.id !== currentStepId &&
+                  index !== currentStep &&
                     stepStatuses[step.id] === "error" &&
                     "bg-red-500",
-                  step.id !== currentStepId &&
+                  index !== currentStep &&
                     stepStatuses[step.id] === "incomplete" &&
                     "bg-muted"
                 )}

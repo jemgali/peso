@@ -8,15 +8,10 @@ import type { FormSectionWithFieldArrayProps } from "./types";
 const SkillsSection: React.FC<FormSectionWithFieldArrayProps> = ({
   register,
   isPending,
-  setSectionRef,
   skillsFieldArray,
 }) => {
   return (
-    <div
-      id="skills"
-      ref={setSectionRef("skills")}
-      className="scroll-mt-24"
-    >
+    <div id="skills" className="scroll-mt-24">
       <div className="mb-4">
         <h2 className="text-lg font-semibold">Skills & Competencies</h2>
         <p className="text-sm text-muted-foreground">

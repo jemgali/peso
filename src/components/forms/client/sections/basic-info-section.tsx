@@ -1,5 +1,7 @@
-import React from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { Input } from "@/ui/input";
+import { Button } from "@/ui/button";
+import { X, Ruler } from "lucide-react";
 import {
   Field,
   FieldSet,
@@ -7,32 +9,170 @@ import {
   FieldLabel,
   FieldError,
 } from "@/ui/field";
-import type { FormSectionProps } from "./types";
+import { RadioGroup, RadioGroupItem } from "@/ui/radio-group";
+import { Label } from "@/ui/label";
+import { Badge } from "@/ui/badge";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/ui/popover";
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupButton,
+  InputGroupInput,
+} from "@/ui/input-group";
+import {
+  Combobox,
+  ComboboxInput,
+  ComboboxContent,
+  ComboboxList,
+  ComboboxItem,
+  ComboboxEmpty,
+} from "@/ui/combobox";
+import type { FormSectionWithFieldArrayProps } from "./types";
 
-const BasicInfoSection: React.FC<FormSectionProps> = ({
+// CLDR language data type
+interface CLDRLanguageData {
+  main: {
+    en: {
+      localeDisplayNames: {
+        languages: Record<string, string>;
+      };
+    };
+  };
+}
+
+// Calculate age from birthdate
+function calculateAge(birthdate: string): number {
+  const today = new Date();
+  const birth = new Date(birthdate);
+  let age = today.getFullYear() - birth.getFullYear();
+  const monthDiff = today.getMonth() - birth.getMonth();
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+    age--;
+  }
+  return age;
+}
+
+const BasicInfoSection: React.FC<FormSectionWithFieldArrayProps> = ({
   register,
   errors,
   isPending,
-  setSectionRef,
+  watch,
+  setValue,
 }) => {
+  // Height converter state
+  const [feet, setFeet] = useState<string>("");
+  const [inches, setInches] = useState<string>("");
+  const [converterOpen, setConverterOpen] = useState(false);
+
+  // CLDR languages state
+  const [cldrLanguages, setCldrLanguages] = useState<{ code: string; name: string }[]>([]);
+  const [languageSearch, setLanguageSearch] = useState("");
+
+  // Watch form values for reactivity
+  const birthdate = watch?.("profileBirthdate");
+  const currentSex = watch?.("profileSex");
+  const currentAge = watch?.("profileAge");
+  const selectedLanguages = watch?.("profileLanguageDialect") || [];
+
+  // Load CLDR languages on mount
+  useEffect(() => {
+    fetch("/cldr-data/languages.json")
+      .then((res) => res.json())
+      .then((data: CLDRLanguageData) => {
+        const langs = data.main.en.localeDisplayNames.languages;
+        const parsed = Object.entries(langs)
+          .filter(([code]) => !code.includes("-alt-") && !code.includes("-"))
+          .map(([code, name]) => ({ code, name }))
+          .sort((a, b) => a.name.localeCompare(b.name));
+        setCldrLanguages(parsed);
+      })
+      .catch(console.error);
+  }, []);
+
+  // Filter languages based on search
+  const filteredLanguages = useMemo(() => {
+    if (!languageSearch.trim()) {
+      // Show common languages when no search
+      const commonCodes = ["en", "tl", "ceb", "ilo", "hil", "bik", "war", "pam", "bcl", "pag", "zh", "es", "ar", "ko", "ja"];
+      const common = cldrLanguages.filter((l) => commonCodes.includes(l.code));
+      return common.length > 0 ? common : cldrLanguages.slice(0, 20);
+    }
+    const search = languageSearch.toLowerCase();
+    return cldrLanguages
+      .filter((l) => l.name.toLowerCase().includes(search) || l.code.toLowerCase().includes(search))
+      .slice(0, 50);
+  }, [cldrLanguages, languageSearch]);
+
+  // Auto-calculate age when birthdate changes
+  useEffect(() => {
+    if (setValue) {
+      if (birthdate) {
+        const age = calculateAge(birthdate);
+        if (age >= 0 && age < 150) {
+          setValue("profileAge", age, { shouldValidate: true });
+        } else {
+          // Clear stale age when birthdate is invalid
+          setValue("profileAge", undefined, { shouldValidate: true });
+        }
+      } else {
+        // Clear age when birthdate is empty
+        setValue("profileAge", undefined, { shouldValidate: true });
+      }
+    }
+  }, [birthdate, setValue]);
+
+  // Convert feet/inches to cm
+  const handleConvert = () => {
+    const feetNum = parseFloat(feet) || 0;
+    const inchesNum = parseFloat(inches) || 0;
+    const totalInches = feetNum * 12 + inchesNum;
+    const cm = Math.round(totalInches * 2.54);
+    if (cm > 0 && setValue) {
+      setValue("profileHeight", cm, { shouldValidate: true });
+      setConverterOpen(false);
+      setFeet("");
+      setInches("");
+    }
+  };
+
+  // Add a language
+  const handleAddLanguage = (languageName: string) => {
+    if (!languageName || !setValue) return;
+    const current = selectedLanguages || [];
+    const exists = current.some((l) => l.value === languageName);
+    if (!exists) {
+      setValue("profileLanguageDialect", [...current, { value: languageName }], { shouldValidate: true });
+    }
+    setLanguageSearch("");
+  };
+
+  // Remove a language
+  const handleRemoveLanguage = (index: number) => {
+    if (!setValue) return;
+    const current = selectedLanguages || [];
+    const updated = current.filter((_, i) => i !== index);
+    setValue("profileLanguageDialect", updated, { shouldValidate: true });
+  };
+
   return (
-    <div
-      id="basic-info"
-      ref={setSectionRef("basic-info")}
-      className="scroll-mt-24"
-    >
+    <div id="basic-info" className="scroll-mt-24">
       <div className="mb-4">
-        <h2 className="text-lg font-semibold">Basic Information</h2>
+        <h2 className="text-lg font-semibold">Personal Information</h2>
         <p className="text-sm text-muted-foreground">
-          Please provide your basic personal information
+          Please provide your personal information
         </p>
       </div>
 
       <FieldGroup>
         <FieldSet className="gap-4">
+          {/* Name Fields */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Field data-invalid={!!errors.profileLastName}>
-              <FieldLabel htmlFor="profileLastName">Last Name *</FieldLabel>
+              <FieldLabel htmlFor="profileLastName" required>Last Name</FieldLabel>
               <Input
                 {...register("profileLastName")}
                 type="text"
@@ -48,7 +188,7 @@ const BasicInfoSection: React.FC<FormSectionProps> = ({
             </Field>
 
             <Field data-invalid={!!errors.profileFirstName}>
-              <FieldLabel htmlFor="profileFirstName">First Name *</FieldLabel>
+              <FieldLabel htmlFor="profileFirstName" required>First Name</FieldLabel>
               <Input
                 {...register("profileFirstName")}
                 type="text"
@@ -96,20 +236,329 @@ const BasicInfoSection: React.FC<FormSectionProps> = ({
             </Field>
           </div>
 
-          <Field data-invalid={!!errors.profileRole}>
-            <FieldLabel htmlFor="profileRole">Role / Designation *</FieldLabel>
-            <Input
-              {...register("profileRole")}
-              type="text"
-              id="profileRole"
-              disabled={isPending}
-              placeholder="e.g., Applicant, Job Seeker"
-              aria-invalid={!!errors.profileRole}
-            />
-            {errors.profileRole && (
-              <FieldError>{errors.profileRole.message}</FieldError>
+          {/* Personal Details - merged with contact details */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4">
+            <Field data-invalid={!!errors.profileBirthdate}>
+              <FieldLabel htmlFor="profileBirthdate" required>Date of Birth</FieldLabel>
+              <Input
+                {...register("profileBirthdate")}
+                type="date"
+                id="profileBirthdate"
+                disabled={isPending}
+                aria-invalid={!!errors.profileBirthdate}
+              />
+              {errors.profileBirthdate && (
+                <FieldError>{errors.profileBirthdate.message}</FieldError>
+              )}
+            </Field>
+
+            <Field data-invalid={!!errors.profileAge}>
+              <FieldLabel htmlFor="profileAge">Age</FieldLabel>
+              <Input
+                type="number"
+                id="profileAge"
+                value={currentAge ?? ""}
+                readOnly
+                disabled
+                placeholder="Auto-calculated"
+                aria-invalid={!!errors.profileAge}
+                className="bg-muted"
+              />
+              {errors.profileAge && (
+                <FieldError>{errors.profileAge.message}</FieldError>
+              )}
+            </Field>
+
+            <Field data-invalid={!!errors.profilePlaceOfBirth}>
+              <FieldLabel htmlFor="profilePlaceOfBirth">Place of Birth</FieldLabel>
+              <Input
+                {...register("profilePlaceOfBirth")}
+                type="text"
+                id="profilePlaceOfBirth"
+                disabled={isPending}
+                placeholder="City, Province"
+                aria-invalid={!!errors.profilePlaceOfBirth}
+              />
+              {errors.profilePlaceOfBirth && (
+                <FieldError>{errors.profilePlaceOfBirth.message}</FieldError>
+              )}
+            </Field>
+
+            <Field data-invalid={!!errors.profileSex}>
+              <FieldLabel required>Sex</FieldLabel>
+              <RadioGroup
+                value={currentSex || ""}
+                onValueChange={(val) => setValue?.("profileSex", val, { shouldValidate: true })}
+                disabled={isPending}
+                className="flex gap-6 h-10 items-center"
+              >
+                <div className="flex items-center gap-2">
+                  <RadioGroupItem value="Male" id="sex-male" />
+                  <Label htmlFor="sex-male" className="font-normal cursor-pointer">Male</Label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <RadioGroupItem value="Female" id="sex-female" />
+                  <Label htmlFor="sex-female" className="font-normal cursor-pointer">Female</Label>
+                </div>
+              </RadioGroup>
+              {errors.profileSex && (
+                <FieldError>{errors.profileSex.message}</FieldError>
+              )}
+            </Field>
+
+            <Field data-invalid={!!errors.profileHeight}>
+              <FieldLabel htmlFor="profileHeight" required>Height (cm)</FieldLabel>
+              <InputGroup className="h-10">
+                <InputGroupInput
+                  {...register("profileHeight")}
+                  type="number"
+                  id="profileHeight"
+                  disabled={isPending}
+                  placeholder="170"
+                  aria-invalid={!!errors.profileHeight}
+                />
+                <InputGroupAddon align="inline-end">
+                  <Popover open={converterOpen} onOpenChange={setConverterOpen}>
+                    <PopoverTrigger asChild>
+                      <InputGroupButton
+                        type="button"
+                        variant="ghost"
+                        size="xs"
+                        disabled={isPending}
+                      >
+                        <Ruler className="h-4 w-4" />
+                        Convert
+                      </InputGroupButton>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-64" align="end">
+                      <div className="space-y-3">
+                        <h4 className="font-medium text-sm">Height Converter</h4>
+                        <p className="text-xs text-muted-foreground">
+                          Enter height in feet and inches
+                        </p>
+                        <div className="flex gap-2">
+                          <div className="flex-1">
+                            <Label htmlFor="feet" className="text-xs">Feet</Label>
+                            <Input
+                              id="feet"
+                              type="number"
+                              min="0"
+                              max="8"
+                              value={feet}
+                              onChange={(e) => setFeet(e.target.value)}
+                              placeholder="5"
+                              className="h-8"
+                            />
+                          </div>
+                          <div className="flex-1">
+                            <Label htmlFor="inches" className="text-xs">Inches</Label>
+                            <Input
+                              id="inches"
+                              type="number"
+                              min="0"
+                              max="11"
+                              step="0.5"
+                              value={inches}
+                              onChange={(e) => setInches(e.target.value)}
+                              placeholder="6"
+                              className="h-8"
+                            />
+                          </div>
+                        </div>
+                        <Button
+                          type="button"
+                          size="sm"
+                          className="w-full"
+                          onClick={handleConvert}
+                          disabled={!feet && !inches}
+                        >
+                          Convert to CM
+                        </Button>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                </InputGroupAddon>
+              </InputGroup>
+              {errors.profileHeight && (
+                <FieldError>{errors.profileHeight.message}</FieldError>
+              )}
+            </Field>
+
+            <Field data-invalid={!!errors.profileCivilStatus}>
+              <FieldLabel htmlFor="profileCivilStatus" required>Civil Status</FieldLabel>
+              <select
+                {...register("profileCivilStatus")}
+                id="profileCivilStatus"
+                disabled={isPending}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                aria-invalid={!!errors.profileCivilStatus}
+              >
+                <option value="">Select...</option>
+                <option value="Single">Single</option>
+                <option value="Married">Married</option>
+                <option value="Divorced">Divorced</option>
+                <option value="Widowed">Widowed</option>
+              </select>
+              {errors.profileCivilStatus && (
+                <FieldError>{errors.profileCivilStatus.message}</FieldError>
+              )}
+            </Field>
+
+            <Field data-invalid={!!errors.profileReligion}>
+              <FieldLabel htmlFor="profileReligion" required>Religion</FieldLabel>
+              <Input
+                {...register("profileReligion")}
+                type="text"
+                id="profileReligion"
+                disabled={isPending}
+                placeholder="e.g., Catholic, Christian, Muslim"
+                aria-invalid={!!errors.profileReligion}
+              />
+              {errors.profileReligion && (
+                <FieldError>{errors.profileReligion.message}</FieldError>
+              )}
+            </Field>
+
+            {/* Contact Details - merged below Religion */}
+            <Field data-invalid={!!errors.profileEmail}>
+              <FieldLabel htmlFor="profileEmail" required>Email Address</FieldLabel>
+              <Input
+                {...register("profileEmail")}
+                type="email"
+                id="profileEmail"
+                disabled={isPending}
+                placeholder="email@example.com"
+                aria-invalid={!!errors.profileEmail}
+              />
+              {errors.profileEmail && (
+                <FieldError>{errors.profileEmail.message}</FieldError>
+              )}
+            </Field>
+
+            <Field data-invalid={!!errors.profileContact}>
+              <FieldLabel htmlFor="profileContact" required>Contact Number</FieldLabel>
+              <Input
+                {...register("profileContact")}
+                type="tel"
+                id="profileContact"
+                disabled={isPending}
+                placeholder="+63 9XX-XXX-XXXX"
+                aria-invalid={!!errors.profileContact}
+              />
+              {errors.profileContact && (
+                <FieldError>{errors.profileContact.message}</FieldError>
+              )}
+            </Field>
+
+            <Field data-invalid={!!errors.profileFacebook} className="md:col-span-2">
+              <FieldLabel htmlFor="profileFacebook" required>Facebook Profile URL</FieldLabel>
+              <Input
+                {...register("profileFacebook")}
+                type="url"
+                id="profileFacebook"
+                disabled={isPending}
+                placeholder="https://facebook.com/username"
+                aria-invalid={!!errors.profileFacebook}
+              />
+              {errors.profileFacebook && (
+                <FieldError>{errors.profileFacebook.message}</FieldError>
+              )}
+            </Field>
+          </div>
+
+          {/* Language/Dialect - CLDR Combobox with Badges */}
+          <div className="space-y-2 mt-4">
+            <FieldLabel required>Languages / Dialects</FieldLabel>
+
+            {/* Selected Languages as Badges */}
+            {selectedLanguages.length > 0 && (
+              <div className="flex flex-wrap gap-2 mb-2">
+                {selectedLanguages.map((lang, index) => (
+                  <Badge key={index} variant="secondary" className="gap-1 pr-1">
+                    {lang.value}
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-4 w-4 p-0 hover:bg-transparent"
+                      onClick={() => handleRemoveLanguage(index)}
+                      disabled={isPending}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </Badge>
+                ))}
+              </div>
             )}
-          </Field>
+
+            {/* Language Combobox */}
+            <Combobox<string>
+              inputValue={languageSearch}
+              onInputValueChange={(value) => setLanguageSearch(value ?? "")}
+              onValueChange={(value) => {
+                if (value) {
+                  handleAddLanguage(value);
+                }
+              }}
+            >
+              <ComboboxInput
+                placeholder="Search and select languages..."
+                disabled={isPending}
+                showTrigger
+              />
+              <ComboboxContent>
+                <ComboboxList>
+                  <ComboboxEmpty>No languages found</ComboboxEmpty>
+                  {filteredLanguages.map((lang) => (
+                    <ComboboxItem
+                      key={lang.code}
+                      value={lang.name}
+                      disabled={selectedLanguages.some((l) => l.value === lang.name)}
+                    >
+                      {lang.name}
+                    </ComboboxItem>
+                  ))}
+                </ComboboxList>
+              </ComboboxContent>
+            </Combobox>
+
+            {errors.profileLanguageDialect && (
+              <FieldError>{errors.profileLanguageDialect.message}</FieldError>
+            )}
+          </div>
+
+          {/* Disability Information */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+            <Field data-invalid={!!errors.profileDisability}>
+              <FieldLabel htmlFor="profileDisability">Disability (if applicable)</FieldLabel>
+              <Input
+                {...register("profileDisability")}
+                type="text"
+                id="profileDisability"
+                disabled={isPending}
+                placeholder="Type of disability"
+                aria-invalid={!!errors.profileDisability}
+              />
+              {errors.profileDisability && (
+                <FieldError>{errors.profileDisability.message}</FieldError>
+              )}
+            </Field>
+
+            <Field data-invalid={!!errors.profilePwdId}>
+              <FieldLabel htmlFor="profilePwdId">PWD ID Number</FieldLabel>
+              <Input
+                {...register("profilePwdId")}
+                type="text"
+                id="profilePwdId"
+                disabled={isPending}
+                placeholder="PWD ID (if applicable)"
+                aria-invalid={!!errors.profilePwdId}
+              />
+              {errors.profilePwdId && (
+                <FieldError>{errors.profilePwdId.message}</FieldError>
+              )}
+            </Field>
+          </div>
         </FieldSet>
       </FieldGroup>
     </div>

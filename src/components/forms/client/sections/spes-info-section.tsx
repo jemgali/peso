@@ -16,16 +16,11 @@ const SPESInfoSection: React.FC<FormSectionWithControlProps> = ({
   errors,
   isPending,
   control,
-  setSectionRef,
 }) => {
   const currentYear = new Date().getFullYear();
 
   return (
-    <div
-      id="spes-info"
-      ref={setSectionRef("spes-info")}
-      className="scroll-mt-24"
-    >
+    <div id="spes-info" className="scroll-mt-24">
       <div className="mb-4">
         <h2 className="text-lg font-semibold">SPES Application Details</h2>
         <p className="text-sm text-muted-foreground">

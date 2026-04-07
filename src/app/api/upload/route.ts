@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
-import { PrismaClient } from "@/generated/prisma/client";
+import { PrismaClient, Prisma } from "@/generated/prisma/client";
 import { Pool } from "pg";
 import { PrismaPg } from "@prisma/adapter-pg";
 import {
@@ -133,14 +133,14 @@ export async function POST(
     if (profile.documents) {
       await prisma.profileDocuments.update({
         where: { profileId: profile.profileId },
-        data: { documents: updatedDocuments },
+        data: { documents: updatedDocuments as Prisma.InputJsonValue },
       });
     } else {
       await prisma.profileDocuments.create({
         data: {
           documentId: randomUUID(),
           profileId: profile.profileId,
-          documents: updatedDocuments,
+          documents: updatedDocuments as Prisma.InputJsonValue,
         },
       });
     }

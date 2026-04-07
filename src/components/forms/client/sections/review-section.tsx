@@ -18,7 +18,6 @@ const ReviewSection: React.FC<ReviewSectionProps> = ({
   formValues,
   isPending,
   isValid,
-  setSectionRef,
   onSubmitRequest,
 }) => {
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
@@ -80,11 +79,7 @@ const ReviewSection: React.FC<ReviewSectionProps> = ({
   };
 
   return (
-    <div
-      id="review"
-      ref={setSectionRef("review")}
-      className="scroll-mt-24"
-    >
+    <div id="review" className="scroll-mt-24">
       <div className="mb-4">
         <h2 className="text-lg font-semibold">Review Application</h2>
         <p className="text-sm text-muted-foreground">

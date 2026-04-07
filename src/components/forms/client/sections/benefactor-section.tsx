@@ -13,14 +13,9 @@ const BenefactorSection: React.FC<FormSectionProps> = ({
   register,
   errors,
   isPending,
-  setSectionRef,
 }) => {
   return (
-    <div
-      id="benefactor"
-      ref={setSectionRef("benefactor")}
-      className="scroll-mt-24"
-    >
+    <div id="benefactor" className="scroll-mt-24">
       <div className="mb-4">
         <h2 className="text-lg font-semibold">Benefactor Information</h2>
         <p className="text-sm text-muted-foreground">

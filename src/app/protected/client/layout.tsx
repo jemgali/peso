@@ -1,31 +1,27 @@
-import React from "react";
-import Header from "@/protected/header";
-import Footer from "@/protected/footer";
-import Side from "@/components/client/side";
-import { SidebarProvider, SidebarInset } from "@/ui/sidebar";
-import { requireUser } from "@/lib/utils/user-auth";
+import React from "react"
+import Header from "@/components/protected/header"
+import Footer from "@/components/protected/footer"
+import Side from "@/components/client/side"
+import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar"
+import { requireUser } from "@/lib/utils/user-auth"
 
 const Layout = async ({ children }: { children: React.ReactNode }) => {
-  const user = await requireUser();
+  await requireUser()
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden bg-background">
-      <div className="shrink-0 z-50">
-        <Header />
-      </div>
-      <div className="flex-1 relative overflow-hidden flex">
+    <div className="flex h-screen flex-col overflow-hidden bg-background">
+      <Header />
+      <div className="relative flex flex-1 overflow-hidden">
         <SidebarProvider className="absolute inset-0 h-full min-h-0 w-full">
           <Side />
           <SidebarInset className="flex-1 overflow-y-auto">
-            <main className="h-full p-4">{children}</main>
+            <main className="h-full p-4 md:p-6">{children}</main>
           </SidebarInset>
         </SidebarProvider>
       </div>
-      <div className="shrink-0 z-50">
-        <Footer />
-      </div>
+      <Footer />
     </div>
-  );
-};
+  )
+}
 
-export default Layout;
+export default Layout

@@ -6,8 +6,8 @@ import { Plus, Search, GripVertical, ChevronLeft, ChevronRight } from "lucide-re
 import Image from "next/image"
 import { Input } from "@/ui/input"
 import { Button } from "@/ui/button"
-import { Spinner } from "@/ui/spinner"
 import { Badge } from "@/ui/badge"
+import { ProgramsListSkeleton } from "@/ui/skeletons"
 import {
   Table,
   TableBody,
@@ -106,11 +106,7 @@ export default function Programs() {
   }
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <Spinner className="h-8 w-8" />
-      </div>
-    )
+    return <ProgramsListSkeleton />
   }
 
   return (

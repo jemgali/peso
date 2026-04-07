@@ -1,9 +1,12 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useForm, useFieldArray, FieldErrors, Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { Button } from "@/ui/button";
+import { Spinner } from "@/ui/spinner";
 import {
   spesApplicationSchema,
   validateSection,
@@ -14,7 +17,6 @@ import type { StepStatus } from "@/components/client/application-progress";
 // Import section components
 import {
   BasicInfoSection,
-  PersonalDetailsSection,
   AddressSection,
   FamilySection,
   GuardianSection,
@@ -23,14 +25,12 @@ import {
   SkillsSection,
   SPESInfoSection,
   DocumentsSection,
-  ContactSection,
   ReviewSection,
 } from "./sections";
 
-// Section IDs that match the stepper configuration
+// Section IDs that match the stepper configuration (10 steps total)
 const SECTION_IDS = [
   "basic-info",
-  "personal-details",
   "address",
   "family",
   "guardian",
@@ -39,14 +39,28 @@ const SECTION_IDS = [
   "skills",
   "spes-info",
   "documents",
-  "contact-info",
   "review",
 ] as const;
 
-// Section field mappings
-const SECTION_FIELDS: Record<string, string[]> = {
-  "basic-info": ["profileLastName", "profileFirstName", "profileRole"],
-  "personal-details": [
+// Section titles for display
+const SECTION_TITLES: Record<string, string> = {
+  "basic-info": "Personal Information",
+  address: "Address",
+  family: "Family Information",
+  guardian: "Guardian Details",
+  benefactor: "Benefactor Information",
+  education: "Educational Background",
+  skills: "Skills",
+  "spes-info": "SPES Program Details",
+  documents: "Documents",
+  review: "Review & Submit",
+};
+
+// Section field mappings for validation
+const SECTION_FIELDS: Record<string, (keyof SPESApplicationFormValues)[]> = {
+  "basic-info": [
+    "profileLastName",
+    "profileFirstName",
     "profileBirthdate",
     "profileAge",
     "profilePlaceOfBirth",
@@ -55,6 +69,9 @@ const SECTION_FIELDS: Record<string, string[]> = {
     "profileCivilStatus",
     "profileReligion",
     "profileEmail",
+    "profileContact",
+    "profileFacebook",
+    "profileLanguageDialect",
     "profileDisability",
     "profilePwdId",
   ],
@@ -91,19 +108,24 @@ const SECTION_FIELDS: Record<string, string[]> = {
     "remarks",
   ],
   documents: ["documents"],
-  "contact-info": ["profileContact", "profileFacebook"],
   review: [],
 };
 
 const TOUCHED_FIELDS: Record<string, string[]> = {
-  "basic-info": ["profileLastName", "profileFirstName", "profileRole"],
-  "personal-details": [
+  "basic-info": [
+    "profileLastName",
+    "profileFirstName",
     "profileBirthdate",
     "profileAge",
     "profilePlaceOfBirth",
     "profileSex",
     "profileHeight",
     "profileCivilStatus",
+    "profileReligion",
+    "profileEmail",
+    "profileContact",
+    "profileFacebook",
+    "profileLanguageDialect",
   ],
   address: [
     "profileHouseStreet",
@@ -118,7 +140,6 @@ const TOUCHED_FIELDS: Record<string, string[]> = {
   skills: ["skills"],
   "spes-info": ["applicationYear", "motivation"],
   documents: [],
-  "contact-info": ["profileContact", "profileFacebook"],
   review: [],
 };
 
@@ -141,7 +162,6 @@ function checkSectionTouched(
   const fields = TOUCHED_FIELDS[sectionId] || [];
   return fields.some((field) => {
     const value = touched[field];
-    // Handle both single boolean and array of booleans (for array fields)
     if (Array.isArray(value)) {
       return value.some((v) => v === true);
     }
@@ -150,22 +170,32 @@ function checkSectionTouched(
 }
 
 export interface SPESApplicationFormProps {
-  onStepChange?: (stepId: string) => void;
+  currentStep?: number;
+  onStepChange?: (stepIndex: number) => void;
   onValidationChange?: (stepStatuses: Record<string, StepStatus>) => void;
+  onMount?: (goToStep: (stepIndex: number) => Promise<void>) => void;
 }
 
 const SPESApplicationForm: React.FC<SPESApplicationFormProps> = ({
+  currentStep: controlledStep,
   onStepChange,
   onValidationChange,
+  onMount,
 }) => {
+  const [internalStep, setInternalStep] = useState(0);
   const [isPending, setIsPending] = useState(false);
-  const sectionRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const [isValidating, setIsValidating] = useState(false);
+
+  // Use controlled step if provided, otherwise use internal state
+  const currentStep = controlledStep ?? internalStep;
 
   const {
     register,
     handleSubmit,
     watch,
     control,
+    trigger,
+    setValue,
     formState: { errors, isValid, touchedFields },
   } = useForm<SPESApplicationFormValues>({
     resolver: zodResolver(
@@ -256,67 +286,112 @@ const SPESApplicationForm: React.FC<SPESApplicationFormProps> = ({
   const getStepStatuses = useCallback((): Record<string, StepStatus> => {
     const statuses: Record<string, StepStatus> = {};
 
-    SECTION_IDS.forEach((sectionId) => {
-      // Check if section has validation errors
+    SECTION_IDS.forEach((sectionId, index) => {
       const sectionHasErrors = checkSectionErrors(sectionId, errors);
-
-      // Check if section is valid (required fields filled)
       const sectionIsValid = validateSection(sectionId, formValues);
-
-      // Check if user has interacted with this section
       const sectionTouched = checkSectionTouched(sectionId, touchedFields);
 
       if (sectionHasErrors) {
         statuses[sectionId] = "error";
       } else if (sectionIsValid && sectionTouched) {
         statuses[sectionId] = "complete";
+      } else if (index === currentStep) {
+        statuses[sectionId] = "current";
       } else {
         statuses[sectionId] = "incomplete";
       }
     });
 
-    // Review section is valid only when form is fully valid
     statuses["review"] = isValid ? "complete" : "incomplete";
 
     return statuses;
-  }, [errors, formValues, touchedFields, isValid]);
-
-  // Set up Intersection Observer to track which section is in view
-  useEffect(() => {
-    const observers: IntersectionObserver[] = [];
-
-    SECTION_IDS.forEach((sectionId) => {
-      const element = sectionRefs.current[sectionId];
-      if (!element) return;
-
-      const observer = new IntersectionObserver(
-        (entries) => {
-          entries.forEach((entry) => {
-            if (entry.isIntersecting) {
-              onStepChange?.(sectionId);
-            }
-          });
-        },
-        {
-          rootMargin: "-20% 0px -60% 0px",
-          threshold: 0,
-        },
-      );
-
-      observer.observe(element);
-      observers.push(observer);
-    });
-
-    return () => {
-      observers.forEach((observer) => observer.disconnect());
-    };
-  }, [onStepChange]);
+  }, [errors, formValues, touchedFields, isValid, currentStep]);
 
   // Update validation statuses when form state changes
   useEffect(() => {
     const statuses = getStepStatuses();
     onValidationChange?.(statuses);
   }, [getStepStatuses, onValidationChange]);
+
+  // Notify parent of step change
+  useEffect(() => {
+    onStepChange?.(currentStep);
+  }, [currentStep, onStepChange]);
+
+  // Navigate to specific step (from sidebar)
+  const goToStep = useCallback(async (stepIndex: number) => {
+    // Allow going back to any previous step
+    if (stepIndex < currentStep) {
+      if (controlledStep === undefined) {
+        setInternalStep(stepIndex);
+      }
+      onStepChange?.(stepIndex);
+      return;
+    }
+
+    // For forward navigation, validate all steps up to and including the target
+    for (let i = currentStep; i < stepIndex; i++) {
+      const sectionId = SECTION_IDS[i];
+      const fieldsToValidate = SECTION_FIELDS[sectionId];
+      const isStepValid = await trigger(fieldsToValidate);
+
+      if (!isStepValid) {
+        toast.error(`Please complete the "${SECTION_TITLES[sectionId]}" section first.`);
+        if (controlledStep === undefined) {
+          setInternalStep(i);
+        }
+        onStepChange?.(i);
+        return;
+      }
+    }
+
+    // All steps validated, go to target
+    if (controlledStep === undefined) {
+      setInternalStep(stepIndex);
+    }
+    onStepChange?.(stepIndex);
+  }, [currentStep, controlledStep, onStepChange, trigger]);
+
+  // Expose goToStep function to parent via onMount callback
+  useEffect(() => {
+    onMount?.(goToStep);
+  }, [goToStep, onMount]);
+
+  // Navigate to next step with validation
+  const handleNext = async () => {
+    const sectionId = SECTION_IDS[currentStep];
+    const fieldsToValidate = SECTION_FIELDS[sectionId];
+
+    setIsValidating(true);
+
+    // Trigger validation for current section fields
+    const isStepValid = await trigger(fieldsToValidate);
+
+    setIsValidating(false);
+
+    if (isStepValid) {
+      if (currentStep < SECTION_IDS.length - 1) {
+        const newStep = currentStep + 1;
+        if (controlledStep === undefined) {
+          setInternalStep(newStep);
+        }
+        onStepChange?.(newStep);
+      }
+    } else {
+      toast.error("Please fill in all required fields before proceeding.");
+    }
+  };
+
+  // Navigate to previous step
+  const handlePrevious = () => {
+    if (currentStep > 0) {
+      const newStep = currentStep - 1;
+      if (controlledStep === undefined) {
+        setInternalStep(newStep);
+      }
+      onStepChange?.(newStep);
+    }
+  };
 
   const onSubmit = async (data: SPESApplicationFormValues) => {
     setIsPending(true);
@@ -348,17 +423,11 @@ const SPESApplicationForm: React.FC<SPESApplicationFormProps> = ({
     handleSubmit(onSubmit)();
   };
 
-  // Helper to set section refs
-  const setSectionRef = (id: string) => (el: HTMLDivElement | null) => {
-    sectionRefs.current[id] = el;
-  };
-
   // Common props for most sections
   const sectionProps = {
     register,
     errors,
     isPending,
-    setSectionRef,
   };
 
   // Props for sections with control
@@ -373,63 +442,96 @@ const SPESApplicationForm: React.FC<SPESApplicationFormProps> = ({
     siblingsFieldArray,
     skillsFieldArray,
     languageFieldArray,
+    watch,
+    setValue,
   };
 
+  // Render only the current section (10 steps total)
+  const renderCurrentSection = () => {
+    switch (currentStep) {
+      case 0:
+        return <BasicInfoSection {...sectionWithFieldArrayProps} />;
+      case 1:
+        return <AddressSection {...sectionProps} />;
+      case 2:
+        return <FamilySection {...sectionWithFieldArrayProps} />;
+      case 3:
+        return <GuardianSection {...sectionProps} />;
+      case 4:
+        return <BenefactorSection {...sectionProps} />;
+      case 5:
+        return <EducationSection {...sectionProps} />;
+      case 6:
+        return <SkillsSection {...sectionWithFieldArrayProps} />;
+      case 7:
+        return <SPESInfoSection {...sectionWithControlProps} />;
+      case 8:
+        return <DocumentsSection {...sectionProps} />;
+      case 9:
+        return (
+          <ReviewSection
+            formValues={formValues}
+            isPending={isPending}
+            isValid={isValid}
+            onSubmitRequest={handleSubmitRequest}
+          />
+        );
+      default:
+        return null;
+    }
+  };
+
+  const isLastStep = currentStep === SECTION_IDS.length - 1;
+  const isFirstStep = currentStep === 0;
+
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="w-full space-y-12">
-      <BasicInfoSection {...sectionProps} />
+    <form onSubmit={handleSubmit(onSubmit)} className="w-full">
+      {/* Current Section Content */}
+      <div className="min-h-[400px]">
+        {renderCurrentSection()}
+      </div>
 
-      <hr className="border-border" />
+      {/* Navigation Buttons */}
+      <div className="flex justify-between items-center mt-8 pt-6 border-t">
+        <Button
+          type="button"
+          variant="outline"
+          onClick={handlePrevious}
+          disabled={isFirstStep || isPending}
+        >
+          <ChevronLeft className="h-4 w-4 mr-2" />
+          Previous
+        </Button>
 
-      <PersonalDetailsSection {...sectionWithFieldArrayProps} />
+        <span className="text-sm text-muted-foreground">
+          Step {currentStep + 1} of {SECTION_IDS.length}
+        </span>
 
-      <hr className="border-border" />
-
-      <AddressSection {...sectionProps} />
-
-      <hr className="border-border" />
-
-      <FamilySection {...sectionWithFieldArrayProps} />
-
-      <hr className="border-border" />
-
-      <GuardianSection {...sectionProps} />
-
-      <hr className="border-border" />
-
-      <BenefactorSection {...sectionProps} />
-
-      <hr className="border-border" />
-
-      <EducationSection {...sectionProps} />
-
-      <hr className="border-border" />
-
-      <SkillsSection {...sectionWithFieldArrayProps} />
-
-      <hr className="border-border" />
-
-      <SPESInfoSection {...sectionWithControlProps} />
-
-      <hr className="border-border" />
-
-      <DocumentsSection {...sectionProps} />
-
-      <hr className="border-border" />
-
-      <ContactSection {...sectionProps} />
-
-      <hr className="border-border" />
-
-      <ReviewSection
-        formValues={formValues}
-        isPending={isPending}
-        isValid={isValid}
-        setSectionRef={setSectionRef}
-        onSubmitRequest={handleSubmitRequest}
-      />
+        {!isLastStep ? (
+          <Button
+            type="button"
+            onClick={handleNext}
+            disabled={isPending || isValidating}
+          >
+            {isValidating ? (
+              <>
+                <Spinner className="mr-2 h-4 w-4" />
+                Validating...
+              </>
+            ) : (
+              <>
+                Next
+                <ChevronRight className="h-4 w-4 ml-2" />
+              </>
+            )}
+          </Button>
+        ) : (
+          <div className="w-24" /> 
+        )}
+      </div>
     </form>
   );
 };
 
+export { SECTION_IDS, SECTION_TITLES };
 export default SPESApplicationForm;

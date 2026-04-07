@@ -14,14 +14,9 @@ const GuardianSection: React.FC<FormSectionProps> = ({
   register,
   errors,
   isPending,
-  setSectionRef,
 }) => {
   return (
-    <div
-      id="guardian"
-      ref={setSectionRef("guardian")}
-      className="scroll-mt-24"
-    >
+    <div id="guardian" className="scroll-mt-24">
       <div className="mb-4">
         <h2 className="text-lg font-semibold">Guardian Information</h2>
         <p className="text-sm text-muted-foreground">

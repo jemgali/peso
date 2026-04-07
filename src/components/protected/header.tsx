@@ -5,17 +5,28 @@ import { NotificationBell } from '@/components/notifications'
 
 const Header = () => {
   return (
-    <header className="bg-chart-3 text-white p-4 flex gap-4 items-center justify-between w-full shadow-md">
-      <div className="flex">
-        <Image src="/assets/peso_logo.png" alt="PESO Logo" width={60} height={60} />
-        <div>
-            <h1 className="text-2xl font-bold">Public Employment Service Office</h1>
-            <h2 className="text-sm">City Government of Baguio</h2>
+    <header className="w-full bg-gov-header text-gov-header-foreground shadow-md">
+      <div className="flex items-center justify-between gap-4 px-4 py-3">
+        <div className="flex items-center gap-4">
+          <Image 
+            src="/assets/peso_logo.png" 
+            alt="PESO Logo" 
+            width={56} 
+            height={56}
+            className="shrink-0"
+            priority
+          />
+          <div className="flex flex-col">
+            <h1 className="text-xl font-bold leading-tight md:text-2xl">
+              Public Employment Service Office
+            </h1>
+            <p className="text-sm opacity-90">City Government of Baguio</p>
+          </div>
         </div>
-      </div>
-      <div className="flex items-center gap-2">
-        <NotificationBell />
-        <UserProfile />
+        <div className="flex items-center gap-3">
+          <NotificationBell />
+          <UserProfile />
+        </div>
       </div>
     </header>
   )

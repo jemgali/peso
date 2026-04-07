@@ -13,14 +13,9 @@ const EducationSection: React.FC<FormSectionProps> = ({
   register,
   errors,
   isPending,
-  setSectionRef,
 }) => {
   return (
-    <div
-      id="education"
-      ref={setSectionRef("education")}
-      className="scroll-mt-24"
-    >
+    <div id="education" className="scroll-mt-24">
       <div className="mb-4">
         <h2 className="text-lg font-semibold">Educational Background</h2>
         <p className="text-sm text-muted-foreground">
