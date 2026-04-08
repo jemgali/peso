@@ -1,14 +1,9 @@
 import React from "react";
 import { Input } from "@/ui/input";
 import { Button } from "@/ui/button";
-import {
-  Field,
-  FieldSet,
-  FieldGroup,
-  FieldLabel,
-  FieldError,
-} from "@/ui/field";
+import { Field, FieldSet, FieldGroup, FieldLabel } from "@/ui/field";
 import { Plus, X } from "lucide-react";
+import { TextField } from "@/components/shared";
 import type { FormSectionWithFieldArrayProps } from "./types";
 
 const FamilySection: React.FC<FormSectionWithFieldArrayProps> = ({
@@ -34,50 +29,33 @@ const FamilySection: React.FC<FormSectionWithFieldArrayProps> = ({
               Father&apos;s Information
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Field data-invalid={!!errors.fatherName}>
-                <FieldLabel htmlFor="fatherName">Full Name</FieldLabel>
-                <Input
-                  {...register("fatherName")}
-                  type="text"
-                  id="fatherName"
-                  disabled={isPending}
-                  placeholder="Father's full name"
-                  aria-invalid={!!errors.fatherName}
-                />
-                {errors.fatherName && (
-                  <FieldError>{errors.fatherName.message}</FieldError>
-                )}
-              </Field>
+              <TextField
+                name="fatherName"
+                label="Full Name"
+                register={register}
+                error={errors.fatherName?.message}
+                disabled={isPending}
+                placeholder="Father's full name"
+              />
 
-              <Field data-invalid={!!errors.fatherOccupation}>
-                <FieldLabel htmlFor="fatherOccupation">Occupation</FieldLabel>
-                <Input
-                  {...register("fatherOccupation")}
-                  type="text"
-                  id="fatherOccupation"
-                  disabled={isPending}
-                  placeholder="Occupation"
-                  aria-invalid={!!errors.fatherOccupation}
-                />
-                {errors.fatherOccupation && (
-                  <FieldError>{errors.fatherOccupation.message}</FieldError>
-                )}
-              </Field>
+              <TextField
+                name="fatherOccupation"
+                label="Occupation"
+                register={register}
+                error={errors.fatherOccupation?.message}
+                disabled={isPending}
+                placeholder="Occupation"
+              />
 
-              <Field data-invalid={!!errors.fatherContact}>
-                <FieldLabel htmlFor="fatherContact">Contact Number</FieldLabel>
-                <Input
-                  {...register("fatherContact")}
-                  type="tel"
-                  id="fatherContact"
-                  disabled={isPending}
-                  placeholder="+63 9XX-XXX-XXXX"
-                  aria-invalid={!!errors.fatherContact}
-                />
-                {errors.fatherContact && (
-                  <FieldError>{errors.fatherContact.message}</FieldError>
-                )}
-              </Field>
+              <TextField
+                name="fatherContact"
+                label="Contact Number"
+                register={register}
+                error={errors.fatherContact?.message}
+                disabled={isPending}
+                type="tel"
+                placeholder="+63 9XX-XXX-XXXX"
+              />
             </div>
           </div>
 
@@ -87,56 +65,37 @@ const FamilySection: React.FC<FormSectionWithFieldArrayProps> = ({
               Mother&apos;s Information
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Field data-invalid={!!errors.motherMaidenName}>
-                <FieldLabel htmlFor="motherMaidenName">
-                  Maiden Name
-                </FieldLabel>
-                <Input
-                  {...register("motherMaidenName")}
-                  type="text"
-                  id="motherMaidenName"
-                  disabled={isPending}
-                  placeholder="Mother's maiden name"
-                  aria-invalid={!!errors.motherMaidenName}
-                />
-                {errors.motherMaidenName && (
-                  <FieldError>{errors.motherMaidenName.message}</FieldError>
-                )}
-              </Field>
+              <TextField
+                name="motherMaidenName"
+                label="Maiden Name"
+                register={register}
+                error={errors.motherMaidenName?.message}
+                disabled={isPending}
+                placeholder="Mother's maiden name"
+              />
 
-              <Field data-invalid={!!errors.motherOccupation}>
-                <FieldLabel htmlFor="motherOccupation">Occupation</FieldLabel>
-                <Input
-                  {...register("motherOccupation")}
-                  type="text"
-                  id="motherOccupation"
-                  disabled={isPending}
-                  placeholder="Occupation"
-                  aria-invalid={!!errors.motherOccupation}
-                />
-                {errors.motherOccupation && (
-                  <FieldError>{errors.motherOccupation.message}</FieldError>
-                )}
-              </Field>
+              <TextField
+                name="motherOccupation"
+                label="Occupation"
+                register={register}
+                error={errors.motherOccupation?.message}
+                disabled={isPending}
+                placeholder="Occupation"
+              />
 
-              <Field data-invalid={!!errors.motherContact}>
-                <FieldLabel htmlFor="motherContact">Contact Number</FieldLabel>
-                <Input
-                  {...register("motherContact")}
-                  type="tel"
-                  id="motherContact"
-                  disabled={isPending}
-                  placeholder="+63 9XX-XXX-XXXX"
-                  aria-invalid={!!errors.motherContact}
-                />
-                {errors.motherContact && (
-                  <FieldError>{errors.motherContact.message}</FieldError>
-                )}
-              </Field>
+              <TextField
+                name="motherContact"
+                label="Contact Number"
+                register={register}
+                error={errors.motherContact?.message}
+                disabled={isPending}
+                type="tel"
+                placeholder="+63 9XX-XXX-XXXX"
+              />
             </div>
           </div>
 
-          {/* Siblings Information */}
+          {/* Siblings Information - keeping dynamic field array structure */}
           <div className="space-y-4 border-t pt-6">
             <div className="flex items-center justify-between">
               <div>

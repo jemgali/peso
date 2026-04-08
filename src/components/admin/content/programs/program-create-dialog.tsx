@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react"
+import React from "react"
 import { toast } from "sonner"
 import {
   Dialog,
@@ -10,6 +10,7 @@ import {
   DialogTitle,
 } from "@/ui/dialog"
 import { ProgramForm } from "@/components/forms/admin/program-form"
+import { useFormSubmit } from "@/hooks"
 import { type CreateProgramFormValues, type ProgramData } from "@/lib/validations/program"
 
 interface ProgramCreateDialogProps {
@@ -23,32 +24,17 @@ export function ProgramCreateDialog({
   onOpenChange,
   onProgramCreated,
 }: ProgramCreateDialogProps) {
-  const [isPending, setIsPending] = useState(false)
-
-  const handleSubmit = async (data: CreateProgramFormValues) => {
-    setIsPending(true)
-    try {
-      const response = await fetch("/api/admin/programs", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      })
-
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || "Failed to create program")
-      }
-
-      const { program } = await response.json()
+  const { submit, isPending } = useFormSubmit<CreateProgramFormValues, { program: ProgramData }>({
+    url: "/api/admin/programs",
+    method: "POST",
+    onSuccess: (result) => {
       toast.success("Program created successfully")
-      onProgramCreated(program)
-    } catch (error) {
-      console.error("Error creating program:", error)
-      toast.error(error instanceof Error ? error.message : "Failed to create program")
-    } finally {
-      setIsPending(false)
-    }
-  }
+      onProgramCreated(result.program)
+    },
+    onError: (error) => {
+      toast.error(error.message)
+    },
+  })
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -60,7 +46,7 @@ export function ProgramCreateDialog({
           </DialogDescription>
         </DialogHeader>
         <ProgramForm
-          onSubmit={handleSubmit}
+          onSubmit={async (data) => { await submit(data) }}
           isPending={isPending}
           submitLabel="Create Program"
         />

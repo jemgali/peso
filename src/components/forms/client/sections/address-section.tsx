@@ -1,13 +1,6 @@
 import React from "react";
-import { Input } from "@/ui/input";
-import { Textarea } from "@/ui/textarea";
-import {
-  Field,
-  FieldSet,
-  FieldGroup,
-  FieldLabel,
-  FieldError,
-} from "@/ui/field";
+import { FieldSet, FieldGroup } from "@/ui/field";
+import { TextField, TextareaField } from "@/components/shared";
 import type { FormSectionProps } from "./types";
 
 const AddressSection: React.FC<FormSectionProps> = ({
@@ -26,70 +19,43 @@ const AddressSection: React.FC<FormSectionProps> = ({
 
       <FieldGroup>
         <FieldSet className="gap-4">
-          <Field data-invalid={!!errors.profileHouseStreet}>
-            <FieldLabel htmlFor="profileHouseStreet">
-              House/Unit No., Street, Subdivision
-            </FieldLabel>
-            <Textarea
-              {...register("profileHouseStreet")}
-              id="profileHouseStreet"
-              disabled={isPending}
-              placeholder="House/Unit No., Street, Subdivision/Village"
-              aria-invalid={!!errors.profileHouseStreet}
-              className="min-h-20"
-            />
-            {errors.profileHouseStreet && (
-              <FieldError>{errors.profileHouseStreet.message}</FieldError>
-            )}
-          </Field>
+          <TextareaField
+            name="profileHouseStreet"
+            label="House/Unit No., Street, Subdivision"
+            register={register}
+            error={errors.profileHouseStreet?.message}
+            disabled={isPending}
+            placeholder="House/Unit No., Street, Subdivision/Village"
+            className="min-h-20"
+          />
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Field data-invalid={!!errors.profileBarangay}>
-              <FieldLabel htmlFor="profileBarangay">Barangay</FieldLabel>
-              <Input
-                {...register("profileBarangay")}
-                type="text"
-                id="profileBarangay"
-                disabled={isPending}
-                placeholder="Barangay name"
-                aria-invalid={!!errors.profileBarangay}
-              />
-              {errors.profileBarangay && (
-                <FieldError>{errors.profileBarangay.message}</FieldError>
-              )}
-            </Field>
+            <TextField
+              name="profileBarangay"
+              label="Barangay"
+              register={register}
+              error={errors.profileBarangay?.message}
+              disabled={isPending}
+              placeholder="Barangay name"
+            />
 
-            <Field data-invalid={!!errors.profileMunicipality}>
-              <FieldLabel htmlFor="profileMunicipality">
-                Municipality/City
-              </FieldLabel>
-              <Input
-                {...register("profileMunicipality")}
-                type="text"
-                id="profileMunicipality"
-                disabled={isPending}
-                placeholder="City or Municipality"
-                aria-invalid={!!errors.profileMunicipality}
-              />
-              {errors.profileMunicipality && (
-                <FieldError>{errors.profileMunicipality.message}</FieldError>
-              )}
-            </Field>
+            <TextField
+              name="profileMunicipality"
+              label="Municipality/City"
+              register={register}
+              error={errors.profileMunicipality?.message}
+              disabled={isPending}
+              placeholder="City or Municipality"
+            />
 
-            <Field data-invalid={!!errors.profileProvince}>
-              <FieldLabel htmlFor="profileProvince">Province</FieldLabel>
-              <Input
-                {...register("profileProvince")}
-                type="text"
-                id="profileProvince"
-                disabled={isPending}
-                placeholder="Province name"
-                aria-invalid={!!errors.profileProvince}
-              />
-              {errors.profileProvince && (
-                <FieldError>{errors.profileProvince.message}</FieldError>
-              )}
-            </Field>
+            <TextField
+              name="profileProvince"
+              label="Province"
+              register={register}
+              error={errors.profileProvince?.message}
+              disabled={isPending}
+              placeholder="Province name"
+            />
           </div>
         </FieldSet>
       </FieldGroup>

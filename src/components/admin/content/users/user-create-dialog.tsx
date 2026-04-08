@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react"
+import React from "react"
 import { toast } from "sonner"
 import {
   Dialog,
@@ -10,6 +10,7 @@ import {
   DialogTitle,
 } from "@/ui/dialog"
 import { UserForm } from "@/forms/admin/user-form"
+import { useFormSubmit } from "@/hooks"
 import type { CreateUserFormValues, UserData } from "@/lib/validations/user"
 
 type UserCreateDialogProps = {
@@ -23,35 +24,23 @@ export function UserCreateDialog({
   onOpenChange,
   onUserCreated,
 }: UserCreateDialogProps) {
-  const [isPending, setIsPending] = useState(false)
-
-  const handleSubmit = async (data: CreateUserFormValues) => {
-    setIsPending(true)
-    try {
-      const response = await fetch("/api/admin/users", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
-      })
-
-      const result = await response.json()
-
-      if (!response.ok) {
-        throw new Error(result.error || "Failed to create user")
-      }
-
+  const { submit, isPending } = useFormSubmit<
+    CreateUserFormValues,
+    { user: UserData }
+  >({
+    url: "/api/admin/users",
+    method: "POST",
+    onSuccess: (result) => {
       toast.success("User created successfully")
       onUserCreated(result.user)
-    } catch (error) {
-      console.error("Error creating user:", error)
-      toast.error(
-        error instanceof Error ? error.message : "Failed to create user"
-      )
-    } finally {
-      setIsPending(false)
-    }
+    },
+    onError: (error) => {
+      toast.error(error.message)
+    },
+  })
+
+  const handleSubmit = async (data: CreateUserFormValues) => {
+    await submit(data)
   }
 
   return (

@@ -15,17 +15,10 @@ import {
   FieldError,
 } from "@/ui/field"
 import { Input } from "@/ui/input"
-import { Textarea } from "@/ui/textarea"
 import { Checkbox } from "@/ui/checkbox"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/ui/select"
 import { Button } from "@/ui/button"
 import { Spinner } from "@/ui/spinner"
+import { TextField, TextareaField, SelectField } from "@/components/shared"
 
 interface EventFormProps {
   defaultValues?: Partial<CreateScheduleEventFormValues>
@@ -83,49 +76,41 @@ export function EventForm({
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       <FieldGroup>
         <FieldSet className="gap-4">
-          <Field data-invalid={!!errors.title}>
-            <FieldLabel htmlFor="title">Title *</FieldLabel>
-            <Input
-              {...register("title")}
-              id="title"
-              placeholder="Event title"
-              disabled={isPending}
-              aria-invalid={!!errors.title}
-            />
-            {errors.title && <FieldError>{errors.title.message}</FieldError>}
-          </Field>
+          <TextField
+            name="title"
+            label="Title"
+            register={register}
+            error={errors.title?.message}
+            disabled={isPending}
+            placeholder="Event title"
+            required
+          />
 
-          <Field data-invalid={!!errors.description}>
-            <FieldLabel htmlFor="description">Description</FieldLabel>
-            <Textarea
-              {...register("description")}
-              id="description"
-              placeholder="Event description..."
-              disabled={isPending}
-              rows={3}
-              aria-invalid={!!errors.description}
-            />
-            {errors.description && <FieldError>{errors.description.message}</FieldError>}
-          </Field>
+          <TextareaField
+            name="description"
+            label="Description"
+            register={register}
+            error={errors.description?.message}
+            disabled={isPending}
+            placeholder="Event description..."
+            rows={3}
+          />
 
-          <Field data-invalid={!!errors.type}>
-            <FieldLabel htmlFor="type">Type *</FieldLabel>
-            <Select
-              value={type}
-              onValueChange={(value) => setValue("type", value as "announcement" | "schedule" | "deadline")}
-              disabled={isPending}
-            >
-              <SelectTrigger id="type">
-                <SelectValue placeholder="Select type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="announcement">Announcement</SelectItem>
-                <SelectItem value="schedule">Schedule</SelectItem>
-                <SelectItem value="deadline">Deadline</SelectItem>
-              </SelectContent>
-            </Select>
-            {errors.type && <FieldError>{errors.type.message}</FieldError>}
-          </Field>
+          <SelectField
+            name="type"
+            label="Type"
+            value={type}
+            onValueChange={(value) => setValue("type", value as "announcement" | "schedule" | "deadline")}
+            options={[
+              { value: "announcement", label: "Announcement" },
+              { value: "schedule", label: "Schedule" },
+              { value: "deadline", label: "Deadline" },
+            ]}
+            error={errors.type?.message}
+            disabled={isPending}
+            placeholder="Select type"
+            required
+          />
 
           <div className="flex items-center space-x-2">
             <Checkbox

@@ -1,14 +1,8 @@
 import React from "react";
 import { Controller } from "react-hook-form";
-import { Textarea } from "@/ui/textarea";
 import { Checkbox } from "@/ui/checkbox";
-import {
-  Field,
-  FieldSet,
-  FieldGroup,
-  FieldLabel,
-  FieldError,
-} from "@/ui/field";
+import { FieldSet, FieldGroup, Field, FieldLabel, FieldError } from "@/ui/field";
+import { TextareaField } from "@/components/shared";
 import type { FormSectionWithControlProps } from "./types";
 
 const SPESInfoSection: React.FC<FormSectionWithControlProps> = ({
@@ -18,6 +12,7 @@ const SPESInfoSection: React.FC<FormSectionWithControlProps> = ({
   control,
 }) => {
   const currentYear = new Date().getFullYear();
+  const applicationYearOptions = [currentYear, currentYear + 1];
 
   return (
     <div id="spes-info" className="scroll-mt-24">
@@ -31,7 +26,7 @@ const SPESInfoSection: React.FC<FormSectionWithControlProps> = ({
 
       <FieldGroup>
         <FieldSet className="gap-6">
-          {/* 4Ps Beneficiary */}
+          {/* 4Ps Beneficiary - keeping checkbox as-is */}
           <div className="flex items-start gap-3 p-4 bg-muted/30 rounded-lg">
             <Controller
               name="isFourPsBeneficiary"
@@ -73,7 +68,7 @@ const SPESInfoSection: React.FC<FormSectionWithControlProps> = ({
                 aria-invalid={!!errors.applicationYear}
               >
                 <option value="">Select year...</option>
-                {[currentYear, currentYear + 1].map((year) => (
+                {applicationYearOptions.map((year) => (
                   <option key={year} value={year}>
                     {year}
                   </option>
@@ -85,39 +80,25 @@ const SPESInfoSection: React.FC<FormSectionWithControlProps> = ({
             </Field>
           </div>
 
-          <Field data-invalid={!!errors.motivation}>
-            <FieldLabel htmlFor="motivation">
-              Why do you want to apply for SPES?
-            </FieldLabel>
-            <Textarea
-              {...register("motivation")}
-              id="motivation"
-              disabled={isPending}
-              placeholder="Share your reasons for applying to the SPES program. What do you hope to gain from this experience? How will it help you achieve your goals?"
-              aria-invalid={!!errors.motivation}
-              className="min-h-32"
-            />
-            {errors.motivation && (
-              <FieldError>{errors.motivation.message}</FieldError>
-            )}
-          </Field>
+          <TextareaField
+            name="motivation"
+            label="Why do you want to apply for SPES?"
+            register={register}
+            error={errors.motivation?.message}
+            disabled={isPending}
+            placeholder="Share your reasons for applying to the SPES program. What do you hope to gain from this experience? How will it help you achieve your goals?"
+            className="min-h-32"
+          />
 
-          <Field data-invalid={!!errors.remarks}>
-            <FieldLabel htmlFor="remarks">
-              Additional Remarks (Optional)
-            </FieldLabel>
-            <Textarea
-              {...register("remarks")}
-              id="remarks"
-              disabled={isPending}
-              placeholder="Any additional information you would like us to know about your application"
-              aria-invalid={!!errors.remarks}
-              className="min-h-24"
-            />
-            {errors.remarks && (
-              <FieldError>{errors.remarks.message}</FieldError>
-            )}
-          </Field>
+          <TextareaField
+            name="remarks"
+            label="Additional Remarks (Optional)"
+            register={register}
+            error={errors.remarks?.message}
+            disabled={isPending}
+            placeholder="Any additional information you would like us to know about your application"
+            className="min-h-24"
+          />
         </FieldSet>
       </FieldGroup>
     </div>

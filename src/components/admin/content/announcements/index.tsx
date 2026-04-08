@@ -16,15 +16,25 @@ import {
   type EventType,
 } from "@/lib/validations/schedule-event"
 import { cn } from "@/lib/utils"
+import { useDialogState } from "@/hooks"
 
 export default function Announcements() {
   const [announcements, setAnnouncements] = useState<ScheduleEventData[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
-  const [createDialogOpen, setCreateDialogOpen] = useState(false)
-  const [editDialogOpen, setEditDialogOpen] = useState(false)
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
-  const [selectedAnnouncement, setSelectedAnnouncement] = useState<ScheduleEventData | null>(null)
+  
+  const {
+    createOpen,
+    setCreateOpen,
+    editOpen,
+    setEditOpen,
+    deleteOpen,
+    setDeleteOpen,
+    selectedItem,
+    openCreate,
+    openEdit,
+    openDelete,
+  } = useDialogState<ScheduleEventData>()
 
   const fetchAnnouncements = async () => {
     try {
@@ -63,21 +73,11 @@ export default function Announcements() {
     )
   }, [announcements, searchQuery])
 
-  const handleEditClick = (announcement: ScheduleEventData) => {
-    setSelectedAnnouncement(announcement)
-    setEditDialogOpen(true)
-  }
-
-  const handleDeleteClick = (announcement: ScheduleEventData) => {
-    setSelectedAnnouncement(announcement)
-    setDeleteDialogOpen(true)
-  }
-
   const handleAnnouncementCreated = (newAnnouncement: ScheduleEventData) => {
     setAnnouncements((prev) => [newAnnouncement, ...prev].sort(
       (a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime()
     ))
-    setCreateDialogOpen(false)
+    setCreateOpen(false)
   }
 
   const handleAnnouncementUpdated = (updatedAnnouncement: ScheduleEventData) => {
@@ -85,14 +85,12 @@ export default function Announcements() {
       prev.map((a) => (a.id === updatedAnnouncement.id ? updatedAnnouncement : a))
         .sort((a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime())
     )
-    setEditDialogOpen(false)
-    setSelectedAnnouncement(null)
+    setEditOpen(false)
   }
 
   const handleAnnouncementDeleted = (deletedId: string) => {
     setAnnouncements((prev) => prev.filter((a) => a.id !== deletedId))
-    setDeleteDialogOpen(false)
-    setSelectedAnnouncement(null)
+    setDeleteOpen(false)
   }
 
   const formatDate = (date: Date, allDay: boolean) => {
@@ -133,7 +131,7 @@ export default function Announcements() {
             Manage announcements that appear on the schedule calendar.
           </p>
         </div>
-        <Button onClick={() => setCreateDialogOpen(true)}>
+        <Button onClick={openCreate}>
           <Plus className="h-4 w-4 mr-1" />
           New Announcement
         </Button>
@@ -160,7 +158,7 @@ export default function Announcements() {
             <p className="text-sm text-muted-foreground mb-4">
               Create your first announcement to get started.
             </p>
-            <Button onClick={() => setCreateDialogOpen(true)}>
+            <Button onClick={openCreate}>
               <Plus className="h-4 w-4 mr-1" />
               New Announcement
             </Button>
@@ -175,7 +173,7 @@ export default function Announcements() {
                 "transition-all hover:shadow-md cursor-pointer",
                 isPast(announcement.startDate) && "opacity-60"
               )}
-              onClick={() => handleEditClick(announcement)}
+              onClick={() => openEdit(announcement)}
             >
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between gap-2">
@@ -214,7 +212,7 @@ export default function Announcements() {
                     size="sm"
                     onClick={(e) => {
                       e.stopPropagation()
-                      handleDeleteClick(announcement)
+                      openDelete(announcement)
                     }}
                     className="text-destructive hover:text-destructive"
                   >
@@ -225,7 +223,7 @@ export default function Announcements() {
                     size="sm"
                     onClick={(e) => {
                       e.stopPropagation()
-                      handleEditClick(announcement)
+                      openEdit(announcement)
                     }}
                   >
                     Edit
@@ -238,25 +236,25 @@ export default function Announcements() {
       )}
 
       <AnnouncementDialog
-        open={createDialogOpen}
-        onOpenChange={setCreateDialogOpen}
+        open={createOpen}
+        onOpenChange={setCreateOpen}
         mode="create"
         onAnnouncementCreated={handleAnnouncementCreated}
       />
 
-      {selectedAnnouncement && (
+      {selectedItem && (
         <>
           <AnnouncementDialog
-            open={editDialogOpen}
-            onOpenChange={setEditDialogOpen}
+            open={editOpen}
+            onOpenChange={setEditOpen}
             mode="edit"
-            announcement={selectedAnnouncement}
+            announcement={selectedItem}
             onAnnouncementUpdated={handleAnnouncementUpdated}
           />
           <AnnouncementDeleteDialog
-            open={deleteDialogOpen}
-            onOpenChange={setDeleteDialogOpen}
-            announcement={selectedAnnouncement}
+            open={deleteOpen}
+            onOpenChange={setDeleteOpen}
+            announcement={selectedItem}
             onAnnouncementDeleted={handleAnnouncementDeleted}
           />
         </>

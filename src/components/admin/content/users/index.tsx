@@ -1,7 +1,6 @@
 "use client"
 
-import React, { useState, useEffect, useMemo } from "react"
-import { toast } from "sonner"
+import React from "react"
 import { Plus, Search, ChevronLeft, ChevronRight } from "lucide-react"
 import { Input } from "@/ui/input"
 import { Button } from "@/ui/button"
@@ -19,91 +18,32 @@ import { UserCreateDialog } from "./user-create-dialog"
 import { UserEditDialog } from "./user-edit-dialog"
 import { UserArchiveDialog } from "./user-archive-dialog"
 import { type UserData } from "@/lib/validations/user"
-
-const PAGE_SIZE = 10
+import { useDialogState, useDataList } from "@/hooks"
 
 export default function Users() {
-  const [users, setUsers] = useState<UserData[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [searchQuery, setSearchQuery] = useState("")
-  const [currentPage, setCurrentPage] = useState(1)
-  const [createDialogOpen, setCreateDialogOpen] = useState(false)
-  const [editDialogOpen, setEditDialogOpen] = useState(false)
-  const [archiveDialogOpen, setArchiveDialogOpen] = useState(false)
-  const [selectedUser, setSelectedUser] = useState<UserData | null>(null)
-
-  const fetchUsers = async () => {
-    try {
-      const response = await fetch("/api/admin/users")
-      if (!response.ok) {
-        throw new Error("Failed to fetch users")
-      }
-      const data = await response.json()
-      setUsers(data.users)
-    } catch (error) {
-      console.error("Error fetching users:", error)
-      toast.error("Failed to load users")
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  useEffect(() => {
-    fetchUsers()
-  }, [])
-
-  const filteredUsers = useMemo(() => {
-    if (!searchQuery.trim()) return users
-
-    const query = searchQuery.toLowerCase()
-    return users.filter(
-      (user) =>
-        user.name.toLowerCase().includes(query) ||
-        user.email.toLowerCase().includes(query) ||
-        (user.role && user.role.toLowerCase().includes(query))
-    )
-  }, [users, searchQuery])
-
-  // Reset to first page when search changes
-  useEffect(() => {
-    setCurrentPage(1)
-  }, [searchQuery])
-
-  // Pagination calculations
-  const totalPages = Math.ceil(filteredUsers.length / PAGE_SIZE)
-  const startIndex = (currentPage - 1) * PAGE_SIZE
-  const endIndex = Math.min(startIndex + PAGE_SIZE, filteredUsers.length)
-  const paginatedUsers = filteredUsers.slice(startIndex, endIndex)
-
-  const handleEditClick = (user: UserData) => {
-    setSelectedUser(user)
-    setEditDialogOpen(true)
-  }
-
-  const handleArchiveClick = (user: UserData) => {
-    setSelectedUser(user)
-    setArchiveDialogOpen(true)
-  }
+  const dialogState = useDialogState<UserData>()
+  const dataList = useDataList<UserData>("/api/admin/users", {
+    searchKeys: ["name", "email", "role"],
+    pageSize: 10,
+  })
 
   const handleUserCreated = (newUser: UserData) => {
-    setUsers((prev) => [newUser, ...prev])
-    setCreateDialogOpen(false)
+    dataList.setItems((prev) => [newUser, ...prev])
+    dialogState.setCreateOpen(false)
   }
 
   const handleUserUpdated = (updatedUser: UserData) => {
-    setUsers((prev) =>
+    dataList.setItems((prev) =>
       prev.map((user) => (user.id === updatedUser.id ? updatedUser : user))
     )
-    setEditDialogOpen(false)
-    setSelectedUser(null)
+    dialogState.closeAll()
   }
 
   const handleUserArchived = (archivedUser: UserData) => {
-    setUsers((prev) =>
+    dataList.setItems((prev) =>
       prev.map((user) => (user.id === archivedUser.id ? archivedUser : user))
     )
-    setArchiveDialogOpen(false)
-    setSelectedUser(null)
+    dialogState.closeAll()
   }
 
   const formatDate = (date: Date) => {
@@ -114,7 +54,7 @@ export default function Users() {
     })
   }
 
-  if (isLoading) {
+  if (dataList.isLoading) {
     return <UsersListSkeleton />
   }
 
@@ -135,12 +75,12 @@ export default function Users() {
           <Input
             type="search"
             placeholder="Search by name, email, or role..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            value={dataList.searchQuery}
+            onChange={(e) => dataList.setSearchQuery(e.target.value)}
             className="pl-8"
           />
         </div>
-        <Button onClick={() => setCreateDialogOpen(true)}>
+        <Button onClick={dialogState.openCreate}>
           <Plus className="h-4 w-4 mr-1" />
           Add User
         </Button>
@@ -160,14 +100,14 @@ export default function Users() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {paginatedUsers.length === 0 ? (
+            {dataList.paginatedItems.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={6} className="text-center py-8">
-                  {searchQuery ? "No users found matching your search." : "No users found."}
+                  {dataList.searchQuery ? "No users found matching your search." : "No users found."}
                 </TableCell>
               </TableRow>
             ) : (
-              paginatedUsers.map((user) => (
+              dataList.paginatedItems.map((user) => (
                 <TableRow key={user.id}>
                   <TableCell className="font-medium">{user.name}</TableCell>
                   <TableCell>{user.email}</TableCell>
@@ -189,7 +129,7 @@ export default function Users() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => handleEditClick(user)}
+                        onClick={() => dialogState.openEdit(user)}
                         disabled={user.banned === true}
                       >
                         Edit
@@ -197,7 +137,7 @@ export default function Users() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => handleArchiveClick(user)}
+                        onClick={() => dialogState.openDelete(user)}
                         disabled={user.banned === true}
                       >
                         Archive
@@ -211,25 +151,25 @@ export default function Users() {
         </Table>
 
         {/* Pagination */}
-        {totalPages > 1 && (
+        {dataList.totalPages > 1 && (
           <div className="flex items-center justify-between px-4 py-3 border-t">
             <p className="text-sm text-muted-foreground">
-              Showing {startIndex + 1} to {endIndex} of {filteredUsers.length} users
+              Showing {dataList.startIndex + 1} to {dataList.endIndex} of {dataList.filteredItems.length} users
             </p>
             <div className="flex gap-2">
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                disabled={currentPage === 1}
+                onClick={() => dataList.setCurrentPage(Math.max(1, dataList.currentPage - 1))}
+                disabled={dataList.currentPage === 1}
               >
                 <ChevronLeft className="h-4 w-4" />
               </Button>
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                disabled={currentPage === totalPages}
+                onClick={() => dataList.setCurrentPage(Math.min(dataList.totalPages, dataList.currentPage + 1))}
+                disabled={dataList.currentPage === dataList.totalPages}
               >
                 <ChevronRight className="h-4 w-4" />
               </Button>
@@ -239,23 +179,23 @@ export default function Users() {
       </div>
 
       <UserCreateDialog
-        open={createDialogOpen}
-        onOpenChange={setCreateDialogOpen}
+        open={dialogState.createOpen}
+        onOpenChange={dialogState.setCreateOpen}
         onUserCreated={handleUserCreated}
       />
 
-      {selectedUser && (
+      {dialogState.selectedItem && (
         <>
           <UserEditDialog
-            open={editDialogOpen}
-            onOpenChange={setEditDialogOpen}
-            user={selectedUser}
+            open={dialogState.editOpen}
+            onOpenChange={dialogState.setEditOpen}
+            user={dialogState.selectedItem}
             onUserUpdated={handleUserUpdated}
           />
           <UserArchiveDialog
-            open={archiveDialogOpen}
-            onOpenChange={setArchiveDialogOpen}
-            user={selectedUser}
+            open={dialogState.deleteOpen}
+            onOpenChange={dialogState.setDeleteOpen}
+            user={dialogState.selectedItem}
             onUserArchived={handleUserArchived}
           />
         </>

@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react"
+import React from "react"
 import { toast } from "sonner"
 import {
   Dialog,
@@ -10,6 +10,7 @@ import {
   DialogTitle,
 } from "@/ui/dialog"
 import { ProgramForm } from "@/components/forms/admin/program-form"
+import { useFormSubmit } from "@/hooks"
 import { type CreateProgramFormValues, type ProgramData } from "@/lib/validations/program"
 
 interface ProgramEditDialogProps {
@@ -25,32 +26,17 @@ export function ProgramEditDialog({
   program,
   onProgramUpdated,
 }: ProgramEditDialogProps) {
-  const [isPending, setIsPending] = useState(false)
-
-  const handleSubmit = async (data: CreateProgramFormValues) => {
-    setIsPending(true)
-    try {
-      const response = await fetch(`/api/admin/programs/${program.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      })
-
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || "Failed to update program")
-      }
-
-      const { program: updatedProgram } = await response.json()
+  const { submit, isPending } = useFormSubmit<CreateProgramFormValues, { program: ProgramData }>({
+    url: `/api/admin/programs/${program.id}`,
+    method: "PATCH",
+    onSuccess: (result) => {
       toast.success("Program updated successfully")
-      onProgramUpdated(updatedProgram)
-    } catch (error) {
-      console.error("Error updating program:", error)
-      toast.error(error instanceof Error ? error.message : "Failed to update program")
-    } finally {
-      setIsPending(false)
-    }
-  }
+      onProgramUpdated(result.program)
+    },
+    onError: (error) => {
+      toast.error(error.message)
+    },
+  })
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -70,7 +56,7 @@ export function ProgramEditDialog({
             status: program.status as "active" | "inactive",
             order: program.order,
           }}
-          onSubmit={handleSubmit}
+          onSubmit={async (data) => { await submit(data) }}
           isPending={isPending}
           submitLabel="Update Program"
         />

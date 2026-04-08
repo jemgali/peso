@@ -7,24 +7,15 @@ import {
   createProgramSchema,
   type CreateProgramFormValues,
 } from "@/lib/validations/program"
-import {
-  Field,
-  FieldSet,
-  FieldGroup,
-  FieldLabel,
-  FieldError,
-} from "@/ui/field"
-import { Input } from "@/ui/input"
-import { Textarea } from "@/ui/textarea"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/ui/select"
+import { FieldSet, FieldGroup } from "@/ui/field"
+import { TextField, TextareaField, SelectField } from "@/components/shared"
 import { Button } from "@/ui/button"
 import { Spinner } from "@/ui/spinner"
+
+const STATUS_OPTIONS = [
+  { value: "active", label: "Active" },
+  { value: "inactive", label: "Inactive" },
+]
 
 interface ProgramFormProps {
   defaultValues?: Partial<CreateProgramFormValues>
@@ -64,88 +55,67 @@ export function ProgramForm({
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       <FieldGroup>
         <FieldSet className="gap-4">
-          <Field data-invalid={!!errors.title}>
-            <FieldLabel htmlFor="title">Title *</FieldLabel>
-            <Input
-              {...register("title")}
-              id="title"
-              placeholder="e.g., Special Programs for Employment of Students"
-              disabled={isPending}
-              aria-invalid={!!errors.title}
-            />
-            {errors.title && <FieldError>{errors.title.message}</FieldError>}
-          </Field>
+          <TextField
+            name="title"
+            label="Title"
+            register={register}
+            error={errors.title?.message}
+            disabled={isPending}
+            placeholder="e.g., Special Programs for Employment of Students"
+            required
+          />
 
-          <Field data-invalid={!!errors.description}>
-            <FieldLabel htmlFor="description">Description</FieldLabel>
-            <Textarea
-              {...register("description")}
-              id="description"
-              placeholder="Brief description of the program..."
-              disabled={isPending}
-              rows={3}
-              aria-invalid={!!errors.description}
-            />
-            {errors.description && <FieldError>{errors.description.message}</FieldError>}
-          </Field>
+          <TextareaField
+            name="description"
+            label="Description"
+            register={register}
+            error={errors.description?.message}
+            disabled={isPending}
+            placeholder="Brief description of the program..."
+            rows={3}
+          />
 
-          <Field data-invalid={!!errors.image}>
-            <FieldLabel htmlFor="image">Image URL</FieldLabel>
-            <Input
-              {...register("image")}
-              id="image"
-              type="url"
-              placeholder="https://example.com/image.png"
-              disabled={isPending}
-              aria-invalid={!!errors.image}
-            />
-            {errors.image && <FieldError>{errors.image.message}</FieldError>}
-          </Field>
+          <TextField
+            name="image"
+            label="Image URL"
+            register={register}
+            error={errors.image?.message}
+            disabled={isPending}
+            type="url"
+            placeholder="https://example.com/image.png"
+          />
 
-          <Field data-invalid={!!errors.link}>
-            <FieldLabel htmlFor="link">Program Link</FieldLabel>
-            <Input
-              {...register("link")}
-              id="link"
-              type="url"
-              placeholder="https://example.com/program"
-              disabled={isPending}
-              aria-invalid={!!errors.link}
-            />
-            {errors.link && <FieldError>{errors.link.message}</FieldError>}
-          </Field>
+          <TextField
+            name="link"
+            label="Program Link"
+            register={register}
+            error={errors.link?.message}
+            disabled={isPending}
+            type="url"
+            placeholder="https://example.com/program"
+          />
 
           <div className="grid grid-cols-2 gap-4">
-            <Field data-invalid={!!errors.status}>
-              <FieldLabel htmlFor="status">Status</FieldLabel>
-              <Select
-                value={status}
-                onValueChange={(value) => setValue("status", value as "active" | "inactive")}
-                disabled={isPending}
-              >
-                <SelectTrigger id="status">
-                  <SelectValue placeholder="Select status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="inactive">Inactive</SelectItem>
-                </SelectContent>
-              </Select>
-              {errors.status && <FieldError>{errors.status.message}</FieldError>}
-            </Field>
+            <SelectField
+              name="status"
+              label="Status"
+              value={status}
+              onValueChange={(value) => setValue("status", value as "active" | "inactive")}
+              options={STATUS_OPTIONS}
+              error={errors.status?.message}
+              disabled={isPending}
+              placeholder="Select status"
+            />
 
-            <Field data-invalid={!!errors.order}>
-              <FieldLabel htmlFor="order">Display Order</FieldLabel>
-              <Input
-                {...register("order", { valueAsNumber: true })}
-                id="order"
-                type="number"
-                min={0}
-                disabled={isPending}
-                aria-invalid={!!errors.order}
-              />
-              {errors.order && <FieldError>{errors.order.message}</FieldError>}
-            </Field>
+            <TextField
+              name="order"
+              label="Display Order"
+              register={register}
+              error={errors.order?.message}
+              disabled={isPending}
+              type="number"
+              registerOptions={{ valueAsNumber: true }}
+            />
           </div>
         </FieldSet>
       </FieldGroup>

@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react"
+import React from "react"
 import { toast } from "sonner"
 import {
   Dialog,
@@ -14,6 +14,7 @@ import {
   type CreateScheduleEventFormValues,
   type ScheduleEventData,
 } from "@/lib/validations/schedule-event"
+import { useFormSubmit } from "@/hooks"
 
 interface EventDialogProps {
   open: boolean
@@ -25,6 +26,20 @@ interface EventDialogProps {
   onEventUpdated?: (event: ScheduleEventData) => void
 }
 
+interface EventApiResponse {
+  event: ScheduleEventData
+}
+
+function parseEventDates(eventData: ScheduleEventData): ScheduleEventData {
+  return {
+    ...eventData,
+    startDate: new Date(eventData.startDate),
+    endDate: eventData.endDate ? new Date(eventData.endDate) : null,
+    createdAt: new Date(eventData.createdAt),
+    updatedAt: new Date(eventData.updatedAt),
+  }
+}
+
 export function EventDialog({
   open,
   onOpenChange,
@@ -34,63 +49,47 @@ export function EventDialog({
   onEventCreated,
   onEventUpdated,
 }: EventDialogProps) {
-  const [isPending, setIsPending] = useState(false)
+  const isEditMode = mode === "edit"
+
+  const { submit: submitCreate, isPending: isCreating } = useFormSubmit<
+    CreateScheduleEventFormValues,
+    EventApiResponse
+  >({
+    url: "/api/admin/schedule",
+    method: "POST",
+    onSuccess: (result) => {
+      toast.success("Event created successfully")
+      onEventCreated?.(parseEventDates(result.event))
+    },
+    onError: (error) => {
+      toast.error(error.message)
+    },
+  })
+
+  const { submit: submitUpdate, isPending: isUpdating } = useFormSubmit<
+    CreateScheduleEventFormValues,
+    EventApiResponse
+  >({
+    url: `/api/admin/schedule/${event?.id}`,
+    method: "PATCH",
+    onSuccess: (result) => {
+      toast.success("Event updated successfully")
+      onEventUpdated?.(parseEventDates(result.event))
+    },
+    onError: (error) => {
+      toast.error(error.message)
+    },
+  })
 
   const handleSubmit = async (data: CreateScheduleEventFormValues) => {
-    setIsPending(true)
-    try {
-      if (mode === "create") {
-        const response = await fetch("/api/admin/schedule", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(data),
-        })
-
-        if (!response.ok) {
-          const error = await response.json()
-          throw new Error(error.error || "Failed to create event")
-        }
-
-        const { event: newEvent } = await response.json()
-        const parsedEvent = {
-          ...newEvent,
-          startDate: new Date(newEvent.startDate),
-          endDate: newEvent.endDate ? new Date(newEvent.endDate) : null,
-          createdAt: new Date(newEvent.createdAt),
-          updatedAt: new Date(newEvent.updatedAt),
-        }
-        toast.success("Event created successfully")
-        onEventCreated?.(parsedEvent)
-      } else if (event) {
-        const response = await fetch(`/api/admin/schedule/${event.id}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(data),
-        })
-
-        if (!response.ok) {
-          const error = await response.json()
-          throw new Error(error.error || "Failed to update event")
-        }
-
-        const { event: updatedEvent } = await response.json()
-        const parsedEvent = {
-          ...updatedEvent,
-          startDate: new Date(updatedEvent.startDate),
-          endDate: updatedEvent.endDate ? new Date(updatedEvent.endDate) : null,
-          createdAt: new Date(updatedEvent.createdAt),
-          updatedAt: new Date(updatedEvent.updatedAt),
-        }
-        toast.success("Event updated successfully")
-        onEventUpdated?.(parsedEvent)
-      }
-    } catch (error) {
-      console.error(`Error ${mode === "create" ? "creating" : "updating"} event:`, error)
-      toast.error(error instanceof Error ? error.message : `Failed to ${mode} event`)
-    } finally {
-      setIsPending(false)
+    if (isEditMode && event) {
+      await submitUpdate(data)
+    } else {
+      await submitCreate(data)
     }
   }
+
+  const isPending = isCreating || isUpdating
 
   const getDefaultValues = () => {
     if (mode === "edit" && event) {

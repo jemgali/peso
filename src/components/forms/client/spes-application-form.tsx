@@ -319,38 +319,43 @@ const SPESApplicationForm: React.FC<SPESApplicationFormProps> = ({
   }, [currentStep, onStepChange]);
 
   // Navigate to specific step (from sidebar)
-  const goToStep = useCallback(async (stepIndex: number) => {
-    // Allow going back to any previous step
-    if (stepIndex < currentStep) {
+  const goToStep = useCallback(
+    async (stepIndex: number) => {
+      // Allow going back to any previous step
+      if (stepIndex < currentStep) {
+        if (controlledStep === undefined) {
+          setInternalStep(stepIndex);
+        }
+        onStepChange?.(stepIndex);
+        return;
+      }
+
+      // For forward navigation, validate all steps up to and including the target
+      for (let i = currentStep; i < stepIndex; i++) {
+        const sectionId = SECTION_IDS[i];
+        const fieldsToValidate = SECTION_FIELDS[sectionId];
+        const isStepValid = await trigger(fieldsToValidate);
+
+        if (!isStepValid) {
+          toast.error(
+            `Please complete the "${SECTION_TITLES[sectionId]}" section first.`,
+          );
+          if (controlledStep === undefined) {
+            setInternalStep(i);
+          }
+          onStepChange?.(i);
+          return;
+        }
+      }
+
+      // All steps validated, go to target
       if (controlledStep === undefined) {
         setInternalStep(stepIndex);
       }
       onStepChange?.(stepIndex);
-      return;
-    }
-
-    // For forward navigation, validate all steps up to and including the target
-    for (let i = currentStep; i < stepIndex; i++) {
-      const sectionId = SECTION_IDS[i];
-      const fieldsToValidate = SECTION_FIELDS[sectionId];
-      const isStepValid = await trigger(fieldsToValidate);
-
-      if (!isStepValid) {
-        toast.error(`Please complete the "${SECTION_TITLES[sectionId]}" section first.`);
-        if (controlledStep === undefined) {
-          setInternalStep(i);
-        }
-        onStepChange?.(i);
-        return;
-      }
-    }
-
-    // All steps validated, go to target
-    if (controlledStep === undefined) {
-      setInternalStep(stepIndex);
-    }
-    onStepChange?.(stepIndex);
-  }, [currentStep, controlledStep, onStepChange, trigger]);
+    },
+    [currentStep, controlledStep, onStepChange, trigger],
+  );
 
   // Expose goToStep function to parent via onMount callback
   useEffect(() => {
@@ -487,9 +492,7 @@ const SPESApplicationForm: React.FC<SPESApplicationFormProps> = ({
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="w-full">
       {/* Current Section Content */}
-      <div className="min-h-[400px]">
-        {renderCurrentSection()}
-      </div>
+      <div className="min-h-100">{renderCurrentSection()}</div>
 
       {/* Navigation Buttons */}
       <div className="flex justify-between items-center mt-8 pt-6 border-t">
@@ -526,7 +529,7 @@ const SPESApplicationForm: React.FC<SPESApplicationFormProps> = ({
             )}
           </Button>
         ) : (
-          <div className="w-24" /> 
+          <div className="w-24" />
         )}
       </div>
     </form>

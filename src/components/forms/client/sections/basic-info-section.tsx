@@ -2,21 +2,11 @@ import React, { useEffect, useState, useMemo } from "react";
 import { Input } from "@/ui/input";
 import { Button } from "@/ui/button";
 import { X, Ruler } from "lucide-react";
-import {
-  Field,
-  FieldSet,
-  FieldGroup,
-  FieldLabel,
-  FieldError,
-} from "@/ui/field";
+import { Field, FieldSet, FieldGroup, FieldLabel, FieldError } from "@/ui/field";
 import { RadioGroup, RadioGroupItem } from "@/ui/radio-group";
 import { Label } from "@/ui/label";
 import { Badge } from "@/ui/badge";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/ui/popover";
+import { Popover, PopoverContent, PopoverTrigger } from "@/ui/popover";
 import {
   InputGroup,
   InputGroupAddon,
@@ -31,6 +21,7 @@ import {
   ComboboxItem,
   ComboboxEmpty,
 } from "@/ui/combobox";
+import { TextField } from "@/components/shared";
 import type { FormSectionWithFieldArrayProps } from "./types";
 
 // CLDR language data type
@@ -69,7 +60,9 @@ const BasicInfoSection: React.FC<FormSectionWithFieldArrayProps> = ({
   const [converterOpen, setConverterOpen] = useState(false);
 
   // CLDR languages state
-  const [cldrLanguages, setCldrLanguages] = useState<{ code: string; name: string }[]>([]);
+  const [cldrLanguages, setCldrLanguages] = useState<
+    { code: string; name: string }[]
+  >([]);
   const [languageSearch, setLanguageSearch] = useState("");
 
   // Watch form values for reactivity
@@ -97,13 +90,33 @@ const BasicInfoSection: React.FC<FormSectionWithFieldArrayProps> = ({
   const filteredLanguages = useMemo(() => {
     if (!languageSearch.trim()) {
       // Show common languages when no search
-      const commonCodes = ["en", "tl", "ceb", "ilo", "hil", "bik", "war", "pam", "bcl", "pag", "zh", "es", "ar", "ko", "ja"];
+      const commonCodes = [
+        "en",
+        "tl",
+        "ceb",
+        "ilo",
+        "hil",
+        "bik",
+        "war",
+        "pam",
+        "bcl",
+        "pag",
+        "zh",
+        "es",
+        "ar",
+        "ko",
+        "ja",
+      ];
       const common = cldrLanguages.filter((l) => commonCodes.includes(l.code));
       return common.length > 0 ? common : cldrLanguages.slice(0, 20);
     }
     const search = languageSearch.toLowerCase();
     return cldrLanguages
-      .filter((l) => l.name.toLowerCase().includes(search) || l.code.toLowerCase().includes(search))
+      .filter(
+        (l) =>
+          l.name.toLowerCase().includes(search) ||
+          l.code.toLowerCase().includes(search),
+      )
       .slice(0, 50);
   }, [cldrLanguages, languageSearch]);
 
@@ -145,7 +158,11 @@ const BasicInfoSection: React.FC<FormSectionWithFieldArrayProps> = ({
     const current = selectedLanguages || [];
     const exists = current.some((l) => l.value === languageName);
     if (!exists) {
-      setValue("profileLanguageDialect", [...current, { value: languageName }], { shouldValidate: true });
+      setValue(
+        "profileLanguageDialect",
+        [...current, { value: languageName }],
+        { shouldValidate: true },
+      );
     }
     setLanguageSearch("");
   };
@@ -171,75 +188,55 @@ const BasicInfoSection: React.FC<FormSectionWithFieldArrayProps> = ({
         <FieldSet className="gap-4">
           {/* Name Fields */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Field data-invalid={!!errors.profileLastName}>
-              <FieldLabel htmlFor="profileLastName" required>Last Name</FieldLabel>
-              <Input
-                {...register("profileLastName")}
-                type="text"
-                id="profileLastName"
-                disabled={isPending}
-                autoCapitalize="words"
-                placeholder="Dela Cruz"
-                aria-invalid={!!errors.profileLastName}
-              />
-              {errors.profileLastName && (
-                <FieldError>{errors.profileLastName.message}</FieldError>
-              )}
-            </Field>
+            <TextField
+              name="profileLastName"
+              label="Last Name"
+              register={register}
+              error={errors.profileLastName?.message}
+              disabled={isPending}
+              autoCapitalize="words"
+              placeholder="Dela Cruz"
+              required
+            />
 
-            <Field data-invalid={!!errors.profileFirstName}>
-              <FieldLabel htmlFor="profileFirstName" required>First Name</FieldLabel>
-              <Input
-                {...register("profileFirstName")}
-                type="text"
-                id="profileFirstName"
-                disabled={isPending}
-                autoCapitalize="words"
-                placeholder="Juan"
-                aria-invalid={!!errors.profileFirstName}
-              />
-              {errors.profileFirstName && (
-                <FieldError>{errors.profileFirstName.message}</FieldError>
-              )}
-            </Field>
+            <TextField
+              name="profileFirstName"
+              label="First Name"
+              register={register}
+              error={errors.profileFirstName?.message}
+              disabled={isPending}
+              autoCapitalize="words"
+              placeholder="Juan"
+              required
+            />
 
-            <Field data-invalid={!!errors.profileMiddleName}>
-              <FieldLabel htmlFor="profileMiddleName">Middle Name</FieldLabel>
-              <Input
-                {...register("profileMiddleName")}
-                type="text"
-                id="profileMiddleName"
-                disabled={isPending}
-                autoCapitalize="words"
-                placeholder="Antonio"
-                aria-invalid={!!errors.profileMiddleName}
-              />
-              {errors.profileMiddleName && (
-                <FieldError>{errors.profileMiddleName.message}</FieldError>
-              )}
-            </Field>
+            <TextField
+              name="profileMiddleName"
+              label="Middle Name"
+              register={register}
+              error={errors.profileMiddleName?.message}
+              disabled={isPending}
+              autoCapitalize="words"
+              placeholder="Antonio"
+            />
 
-            <Field data-invalid={!!errors.profileSuffix}>
-              <FieldLabel htmlFor="profileSuffix">Suffix</FieldLabel>
-              <Input
-                {...register("profileSuffix")}
-                type="text"
-                id="profileSuffix"
-                disabled={isPending}
-                autoCapitalize="words"
-                placeholder="Jr, Sr"
-                aria-invalid={!!errors.profileSuffix}
-              />
-              {errors.profileSuffix && (
-                <FieldError>{errors.profileSuffix.message}</FieldError>
-              )}
-            </Field>
+            <TextField
+              name="profileSuffix"
+              label="Suffix"
+              register={register}
+              error={errors.profileSuffix?.message}
+              disabled={isPending}
+              autoCapitalize="words"
+              placeholder="Jr, Sr"
+            />
           </div>
 
           {/* Personal Details - merged with contact details */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4">
             <Field data-invalid={!!errors.profileBirthdate}>
-              <FieldLabel htmlFor="profileBirthdate" required>Date of Birth</FieldLabel>
+              <FieldLabel htmlFor="profileBirthdate" required>
+                Date of Birth
+              </FieldLabel>
               <Input
                 {...register("profileBirthdate")}
                 type="date"
@@ -269,36 +266,43 @@ const BasicInfoSection: React.FC<FormSectionWithFieldArrayProps> = ({
               )}
             </Field>
 
-            <Field data-invalid={!!errors.profilePlaceOfBirth}>
-              <FieldLabel htmlFor="profilePlaceOfBirth">Place of Birth</FieldLabel>
-              <Input
-                {...register("profilePlaceOfBirth")}
-                type="text"
-                id="profilePlaceOfBirth"
-                disabled={isPending}
-                placeholder="City, Province"
-                aria-invalid={!!errors.profilePlaceOfBirth}
-              />
-              {errors.profilePlaceOfBirth && (
-                <FieldError>{errors.profilePlaceOfBirth.message}</FieldError>
-              )}
-            </Field>
+            <TextField
+              name="profilePlaceOfBirth"
+              label="Place of Birth"
+              register={register}
+              error={errors.profilePlaceOfBirth?.message}
+              disabled={isPending}
+              placeholder="City, Province"
+              required
+            />
 
             <Field data-invalid={!!errors.profileSex}>
               <FieldLabel required>Sex</FieldLabel>
               <RadioGroup
                 value={currentSex || ""}
-                onValueChange={(val) => setValue?.("profileSex", val, { shouldValidate: true })}
+                onValueChange={(val) =>
+                  setValue?.("profileSex", val, { shouldValidate: true })
+                }
                 disabled={isPending}
                 className="flex gap-6 h-10 items-center"
               >
                 <div className="flex items-center gap-2">
                   <RadioGroupItem value="Male" id="sex-male" />
-                  <Label htmlFor="sex-male" className="font-normal cursor-pointer">Male</Label>
+                  <Label
+                    htmlFor="sex-male"
+                    className="font-normal cursor-pointer"
+                  >
+                    Male
+                  </Label>
                 </div>
                 <div className="flex items-center gap-2">
                   <RadioGroupItem value="Female" id="sex-female" />
-                  <Label htmlFor="sex-female" className="font-normal cursor-pointer">Female</Label>
+                  <Label
+                    htmlFor="sex-female"
+                    className="font-normal cursor-pointer"
+                  >
+                    Female
+                  </Label>
                 </div>
               </RadioGroup>
               {errors.profileSex && (
@@ -307,7 +311,9 @@ const BasicInfoSection: React.FC<FormSectionWithFieldArrayProps> = ({
             </Field>
 
             <Field data-invalid={!!errors.profileHeight}>
-              <FieldLabel htmlFor="profileHeight" required>Height (cm)</FieldLabel>
+              <FieldLabel htmlFor="profileHeight" required>
+                Height (cm)
+              </FieldLabel>
               <InputGroup className="h-10">
                 <InputGroupInput
                   {...register("profileHeight")}
@@ -332,13 +338,17 @@ const BasicInfoSection: React.FC<FormSectionWithFieldArrayProps> = ({
                     </PopoverTrigger>
                     <PopoverContent className="w-64" align="end">
                       <div className="space-y-3">
-                        <h4 className="font-medium text-sm">Height Converter</h4>
+                        <h4 className="font-medium text-sm">
+                          Height Converter
+                        </h4>
                         <p className="text-xs text-muted-foreground">
                           Enter height in feet and inches
                         </p>
                         <div className="flex gap-2">
                           <div className="flex-1">
-                            <Label htmlFor="feet" className="text-xs">Feet</Label>
+                            <Label htmlFor="feet" className="text-xs">
+                              Feet
+                            </Label>
                             <Input
                               id="feet"
                               type="number"
@@ -351,7 +361,9 @@ const BasicInfoSection: React.FC<FormSectionWithFieldArrayProps> = ({
                             />
                           </div>
                           <div className="flex-1">
-                            <Label htmlFor="inches" className="text-xs">Inches</Label>
+                            <Label htmlFor="inches" className="text-xs">
+                              Inches
+                            </Label>
                             <Input
                               id="inches"
                               type="number"
@@ -385,7 +397,9 @@ const BasicInfoSection: React.FC<FormSectionWithFieldArrayProps> = ({
             </Field>
 
             <Field data-invalid={!!errors.profileCivilStatus}>
-              <FieldLabel htmlFor="profileCivilStatus" required>Civil Status</FieldLabel>
+              <FieldLabel htmlFor="profileCivilStatus" required>
+                Civil Status
+              </FieldLabel>
               <select
                 {...register("profileCivilStatus")}
                 id="profileCivilStatus"
@@ -404,66 +418,49 @@ const BasicInfoSection: React.FC<FormSectionWithFieldArrayProps> = ({
               )}
             </Field>
 
-            <Field data-invalid={!!errors.profileReligion}>
-              <FieldLabel htmlFor="profileReligion" required>Religion</FieldLabel>
-              <Input
-                {...register("profileReligion")}
-                type="text"
-                id="profileReligion"
-                disabled={isPending}
-                placeholder="e.g., Catholic, Christian, Muslim"
-                aria-invalid={!!errors.profileReligion}
-              />
-              {errors.profileReligion && (
-                <FieldError>{errors.profileReligion.message}</FieldError>
-              )}
-            </Field>
+            <TextField
+              name="profileReligion"
+              label="Religion"
+              register={register}
+              error={errors.profileReligion?.message}
+              disabled={isPending}
+              placeholder="e.g., Catholic, Christian, Muslim"
+              required
+            />
 
             {/* Contact Details - merged below Religion */}
-            <Field data-invalid={!!errors.profileEmail}>
-              <FieldLabel htmlFor="profileEmail" required>Email Address</FieldLabel>
-              <Input
-                {...register("profileEmail")}
-                type="email"
-                id="profileEmail"
-                disabled={isPending}
-                placeholder="email@example.com"
-                aria-invalid={!!errors.profileEmail}
-              />
-              {errors.profileEmail && (
-                <FieldError>{errors.profileEmail.message}</FieldError>
-              )}
-            </Field>
+            <TextField
+              name="profileEmail"
+              label="Email Address"
+              register={register}
+              error={errors.profileEmail?.message}
+              disabled={isPending}
+              type="email"
+              placeholder="email@example.com"
+              required
+            />
 
-            <Field data-invalid={!!errors.profileContact}>
-              <FieldLabel htmlFor="profileContact" required>Contact Number</FieldLabel>
-              <Input
-                {...register("profileContact")}
-                type="tel"
-                id="profileContact"
-                disabled={isPending}
-                placeholder="+63 9XX-XXX-XXXX"
-                aria-invalid={!!errors.profileContact}
-              />
-              {errors.profileContact && (
-                <FieldError>{errors.profileContact.message}</FieldError>
-              )}
-            </Field>
+            <TextField
+              name="profileContact"
+              label="Contact Number"
+              register={register}
+              error={errors.profileContact?.message}
+              disabled={isPending}
+              type="tel"
+              placeholder="+63 9XX-XXX-XXXX"
+              required
+            />
 
-            <Field data-invalid={!!errors.profileFacebook} className="md:col-span-2">
-              <FieldLabel htmlFor="profileFacebook" required>Facebook Profile URL</FieldLabel>
-              <Input
-                {...register("profileFacebook")}
-                type="url"
-                id="profileFacebook"
-                disabled={isPending}
-                placeholder="https://facebook.com/username"
-                aria-invalid={!!errors.profileFacebook}
-              />
-              {errors.profileFacebook && (
-                <FieldError>{errors.profileFacebook.message}</FieldError>
-              )}
-            </Field>
+            <TextField
+              name="profileFacebook"
+              label="Facebook Profile URL"
+              register={register}
+              error={errors.profileFacebook?.message}
+              disabled={isPending}
+              type="url"
+              placeholder="https://facebook.com/username"
+              required
+            />
           </div>
 
           {/* Language/Dialect - CLDR Combobox with Badges */}
@@ -513,7 +510,9 @@ const BasicInfoSection: React.FC<FormSectionWithFieldArrayProps> = ({
                     <ComboboxItem
                       key={lang.code}
                       value={lang.name}
-                      disabled={selectedLanguages.some((l) => l.value === lang.name)}
+                      disabled={selectedLanguages.some(
+                        (l) => l.value === lang.name,
+                      )}
                     >
                       {lang.name}
                     </ComboboxItem>
@@ -529,35 +528,23 @@ const BasicInfoSection: React.FC<FormSectionWithFieldArrayProps> = ({
 
           {/* Disability Information */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-            <Field data-invalid={!!errors.profileDisability}>
-              <FieldLabel htmlFor="profileDisability">Disability (if applicable)</FieldLabel>
-              <Input
-                {...register("profileDisability")}
-                type="text"
-                id="profileDisability"
-                disabled={isPending}
-                placeholder="Type of disability"
-                aria-invalid={!!errors.profileDisability}
-              />
-              {errors.profileDisability && (
-                <FieldError>{errors.profileDisability.message}</FieldError>
-              )}
-            </Field>
+            <TextField
+              name="profileDisability"
+              label="Disability (if applicable)"
+              register={register}
+              error={errors.profileDisability?.message}
+              disabled={isPending}
+              placeholder="Type of disability"
+            />
 
-            <Field data-invalid={!!errors.profilePwdId}>
-              <FieldLabel htmlFor="profilePwdId">PWD ID Number</FieldLabel>
-              <Input
-                {...register("profilePwdId")}
-                type="text"
-                id="profilePwdId"
-                disabled={isPending}
-                placeholder="PWD ID (if applicable)"
-                aria-invalid={!!errors.profilePwdId}
-              />
-              {errors.profilePwdId && (
-                <FieldError>{errors.profilePwdId.message}</FieldError>
-              )}
-            </Field>
+            <TextField
+              name="profilePwdId"
+              label="PWD ID Number"
+              register={register}
+              error={errors.profilePwdId?.message}
+              disabled={isPending}
+              placeholder="PWD ID (if applicable)"
+            />
           </div>
         </FieldSet>
       </FieldGroup>
