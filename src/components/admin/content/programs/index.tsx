@@ -1,7 +1,5 @@
 "use client"
 
-import React, { useState, useEffect, useMemo } from "react"
-import { toast } from "sonner"
 import { Plus, Search, GripVertical, ChevronLeft, ChevronRight } from "lucide-react"
 import Image from "next/image"
 import { Input } from "@/ui/input"
@@ -20,89 +18,56 @@ import { ProgramCreateDialog } from "./program-create-dialog"
 import { ProgramEditDialog } from "./program-edit-dialog"
 import { ProgramDeleteDialog } from "./program-delete-dialog"
 import { type ProgramData } from "@/lib/validations/program"
-
-const PAGE_SIZE = 10
+import { useDialogState, useDataList } from "@/hooks"
 
 export default function Programs() {
-  const [programs, setPrograms] = useState<ProgramData[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [searchQuery, setSearchQuery] = useState("")
-  const [currentPage, setCurrentPage] = useState(1)
-  const [createDialogOpen, setCreateDialogOpen] = useState(false)
-  const [editDialogOpen, setEditDialogOpen] = useState(false)
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
-  const [selectedProgram, setSelectedProgram] = useState<ProgramData | null>(null)
+  const {
+    createOpen,
+    setCreateOpen,
+    editOpen,
+    setEditOpen,
+    deleteOpen,
+    setDeleteOpen,
+    selectedItem: selectedProgram,
+    openCreate,
+    openEdit,
+    openDelete,
+    closeAll,
+  } = useDialogState<ProgramData>()
 
-  const fetchPrograms = async () => {
-    try {
-      const response = await fetch("/api/admin/programs")
-      if (!response.ok) {
-        throw new Error("Failed to fetch programs")
-      }
-      const data = await response.json()
-      setPrograms(data.programs)
-    } catch (error) {
-      console.error("Error fetching programs:", error)
-      toast.error("Failed to load programs")
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  useEffect(() => {
-    fetchPrograms()
-  }, [])
-
-  const filteredPrograms = useMemo(() => {
-    if (!searchQuery.trim()) return programs
-
-    const query = searchQuery.toLowerCase()
-    return programs.filter(
-      (program) =>
-        program.title.toLowerCase().includes(query) ||
-        (program.description && program.description.toLowerCase().includes(query))
-    )
-  }, [programs, searchQuery])
-
-  // Reset to first page when search changes
-  useEffect(() => {
-    setCurrentPage(1)
-  }, [searchQuery])
-
-  // Pagination calculations
-  const totalPages = Math.ceil(filteredPrograms.length / PAGE_SIZE)
-  const startIndex = (currentPage - 1) * PAGE_SIZE
-  const endIndex = Math.min(startIndex + PAGE_SIZE, filteredPrograms.length)
-  const paginatedPrograms = filteredPrograms.slice(startIndex, endIndex)
-
-  const handleEditClick = (program: ProgramData) => {
-    setSelectedProgram(program)
-    setEditDialogOpen(true)
-  }
-
-  const handleDeleteClick = (program: ProgramData) => {
-    setSelectedProgram(program)
-    setDeleteDialogOpen(true)
-  }
+  const {
+    setItems,
+    isLoading,
+    searchQuery,
+    setSearchQuery,
+    filteredItems: filteredPrograms,
+    paginatedItems: paginatedPrograms,
+    currentPage,
+    setCurrentPage,
+    totalPages,
+    startIndex,
+    endIndex,
+  } = useDataList<ProgramData>("/api/admin/programs", {
+    searchKeys: ["title", "description"],
+    pageSize: 10,
+  })
 
   const handleProgramCreated = (newProgram: ProgramData) => {
-    setPrograms((prev) => [...prev, newProgram].sort((a, b) => a.order - b.order))
-    setCreateDialogOpen(false)
+    setItems((prev) => [...prev, newProgram].sort((a, b) => a.order - b.order))
+    setCreateOpen(false)
   }
 
   const handleProgramUpdated = (updatedProgram: ProgramData) => {
-    setPrograms((prev) =>
+    setItems((prev) =>
       prev.map((program) => (program.id === updatedProgram.id ? updatedProgram : program))
         .sort((a, b) => a.order - b.order)
     )
-    setEditDialogOpen(false)
-    setSelectedProgram(null)
+    closeAll()
   }
 
   const handleProgramDeleted = (deletedProgramId: string) => {
-    setPrograms((prev) => prev.filter((program) => program.id !== deletedProgramId))
-    setDeleteDialogOpen(false)
-    setSelectedProgram(null)
+    setItems((prev) => prev.filter((program) => program.id !== deletedProgramId))
+    closeAll()
   }
 
   if (isLoading) {
@@ -131,7 +96,7 @@ export default function Programs() {
             className="pl-8"
           />
         </div>
-        <Button onClick={() => setCreateDialogOpen(true)}>
+        <Button onClick={openCreate}>
           <Plus className="h-4 w-4 mr-1" />
           Add Program
         </Button>
@@ -196,7 +161,7 @@ export default function Programs() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => handleEditClick(program)}
+                        onClick={() => openEdit(program)}
                       >
                         Edit
                       </Button>
@@ -204,7 +169,7 @@ export default function Programs() {
                         variant="ghost"
                         size="sm"
                         className="text-destructive hover:text-destructive"
-                        onClick={() => handleDeleteClick(program)}
+                        onClick={() => openDelete(program)}
                       >
                         Delete
                       </Button>
@@ -226,7 +191,7 @@ export default function Programs() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                 disabled={currentPage === 1}
               >
                 <ChevronLeft className="h-4 w-4" />
@@ -234,7 +199,7 @@ export default function Programs() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
                 disabled={currentPage === totalPages}
               >
                 <ChevronRight className="h-4 w-4" />
@@ -245,22 +210,22 @@ export default function Programs() {
       </div>
 
       <ProgramCreateDialog
-        open={createDialogOpen}
-        onOpenChange={setCreateDialogOpen}
+        open={createOpen}
+        onOpenChange={setCreateOpen}
         onProgramCreated={handleProgramCreated}
       />
 
       {selectedProgram && (
         <>
           <ProgramEditDialog
-            open={editDialogOpen}
-            onOpenChange={setEditDialogOpen}
+            open={editOpen}
+            onOpenChange={setEditOpen}
             program={selectedProgram}
             onProgramUpdated={handleProgramUpdated}
           />
           <ProgramDeleteDialog
-            open={deleteDialogOpen}
-            onOpenChange={setDeleteDialogOpen}
+            open={deleteOpen}
+            onOpenChange={setDeleteOpen}
             program={selectedProgram}
             onProgramDeleted={handleProgramDeleted}
           />

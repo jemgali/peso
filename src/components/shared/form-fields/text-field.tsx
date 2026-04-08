@@ -45,7 +45,7 @@ export function TextField<TFieldValues extends FieldValues>({
     <Field data-invalid={!!error}>
       <FieldLabel htmlFor={name}>
         {label}
-        {required && " *"}
+        {required && <span className="text-destructive"> *</span>}
       </FieldLabel>
       <Input
         {...register(name, registerOptions)}

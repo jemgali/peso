@@ -1,13 +1,16 @@
 import React from "react";
-import { Input } from "@/ui/input";
-import {
-  Field,
-  FieldSet,
-  FieldGroup,
-  FieldLabel,
-  FieldError,
-} from "@/ui/field";
+import { FieldSet, FieldGroup, Field, FieldLabel, FieldError } from "@/ui/field";
+import { TextField } from "@/components/shared";
 import type { FormSectionProps } from "./types";
+
+const GRADE_YEAR_OPTIONS = [
+  { group: "Elementary", options: ["Grade 1", "Grade 2", "Grade 3", "Grade 4", "Grade 5", "Grade 6"] },
+  { group: "Junior High School", options: ["Grade 7", "Grade 8", "Grade 9", "Grade 10"] },
+  { group: "Senior High School", options: ["Grade 11", "Grade 12"] },
+  { group: "College/University", options: ["1st Year College", "2nd Year College", "3rd Year College", "4th Year College", "5th Year College"] },
+  { group: "Vocational", options: ["Vocational/TESDA"] },
+  { group: "Graduate Studies", options: ["Masters", "Doctorate"] },
+];
 
 const EducationSection: React.FC<FormSectionProps> = ({
   register,
@@ -38,90 +41,45 @@ const EducationSection: React.FC<FormSectionProps> = ({
                 aria-invalid={!!errors.gradeYear}
               >
                 <option value="">Select...</option>
-                <optgroup label="Elementary">
-                  <option value="Grade 1">Grade 1</option>
-                  <option value="Grade 2">Grade 2</option>
-                  <option value="Grade 3">Grade 3</option>
-                  <option value="Grade 4">Grade 4</option>
-                  <option value="Grade 5">Grade 5</option>
-                  <option value="Grade 6">Grade 6</option>
-                </optgroup>
-                <optgroup label="Junior High School">
-                  <option value="Grade 7">Grade 7</option>
-                  <option value="Grade 8">Grade 8</option>
-                  <option value="Grade 9">Grade 9</option>
-                  <option value="Grade 10">Grade 10</option>
-                </optgroup>
-                <optgroup label="Senior High School">
-                  <option value="Grade 11">Grade 11</option>
-                  <option value="Grade 12">Grade 12</option>
-                </optgroup>
-                <optgroup label="College/University">
-                  <option value="1st Year College">1st Year College</option>
-                  <option value="2nd Year College">2nd Year College</option>
-                  <option value="3rd Year College">3rd Year College</option>
-                  <option value="4th Year College">4th Year College</option>
-                  <option value="5th Year College">5th Year College</option>
-                </optgroup>
-                <optgroup label="Vocational">
-                  <option value="Vocational/TESDA">Vocational/TESDA</option>
-                </optgroup>
-                <optgroup label="Graduate Studies">
-                  <option value="Masters">Masters</option>
-                  <option value="Doctorate">Doctorate</option>
-                </optgroup>
+                {GRADE_YEAR_OPTIONS.map((group) => (
+                  <optgroup key={group.group} label={group.group}>
+                    {group.options.map((opt) => (
+                      <option key={opt} value={opt}>{opt}</option>
+                    ))}
+                  </optgroup>
+                ))}
               </select>
               {errors.gradeYear && (
                 <FieldError>{errors.gradeYear.message}</FieldError>
               )}
             </Field>
 
-            <Field data-invalid={!!errors.schoolName}>
-              <FieldLabel htmlFor="schoolName">School Name</FieldLabel>
-              <Input
-                {...register("schoolName")}
-                type="text"
-                id="schoolName"
-                disabled={isPending}
-                placeholder="Name of school/university"
-                aria-invalid={!!errors.schoolName}
-              />
-              {errors.schoolName && (
-                <FieldError>{errors.schoolName.message}</FieldError>
-              )}
-            </Field>
+            <TextField
+              name="schoolName"
+              label="School Name"
+              register={register}
+              error={errors.schoolName?.message}
+              disabled={isPending}
+              placeholder="Name of school/university"
+            />
 
-            <Field data-invalid={!!errors.trackCourse}>
-              <FieldLabel htmlFor="trackCourse">
-                Track/Strand/Course
-              </FieldLabel>
-              <Input
-                {...register("trackCourse")}
-                type="text"
-                id="trackCourse"
-                disabled={isPending}
-                placeholder="e.g., STEM, ABM, BS Computer Science"
-                aria-invalid={!!errors.trackCourse}
-              />
-              {errors.trackCourse && (
-                <FieldError>{errors.trackCourse.message}</FieldError>
-              )}
-            </Field>
+            <TextField
+              name="trackCourse"
+              label="Track/Strand/Course"
+              register={register}
+              error={errors.trackCourse?.message}
+              disabled={isPending}
+              placeholder="e.g., STEM, ABM, BS Computer Science"
+            />
 
-            <Field data-invalid={!!errors.schoolYear}>
-              <FieldLabel htmlFor="schoolYear">School Year</FieldLabel>
-              <Input
-                {...register("schoolYear")}
-                type="text"
-                id="schoolYear"
-                disabled={isPending}
-                placeholder="e.g., 2023-2024"
-                aria-invalid={!!errors.schoolYear}
-              />
-              {errors.schoolYear && (
-                <FieldError>{errors.schoolYear.message}</FieldError>
-              )}
-            </Field>
+            <TextField
+              name="schoolYear"
+              label="School Year"
+              register={register}
+              error={errors.schoolYear?.message}
+              disabled={isPending}
+              placeholder="e.g., 2023-2024"
+            />
           </div>
         </FieldSet>
       </FieldGroup>

@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react"
+import React from "react"
 import { toast } from "sonner"
 import {
   Dialog,
@@ -14,6 +14,7 @@ import {
   type CreateScheduleEventFormValues,
   type ScheduleEventData,
 } from "@/lib/validations/schedule-event"
+import { useFormSubmit } from "@/hooks"
 
 interface AnnouncementDialogProps {
   open: boolean
@@ -24,6 +25,20 @@ interface AnnouncementDialogProps {
   onAnnouncementUpdated?: (announcement: ScheduleEventData) => void
 }
 
+interface AnnouncementResponse {
+  event: ScheduleEventData
+}
+
+function parseEventDates(event: ScheduleEventData): ScheduleEventData {
+  return {
+    ...event,
+    startDate: new Date(event.startDate),
+    endDate: event.endDate ? new Date(event.endDate) : null,
+    createdAt: new Date(event.createdAt),
+    updatedAt: new Date(event.updatedAt),
+  }
+}
+
 export function AnnouncementDialog({
   open,
   onOpenChange,
@@ -32,64 +47,49 @@ export function AnnouncementDialog({
   onAnnouncementCreated,
   onAnnouncementUpdated,
 }: AnnouncementDialogProps) {
-  const [isPending, setIsPending] = useState(false)
+  const isEditMode = mode === "edit"
+
+  const { submit: createSubmit, isPending: isCreatePending } = useFormSubmit<
+    CreateScheduleEventFormValues,
+    AnnouncementResponse
+  >({
+    url: "/api/admin/schedule",
+    method: "POST",
+    onSuccess: (result) => {
+      toast.success("Announcement created successfully")
+      onAnnouncementCreated?.(parseEventDates(result.event))
+    },
+    onError: (error) => {
+      toast.error(error.message)
+    },
+    errorMessage: "Failed to create announcement",
+  })
+
+  const { submit: updateSubmit, isPending: isUpdatePending } = useFormSubmit<
+    CreateScheduleEventFormValues,
+    AnnouncementResponse
+  >({
+    url: `/api/admin/schedule/${announcement?.id}`,
+    method: "PATCH",
+    onSuccess: (result) => {
+      toast.success("Announcement updated successfully")
+      onAnnouncementUpdated?.(parseEventDates(result.event))
+    },
+    onError: (error) => {
+      toast.error(error.message)
+    },
+    errorMessage: "Failed to update announcement",
+  })
+
+  const isPending = isEditMode ? isUpdatePending : isCreatePending
 
   const handleSubmit = async (data: CreateScheduleEventFormValues) => {
-    // Ensure type is always "announcement"
     const announcementData = { ...data, type: "announcement" as const }
-    
-    setIsPending(true)
-    try {
-      if (mode === "create") {
-        const response = await fetch("/api/admin/schedule", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(announcementData),
-        })
 
-        if (!response.ok) {
-          const error = await response.json()
-          throw new Error(error.error || "Failed to create announcement")
-        }
-
-        const { event } = await response.json()
-        const parsedEvent = {
-          ...event,
-          startDate: new Date(event.startDate),
-          endDate: event.endDate ? new Date(event.endDate) : null,
-          createdAt: new Date(event.createdAt),
-          updatedAt: new Date(event.updatedAt),
-        }
-        toast.success("Announcement created successfully")
-        onAnnouncementCreated?.(parsedEvent)
-      } else if (announcement) {
-        const response = await fetch(`/api/admin/schedule/${announcement.id}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(announcementData),
-        })
-
-        if (!response.ok) {
-          const error = await response.json()
-          throw new Error(error.error || "Failed to update announcement")
-        }
-
-        const { event } = await response.json()
-        const parsedEvent = {
-          ...event,
-          startDate: new Date(event.startDate),
-          endDate: event.endDate ? new Date(event.endDate) : null,
-          createdAt: new Date(event.createdAt),
-          updatedAt: new Date(event.updatedAt),
-        }
-        toast.success("Announcement updated successfully")
-        onAnnouncementUpdated?.(parsedEvent)
-      }
-    } catch (error) {
-      console.error(`Error ${mode === "create" ? "creating" : "updating"} announcement:`, error)
-      toast.error(error instanceof Error ? error.message : `Failed to ${mode} announcement`)
-    } finally {
-      setIsPending(false)
+    if (isEditMode && announcement) {
+      await updateSubmit(announcementData)
+    } else {
+      await createSubmit(announcementData)
     }
   }
 

@@ -5,6 +5,7 @@ import { toast } from "sonner"
 import { Plus } from "lucide-react"
 import { Button } from "@/ui/button"
 import { ScheduleCalendarSkeleton } from "@/ui/skeletons"
+import { useDialogState } from "@/hooks"
 import { Calendar } from "./calendar"
 import { EventDialog } from "./event-dialog"
 import { EventDetailsDialog } from "./event-details-dialog"
@@ -15,14 +16,15 @@ import {
 export type CalendarView = "month" | "week" | "day"
 
 export default function Schedule() {
+  // Calendar state
   const [events, setEvents] = useState<ScheduleEventData[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [currentDate, setCurrentDate] = useState(new Date())
   const [view, setView] = useState<CalendarView>("month")
-  const [createDialogOpen, setCreateDialogOpen] = useState(false)
-  const [editDialogOpen, setEditDialogOpen] = useState(false)
+  
+  // Dialog state (create/edit via hook, details kept separate)
+  const dialog = useDialogState<ScheduleEventData>()
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false)
-  const [selectedEvent, setSelectedEvent] = useState<ScheduleEventData | null>(null)
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
 
   const fetchEvents = useCallback(async () => {
@@ -63,24 +65,24 @@ export default function Schedule() {
 
   const handleDateClick = (date: Date) => {
     setSelectedDate(date)
-    setCreateDialogOpen(true)
+    dialog.setCreateOpen(true)
   }
 
   const handleEventClick = (event: ScheduleEventData) => {
-    setSelectedEvent(event)
+    dialog.setSelectedItem(event)
     setDetailsDialogOpen(true)
   }
 
   const handleEditEvent = () => {
     setDetailsDialogOpen(false)
-    setEditDialogOpen(true)
+    dialog.setEditOpen(true)
   }
 
   const handleEventCreated = (newEvent: ScheduleEventData) => {
     setEvents((prev) => [...prev, newEvent].sort((a, b) => 
       new Date(a.startDate).getTime() - new Date(b.startDate).getTime()
     ))
-    setCreateDialogOpen(false)
+    dialog.setCreateOpen(false)
     setSelectedDate(null)
   }
 
@@ -89,14 +91,14 @@ export default function Schedule() {
       prev.map((event) => (event.id === updatedEvent.id ? updatedEvent : event))
         .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime())
     )
-    setEditDialogOpen(false)
-    setSelectedEvent(null)
+    dialog.setEditOpen(false)
+    dialog.setSelectedItem(null)
   }
 
   const handleEventDeleted = (deletedEventId: string) => {
     setEvents((prev) => prev.filter((event) => event.id !== deletedEventId))
     setDetailsDialogOpen(false)
-    setSelectedEvent(null)
+    dialog.setSelectedItem(null)
   }
 
   if (isLoading && events.length === 0) {
@@ -109,7 +111,7 @@ export default function Schedule() {
         <h2 className="text-2xl font-bold">Schedule</h2>
         <Button onClick={() => {
           setSelectedDate(new Date())
-          setCreateDialogOpen(true)
+          dialog.setCreateOpen(true)
         }}>
           <Plus className="h-4 w-4 mr-1" />
           Add Event
@@ -127,27 +129,27 @@ export default function Schedule() {
       />
 
       <EventDialog
-        open={createDialogOpen}
-        onOpenChange={setCreateDialogOpen}
+        open={dialog.createOpen}
+        onOpenChange={dialog.setCreateOpen}
         mode="create"
         defaultDate={selectedDate || undefined}
         onEventCreated={handleEventCreated}
       />
 
-      {selectedEvent && (
+      {dialog.selectedItem && (
         <>
           <EventDetailsDialog
             open={detailsDialogOpen}
             onOpenChange={setDetailsDialogOpen}
-            event={selectedEvent}
+            event={dialog.selectedItem}
             onEdit={handleEditEvent}
             onDelete={handleEventDeleted}
           />
           <EventDialog
-            open={editDialogOpen}
-            onOpenChange={setEditDialogOpen}
+            open={dialog.editOpen}
+            onOpenChange={dialog.setEditOpen}
             mode="edit"
-            event={selectedEvent}
+            event={dialog.selectedItem}
             onEventUpdated={handleEventUpdated}
           />
         </>

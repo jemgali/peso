@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react"
+import React from "react"
 import { toast } from "sonner"
 import {
   AlertDialog,
@@ -14,6 +14,7 @@ import {
 } from "@/ui/alert-dialog"
 import { Spinner } from "@/ui/spinner"
 import { type ScheduleEventData } from "@/lib/validations/schedule-event"
+import { useFormSubmit } from "@/hooks"
 
 interface AnnouncementDeleteDialogProps {
   open: boolean
@@ -28,28 +29,21 @@ export function AnnouncementDeleteDialog({
   announcement,
   onAnnouncementDeleted,
 }: AnnouncementDeleteDialogProps) {
-  const [isPending, setIsPending] = useState(false)
-
-  const handleDelete = async () => {
-    setIsPending(true)
-    try {
-      const response = await fetch(`/api/admin/schedule/${announcement.id}`, {
-        method: "DELETE",
-      })
-
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || "Failed to delete announcement")
-      }
-
+  const { submit, isPending } = useFormSubmit<Record<string, never>, void>({
+    url: `/api/admin/schedule/${announcement.id}`,
+    method: "DELETE",
+    onSuccess: () => {
       toast.success("Announcement deleted successfully")
       onAnnouncementDeleted(announcement.id)
-    } catch (error) {
-      console.error("Error deleting announcement:", error)
-      toast.error(error instanceof Error ? error.message : "Failed to delete announcement")
-    } finally {
-      setIsPending(false)
-    }
+    },
+    onError: (error) => {
+      toast.error(error.message)
+    },
+    errorMessage: "Failed to delete announcement",
+  })
+
+  const handleDelete = () => {
+    submit({})
   }
 
   return (

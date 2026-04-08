@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react"
+import React from "react"
 import { toast } from "sonner"
 import {
   AlertDialog,
@@ -13,6 +13,7 @@ import {
   AlertDialogTitle,
 } from "@/ui/alert-dialog"
 import { Spinner } from "@/ui/spinner"
+import { useFormSubmit } from "@/hooks"
 import type { UserData } from "@/lib/validations/user"
 
 type UserArchiveDialogProps = {
@@ -28,31 +29,23 @@ export function UserArchiveDialog({
   user,
   onUserArchived,
 }: UserArchiveDialogProps) {
-  const [isPending, setIsPending] = useState(false)
-
-  const handleArchive = async () => {
-    setIsPending(true)
-    try {
-      const response = await fetch(`/api/admin/users/${user.id}`, {
-        method: "DELETE",
-      })
-
-      const result = await response.json()
-
-      if (!response.ok) {
-        throw new Error(result.error || "Failed to archive user")
-      }
-
+  const { submit, isPending } = useFormSubmit<
+    Record<string, never>,
+    { user: UserData }
+  >({
+    url: `/api/admin/users/${user.id}`,
+    method: "DELETE",
+    onSuccess: (result) => {
       toast.success("User archived successfully")
       onUserArchived(result.user)
-    } catch (error) {
-      console.error("Error archiving user:", error)
-      toast.error(
-        error instanceof Error ? error.message : "Failed to archive user"
-      )
-    } finally {
-      setIsPending(false)
-    }
+    },
+    onError: (error) => {
+      toast.error(error.message)
+    },
+  })
+
+  const handleArchive = () => {
+    submit({})
   }
 
   return (

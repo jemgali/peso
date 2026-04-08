@@ -9,15 +9,12 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { toast } from 'sonner'
 import { authClient } from '@/lib/auth-client'
+import { TextField } from "@/components/shared"
 import {
-    Field,
     FieldSet,
     FieldGroup,
-    FieldLabel,
     FieldSeparator,
-    FieldError,
 } from "@/ui/field"
-import { Input } from "@/ui/input"
 import { Button } from "@/ui/button"
 import { Spinner } from '@/ui/spinner'
 
@@ -99,92 +96,76 @@ const SignUpForm = () => {
         <FieldGroup>
             <FieldSet className="gap-3">
                 <div className='grid grid-cols-1 md:grid-cols-12 gap-3'>
-                    <Field className="md:col-span-3" data-invalid={!!errors.last_name}>
-                        <FieldLabel htmlFor="last_name">Last Name</FieldLabel>
-                        <Input 
-                            {...register("last_name")}
+                    <div className="md:col-span-3">
+                        <TextField
+                            name="last_name"
+                            label="Last Name"
                             type="text"
-                            id="last_name"
+                            register={register}
+                            error={errors.last_name?.message}
                             disabled={isPending}
-                            autoComplete="family-name"
                             autoCapitalize="words"
                             placeholder="eg. Dela Cruz"
-                            aria-invalid={!!errors.last_name}
                         />
-                        {errors.last_name && <FieldError>{errors.last_name.message}</FieldError>}
-                    </Field>
-                    <Field className="md:col-span-3" data-invalid={!!errors.first_name}>
-                        <FieldLabel htmlFor="first_name">First Name</FieldLabel>
-                        <Input 
-                            {...register("first_name")}
+                    </div>
+                    <div className="md:col-span-3">
+                        <TextField
+                            name="first_name"
+                            label="First Name"
                             type="text"
-                            id="first_name"
+                            register={register}
+                            error={errors.first_name?.message}
                             disabled={isPending}
-                            autoComplete="given-name"
                             autoCapitalize="words"
                             placeholder="eg. Juan"
-                            aria-invalid={!!errors.first_name}
                         />
-                        {errors.first_name && <FieldError>{errors.first_name.message}</FieldError>}
-                    </Field>
-                    <Field className="md:col-span-3" data-invalid={!!errors.middle_name}>
-                        <FieldLabel htmlFor="middle_name">Middle Name</FieldLabel>
-                        <Input 
-                            {...register("middle_name")}
+                    </div>
+                    <div className="md:col-span-3">
+                        <TextField
+                            name="middle_name"
+                            label="Middle Name"
                             type="text"
-                            id="middle_name"
+                            register={register}
+                            error={errors.middle_name?.message}
                             disabled={isPending}
-                            autoComplete="additional-name"
                             autoCapitalize="words"
                             placeholder="eg. Antonio"
-                            aria-invalid={!!errors.middle_name}
                         />
-                        {errors.middle_name && <FieldError>{errors.middle_name.message}</FieldError>}
-                    </Field>
-                    <Field className="md:col-span-3" data-invalid={!!errors.suffix}>
-                        <FieldLabel htmlFor="suffix">Suffix</FieldLabel>
-                        <Input 
-                            {...register("suffix")}
+                    </div>
+                    <div className="md:col-span-3">
+                        <TextField
+                            name="suffix"
+                            label="Suffix"
                             type="text"
-                            id="suffix"
+                            register={register}
+                            error={errors.suffix?.message}
                             disabled={isPending}
-                            autoComplete="honorific-suffix"
                             autoCapitalize="words"
                             placeholder="eg. Jr"
-                            aria-invalid={!!errors.suffix}
                         />
-                        {errors.suffix && <FieldError>{errors.suffix.message}</FieldError>}
-                    </Field>
+                    </div>
                 </div>
             </FieldSet>
             <FieldSet className="gap-3">
-                <Field data-invalid={!!errors.email}>
-                    <FieldLabel htmlFor="email">Email</FieldLabel>
-                    <Input 
-                        {...register("email")}
-                        type="email"
-                        id="email"
-                        disabled={isPending}
-                        autoComplete="email"
-                        placeholder="user@example.com"
-                        className="w-full"
-                        aria-invalid={!!errors.email}
-                    />
-                    {errors.email && <FieldError>{errors.email.message}</FieldError>}
-                </Field>
-                <Field data-invalid={!!errors.password}>
-                    <FieldLabel htmlFor="password">Password</FieldLabel>
-                    <Input 
-                        {...register("password")}
-                        type="password"
-                        id="password"
-                        disabled={isPending}
-                        autoComplete='new-password'
-                        className="w-full"
-                        aria-invalid={!!errors.password}
-                    />
-                    {errors.password && <FieldError>{errors.password.message}</FieldError>}
-                </Field>
+                <TextField
+                    name="email"
+                    label="Email"
+                    type="email"
+                    register={register}
+                    error={errors.email?.message}
+                    disabled={isPending}
+                    placeholder="user@example.com"
+                    className="w-full"
+                />
+                <TextField
+                    name="password"
+                    label="Password"
+                    type="password"
+                    register={register}
+                    error={errors.password?.message}
+                    disabled={isPending}
+                    className="w-full"
+                />
             </FieldSet>
 
             <FieldSet className="space-y-2 pt-4">

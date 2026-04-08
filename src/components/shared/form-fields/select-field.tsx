@@ -52,7 +52,7 @@ export function SelectField({
     <Field data-invalid={!!error}>
       <FieldLabel htmlFor={name}>
         {label}
-        {required && " *"}
+        {required && <span className="text-destructive"> *</span>}
       </FieldLabel>
       <Select value={value} onValueChange={onValueChange} disabled={disabled}>
         <SelectTrigger id={name} className={className}>

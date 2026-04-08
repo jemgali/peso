@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react"
+import React from "react"
 import { toast } from "sonner"
 import {
   AlertDialog,
@@ -13,6 +13,7 @@ import {
   AlertDialogTitle,
 } from "@/ui/alert-dialog"
 import { Spinner } from "@/ui/spinner"
+import { useFormSubmit } from "@/hooks"
 import { type ProgramData } from "@/lib/validations/program"
 
 interface ProgramDeleteDialogProps {
@@ -28,28 +29,20 @@ export function ProgramDeleteDialog({
   program,
   onProgramDeleted,
 }: ProgramDeleteDialogProps) {
-  const [isPending, setIsPending] = useState(false)
-
-  const handleDelete = async () => {
-    setIsPending(true)
-    try {
-      const response = await fetch(`/api/admin/programs/${program.id}`, {
-        method: "DELETE",
-      })
-
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || "Failed to delete program")
-      }
-
+  const { submit, isPending } = useFormSubmit<void, void>({
+    url: `/api/admin/programs/${program.id}`,
+    method: "DELETE",
+    onSuccess: () => {
       toast.success("Program deleted successfully")
       onProgramDeleted(program.id)
-    } catch (error) {
-      console.error("Error deleting program:", error)
-      toast.error(error instanceof Error ? error.message : "Failed to delete program")
-    } finally {
-      setIsPending(false)
-    }
+    },
+    onError: (error) => {
+      toast.error(error.message)
+    },
+  })
+
+  const handleDelete = () => {
+    submit(undefined as void)
   }
 
   return (

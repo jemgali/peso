@@ -39,7 +39,7 @@ export function TextareaField<TFieldValues extends FieldValues>({
     <Field data-invalid={!!error}>
       <FieldLabel htmlFor={name}>
         {label}
-        {required && " *"}
+        {required && <span className="text-destructive"> *</span>}
       </FieldLabel>
       <Textarea
         {...register(name)}

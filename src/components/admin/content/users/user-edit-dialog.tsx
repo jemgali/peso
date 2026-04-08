@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useMemo } from "react"
+import React, { useMemo } from "react"
 import { toast } from "sonner"
 import {
   Dialog,
@@ -10,6 +10,7 @@ import {
   DialogTitle,
 } from "@/ui/dialog"
 import { UserForm } from "@/forms/admin/user-form"
+import { useFormSubmit } from "@/hooks"
 import type { UpdateUserFormValues, UserData } from "@/lib/validations/user"
 
 type UserEditDialogProps = {
@@ -25,7 +26,20 @@ export function UserEditDialog({
   user,
   onUserUpdated,
 }: UserEditDialogProps) {
-  const [isPending, setIsPending] = useState(false)
+  const { submit, isPending } = useFormSubmit<
+    UpdateUserFormValues,
+    { user: UserData }
+  >({
+    url: `/api/admin/users/${user.id}`,
+    method: "PATCH",
+    onSuccess: (result) => {
+      toast.success("User updated successfully")
+      onUserUpdated(result.user)
+    },
+    onError: (error) => {
+      toast.error(error.message)
+    },
+  })
 
   const defaultValues = useMemo(() => {
     const nameParts = user.name.split(" ")
@@ -64,32 +78,7 @@ export function UserEditDialog({
   }, [user])
 
   const handleSubmit = async (data: UpdateUserFormValues) => {
-    setIsPending(true)
-    try {
-      const response = await fetch(`/api/admin/users/${user.id}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
-      })
-
-      const result = await response.json()
-
-      if (!response.ok) {
-        throw new Error(result.error || "Failed to update user")
-      }
-
-      toast.success("User updated successfully")
-      onUserUpdated(result.user)
-    } catch (error) {
-      console.error("Error updating user:", error)
-      toast.error(
-        error instanceof Error ? error.message : "Failed to update user"
-      )
-    } finally {
-      setIsPending(false)
-    }
+    await submit(data)
   }
 
   return (

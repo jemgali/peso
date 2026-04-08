@@ -1,13 +1,21 @@
 import React from "react";
-import { Input } from "@/ui/input";
-import {
-  Field,
-  FieldSet,
-  FieldGroup,
-  FieldLabel,
-  FieldError,
-} from "@/ui/field";
+import { FieldSet, FieldGroup, Field, FieldLabel, FieldError } from "@/ui/field";
+import { TextField } from "@/components/shared";
 import type { FormSectionProps } from "./types";
+
+const BENEFACTOR_RELATIONSHIP_OPTIONS = [
+  { value: "", label: "Select relationship..." },
+  { value: "Parent", label: "Parent" },
+  { value: "Grandparent", label: "Grandparent" },
+  { value: "Aunt/Uncle", label: "Aunt/Uncle" },
+  { value: "Sibling", label: "Sibling" },
+  { value: "Relative", label: "Other Relative" },
+  { value: "Employer", label: "Employer" },
+  { value: "Sponsor", label: "Sponsor" },
+  { value: "NGO", label: "NGO/Organization" },
+  { value: "Government", label: "Government Agency" },
+  { value: "Other", label: "Other" },
+];
 
 const BenefactorSection: React.FC<FormSectionProps> = ({
   register,
@@ -27,22 +35,14 @@ const BenefactorSection: React.FC<FormSectionProps> = ({
       <FieldGroup>
         <FieldSet className="gap-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Field data-invalid={!!errors.benefactorName}>
-              <FieldLabel htmlFor="benefactorName">
-                Benefactor Name
-              </FieldLabel>
-              <Input
-                {...register("benefactorName")}
-                type="text"
-                id="benefactorName"
-                disabled={isPending}
-                placeholder="Full name of benefactor"
-                aria-invalid={!!errors.benefactorName}
-              />
-              {errors.benefactorName && (
-                <FieldError>{errors.benefactorName.message}</FieldError>
-              )}
-            </Field>
+            <TextField
+              name="benefactorName"
+              label="Benefactor Name"
+              register={register}
+              error={errors.benefactorName?.message}
+              disabled={isPending}
+              placeholder="Full name of benefactor"
+            />
 
             <Field data-invalid={!!errors.benefactorRelationship}>
               <FieldLabel htmlFor="benefactorRelationship">
@@ -55,17 +55,11 @@ const BenefactorSection: React.FC<FormSectionProps> = ({
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                 aria-invalid={!!errors.benefactorRelationship}
               >
-                <option value="">Select relationship...</option>
-                <option value="Parent">Parent</option>
-                <option value="Grandparent">Grandparent</option>
-                <option value="Aunt/Uncle">Aunt/Uncle</option>
-                <option value="Sibling">Sibling</option>
-                <option value="Relative">Other Relative</option>
-                <option value="Employer">Employer</option>
-                <option value="Sponsor">Sponsor</option>
-                <option value="NGO">NGO/Organization</option>
-                <option value="Government">Government Agency</option>
-                <option value="Other">Other</option>
+                {BENEFACTOR_RELATIONSHIP_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
               </select>
               {errors.benefactorRelationship && (
                 <FieldError>

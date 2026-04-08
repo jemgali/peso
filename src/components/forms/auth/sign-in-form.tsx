@@ -8,6 +8,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { toast } from 'sonner'
 import { authClient } from '@/lib/auth-client'
+import { TextField } from "@/components/shared"
 import { 
     Field,
     FieldGroup,
@@ -82,20 +83,16 @@ const SignInForm = () => {
     <form onSubmit={handleSubmit(onSubmit)} className="flex w-full flex-col gap-6">
         <FieldGroup>
             <FieldSet className="gap-4">
-                <Field data-invalid={!!errors.email}>
-                    <FieldLabel htmlFor="email">Email</FieldLabel>
-                    <Input 
-                        { ...register("email")}
-                        type="email" 
-                        id="email" 
-                        disabled={isPending}
-                        autoComplete="email" 
-                        placeholder="user@example.com"
-                        className="w-full"
-                        aria-invalid={!!errors.email}
-                    />
-                    {errors.email && <FieldError>{errors.email.message}</FieldError>}
-                </Field>
+                <TextField
+                    name="email"
+                    label="Email"
+                    type="email"
+                    register={register}
+                    error={errors.email?.message}
+                    disabled={isPending}
+                    placeholder="user@example.com"
+                    className="w-full"
+                />
                 <Field data-invalid={!!errors.password}>
                     <div className="flex items-center justify-between">
                         <FieldLabel htmlFor="password">Password</FieldLabel>

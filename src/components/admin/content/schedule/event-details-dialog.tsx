@@ -29,6 +29,7 @@ import {
   type EventType,
 } from "@/lib/validations/schedule-event"
 import { cn } from "@/lib/utils"
+import { useFormSubmit } from "@/hooks"
 
 interface EventDetailsDialogProps {
   open: boolean
@@ -65,29 +66,25 @@ export function EventDetailsDialog({
   onDelete,
 }: EventDetailsDialogProps) {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
-  const [isDeleting, setIsDeleting] = useState(false)
 
-  const handleDelete = async () => {
-    setIsDeleting(true)
-    try {
-      const response = await fetch(`/api/admin/schedule/${event.id}`, {
-        method: "DELETE",
-      })
-
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || "Failed to delete event")
-      }
-
+  const { submit: submitDelete, isPending: isDeleting } = useFormSubmit<
+    Record<string, never>,
+    unknown
+  >({
+    url: `/api/admin/schedule/${event.id}`,
+    method: "DELETE",
+    onSuccess: () => {
       toast.success("Event deleted successfully")
       setDeleteDialogOpen(false)
       onDelete(event.id)
-    } catch (error) {
-      console.error("Error deleting event:", error)
-      toast.error(error instanceof Error ? error.message : "Failed to delete event")
-    } finally {
-      setIsDeleting(false)
-    }
+    },
+    onError: (error) => {
+      toast.error(error.message)
+    },
+  })
+
+  const handleDelete = async () => {
+    await submitDelete({})
   }
 
   return (
