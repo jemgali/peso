@@ -26,6 +26,8 @@ export interface TextFieldProps<TFieldValues extends FieldValues> {
   className?: string
   /** Register options (e.g., valueAsNumber for number inputs) */
   registerOptions?: Parameters<UseFormRegister<TFieldValues>>[1]
+  /** Custom onBlur handler (runs after register's onBlur) */
+  onBlur?: (e: React.FocusEvent<HTMLInputElement>) => void
 }
 
 export function TextField<TFieldValues extends FieldValues>({
@@ -40,7 +42,17 @@ export function TextField<TFieldValues extends FieldValues>({
   required = false,
   className,
   registerOptions,
+  onBlur,
 }: TextFieldProps<TFieldValues>) {
+  const { onBlur: registerOnBlur, ...restRegister } = register(name, registerOptions)
+  
+  const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    // Call register's onBlur first
+    registerOnBlur(e)
+    // Then call custom onBlur if provided
+    onBlur?.(e)
+  }
+  
   return (
     <Field data-invalid={!!error}>
       <FieldLabel htmlFor={name}>
@@ -48,7 +60,8 @@ export function TextField<TFieldValues extends FieldValues>({
         {required && <span className="text-destructive"> *</span>}
       </FieldLabel>
       <Input
-        {...register(name, registerOptions)}
+        {...restRegister}
+        onBlur={handleBlur}
         type={type}
         id={name}
         disabled={disabled}

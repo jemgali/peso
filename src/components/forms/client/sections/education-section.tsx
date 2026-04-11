@@ -1,6 +1,9 @@
+"use client";
+
 import React from "react";
 import { FieldSet, FieldGroup, Field, FieldLabel, FieldError } from "@/ui/field";
 import { TextField } from "@/components/shared";
+import { useAutoCapitalize } from "@/hooks/use-auto-capitalize";
 import type { FormSectionProps } from "./types";
 
 const GRADE_YEAR_OPTIONS = [
@@ -16,13 +19,17 @@ const EducationSection: React.FC<FormSectionProps> = ({
   register,
   errors,
   isPending,
+  setValue,
 }) => {
+  // Auto-capitalize hook for name fields
+  const { handleBlur: autoCapitalizeBlur } = useAutoCapitalize(setValue);
+  
   return (
     <div id="education" className="scroll-mt-24">
       <div className="mb-4">
         <h2 className="text-lg font-semibold">Educational Background</h2>
         <p className="text-sm text-muted-foreground">
-          Tell us about your education
+          Tell us about your education. All fields are required.
         </p>
       </div>
 
@@ -30,7 +37,7 @@ const EducationSection: React.FC<FormSectionProps> = ({
         <FieldSet className="gap-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Field data-invalid={!!errors.gradeYear}>
-              <FieldLabel htmlFor="gradeYear">
+              <FieldLabel htmlFor="gradeYear" required>
                 Grade/Year Level
               </FieldLabel>
               <select
@@ -61,6 +68,8 @@ const EducationSection: React.FC<FormSectionProps> = ({
               error={errors.schoolName?.message}
               disabled={isPending}
               placeholder="Name of school/university"
+              required
+              onBlur={autoCapitalizeBlur("schoolName")}
             />
 
             <TextField
@@ -70,6 +79,8 @@ const EducationSection: React.FC<FormSectionProps> = ({
               error={errors.trackCourse?.message}
               disabled={isPending}
               placeholder="e.g., STEM, ABM, BS Computer Science"
+              required
+              onBlur={autoCapitalizeBlur("trackCourse")}
             />
 
             <TextField
@@ -79,6 +90,7 @@ const EducationSection: React.FC<FormSectionProps> = ({
               error={errors.schoolYear?.message}
               disabled={isPending}
               placeholder="e.g., 2023-2024"
+              required
             />
           </div>
         </FieldSet>

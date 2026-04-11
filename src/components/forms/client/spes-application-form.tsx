@@ -105,7 +105,6 @@ const SECTION_FIELDS: Record<string, (keyof SPESApplicationFormValues)[]> = {
     "isFourPsBeneficiary",
     "applicationYear",
     "motivation",
-    "remarks",
   ],
   documents: ["documents"],
   review: [],
@@ -134,9 +133,9 @@ const TOUCHED_FIELDS: Record<string, string[]> = {
     "profileProvince",
   ],
   family: ["fatherName", "motherMaidenName"],
-  guardian: ["guardianName"],
+  guardian: ["guardianName", "guardianRelationship", "guardianContact"],
   benefactor: ["benefactorName"],
-  education: ["gradeYear", "schoolName"],
+  education: ["gradeYear", "schoolName", "trackCourse", "schoolYear"],
   skills: ["skills"],
   "spes-info": ["applicationYear", "motivation"],
   documents: [],
@@ -174,6 +173,7 @@ export interface SPESApplicationFormProps {
   onStepChange?: (stepIndex: number) => void;
   onValidationChange?: (stepStatuses: Record<string, StepStatus>) => void;
   onMount?: (goToStep: (stepIndex: number) => Promise<void>) => void;
+  userEmail?: string;
 }
 
 const SPESApplicationForm: React.FC<SPESApplicationFormProps> = ({
@@ -181,6 +181,7 @@ const SPESApplicationForm: React.FC<SPESApplicationFormProps> = ({
   onStepChange,
   onValidationChange,
   onMount,
+  userEmail,
 }) => {
   const [internalStep, setInternalStep] = useState(0);
   const [isPending, setIsPending] = useState(false);
@@ -257,7 +258,6 @@ const SPESApplicationForm: React.FC<SPESApplicationFormProps> = ({
       isFourPsBeneficiary: false,
       applicationYear: undefined,
       motivation: "",
-      remarks: "",
       // Documents (placeholder)
       documents: {},
     },
@@ -433,6 +433,8 @@ const SPESApplicationForm: React.FC<SPESApplicationFormProps> = ({
     register,
     errors,
     isPending,
+    watch,
+    setValue,
   };
 
   // Props for sections with control
@@ -447,15 +449,13 @@ const SPESApplicationForm: React.FC<SPESApplicationFormProps> = ({
     siblingsFieldArray,
     skillsFieldArray,
     languageFieldArray,
-    watch,
-    setValue,
   };
 
   // Render only the current section (10 steps total)
   const renderCurrentSection = () => {
     switch (currentStep) {
       case 0:
-        return <BasicInfoSection {...sectionWithFieldArrayProps} />;
+        return <BasicInfoSection {...sectionWithFieldArrayProps} userEmail={userEmail} />;
       case 1:
         return <AddressSection {...sectionProps} />;
       case 2:

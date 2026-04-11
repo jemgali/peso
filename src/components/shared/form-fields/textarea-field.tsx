@@ -22,6 +22,8 @@ export interface TextareaFieldProps<TFieldValues extends FieldValues> {
   required?: boolean
   /** Additional className for the textarea */
   className?: string
+  /** Custom onBlur handler (runs after register's onBlur) */
+  onBlur?: (e: React.FocusEvent<HTMLTextAreaElement>) => void
 }
 
 export function TextareaField<TFieldValues extends FieldValues>({
@@ -34,7 +36,17 @@ export function TextareaField<TFieldValues extends FieldValues>({
   rows = 3,
   required = false,
   className,
+  onBlur,
 }: TextareaFieldProps<TFieldValues>) {
+  const { onBlur: registerOnBlur, ...restRegister } = register(name)
+  
+  const handleBlur = (e: React.FocusEvent<HTMLTextAreaElement>) => {
+    // Call register's onBlur first
+    registerOnBlur(e)
+    // Then call custom onBlur if provided
+    onBlur?.(e)
+  }
+  
   return (
     <Field data-invalid={!!error}>
       <FieldLabel htmlFor={name}>
@@ -42,7 +54,8 @@ export function TextareaField<TFieldValues extends FieldValues>({
         {required && <span className="text-destructive"> *</span>}
       </FieldLabel>
       <Textarea
-        {...register(name)}
+        {...restRegister}
+        onBlur={handleBlur}
         id={name}
         disabled={disabled}
         placeholder={placeholder}

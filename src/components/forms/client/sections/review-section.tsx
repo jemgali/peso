@@ -210,33 +210,46 @@ const ReviewSection: React.FC<ReviewSectionProps> = ({
               )}
             </div>
           </div>
-          {formValues.numberOfSiblings !== undefined && formValues.numberOfSiblings > 0 && (
-            <div className="mt-2 text-sm">
-              <p className="text-muted-foreground">
-                Number of Siblings: {formValues.numberOfSiblings}
+          {formValues.siblings && formValues.siblings.length > 0 && (
+            <div className="mt-3 pt-3 border-t">
+              <p className="text-muted-foreground text-sm mb-2">
+                Siblings ({formValues.numberOfSiblings})
               </p>
+              <div className="space-y-1">
+                {formValues.siblings.map((sibling, index) => (
+                  <div key={index} className="text-sm">
+                    <span className="font-medium">{sibling.name || "Unnamed"}</span>
+                    {sibling.age && <span className="text-muted-foreground"> ({sibling.age} yrs)</span>}
+                    {sibling.occupation && <span className="text-muted-foreground"> - {sibling.occupation}</span>}
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </Card>
 
         {/* Guardian */}
-        {formValues.guardianName && (
-          <Card className="p-4 bg-muted/30">
-            <h3 className="text-sm font-semibold mb-3">Guardian</h3>
-            <div className="grid grid-cols-2 gap-2 text-sm">
-              <div>
-                <p className="text-muted-foreground">Name</p>
-                <p className="font-medium">{formValues.guardianName}</p>
-              </div>
-              <div>
-                <p className="text-muted-foreground">Relationship</p>
-                <p className="font-medium">
-                  {formValues.guardianRelationship || "Not provided"}
-                </p>
-              </div>
+        <Card className="p-4 bg-muted/30">
+          <h3 className="text-sm font-semibold mb-3">Guardian</h3>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-sm">
+            <div>
+              <p className="text-muted-foreground">Name</p>
+              <p className="font-medium">{formValues.guardianName || "Not provided"}</p>
             </div>
-          </Card>
-        )}
+            <div>
+              <p className="text-muted-foreground">Relationship</p>
+              <p className="font-medium">
+                {formValues.guardianRelationship || "Not provided"}
+              </p>
+            </div>
+            <div>
+              <p className="text-muted-foreground">Contact</p>
+              <p className="font-medium">
+                {formValues.guardianContact || "Not provided"}
+              </p>
+            </div>
+          </div>
+        </Card>
 
         {/* Skills */}
         <Card className="p-4 bg-muted/30">

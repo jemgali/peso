@@ -9,3 +9,7 @@ export { useFormSubmit, type UseFormSubmitOptions, type UseFormSubmitReturn } fr
 
 // Utilities
 export { useCalculateAge, calculateAge } from "./use-calculate-age"
+
+// Form utilities
+export { useAutoCapitalize, toTitleCase } from "./use-auto-capitalize"
+export { usePsgcAddress } from "./use-psgc-address"

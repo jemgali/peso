@@ -1,6 +1,9 @@
+"use client";
+
 import React from "react";
 import { FieldSet, FieldGroup, Field, FieldLabel, FieldError } from "@/ui/field";
 import { TextField, TextareaField } from "@/components/shared";
+import { useAutoCapitalize } from "@/hooks/use-auto-capitalize";
 import type { FormSectionProps } from "./types";
 
 const GUARDIAN_RELATIONSHIP_OPTIONS = [
@@ -18,13 +21,17 @@ const GuardianSection: React.FC<FormSectionProps> = ({
   register,
   errors,
   isPending,
+  setValue,
 }) => {
+  // Auto-capitalize hook for name fields
+  const { handleBlur: autoCapitalizeBlur } = useAutoCapitalize(setValue);
+  
   return (
     <div id="guardian" className="scroll-mt-24">
       <div className="mb-4">
         <h2 className="text-lg font-semibold">Guardian Information</h2>
         <p className="text-sm text-muted-foreground">
-          Provide details about your legal guardian (if applicable)
+          Provide details about your legal guardian. Name, relationship, and contact are required.
         </p>
       </div>
 
@@ -38,10 +45,12 @@ const GuardianSection: React.FC<FormSectionProps> = ({
               error={errors.guardianName?.message}
               disabled={isPending}
               placeholder="Full name of guardian"
+              required
+              onBlur={autoCapitalizeBlur("guardianName")}
             />
 
             <Field data-invalid={!!errors.guardianRelationship}>
-              <FieldLabel htmlFor="guardianRelationship">
+              <FieldLabel htmlFor="guardianRelationship" required>
                 Relationship to You
               </FieldLabel>
               <select
@@ -64,7 +73,7 @@ const GuardianSection: React.FC<FormSectionProps> = ({
 
             <TextField
               name="guardianAge"
-              label="Age"
+              label="Age (Optional)"
               register={register}
               error={errors.guardianAge?.message}
               disabled={isPending}
@@ -74,11 +83,12 @@ const GuardianSection: React.FC<FormSectionProps> = ({
 
             <TextField
               name="guardianOccupation"
-              label="Occupation"
+              label="Occupation (Optional)"
               register={register}
               error={errors.guardianOccupation?.message}
               disabled={isPending}
               placeholder="e.g., Teacher, Business Owner"
+              onBlur={autoCapitalizeBlur("guardianOccupation")}
             />
 
             <TextField
@@ -89,17 +99,19 @@ const GuardianSection: React.FC<FormSectionProps> = ({
               disabled={isPending}
               type="tel"
               placeholder="+63 9XX-XXX-XXXX"
+              required
             />
           </div>
 
           <TextareaField
             name="guardianAddress"
-            label="Address"
+            label="Address (Optional)"
             register={register}
             error={errors.guardianAddress?.message}
             disabled={isPending}
             placeholder="Complete address of guardian"
             className="min-h-20"
+            onBlur={autoCapitalizeBlur("guardianAddress")}
           />
         </FieldSet>
       </FieldGroup>

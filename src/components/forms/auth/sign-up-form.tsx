@@ -19,10 +19,6 @@ import { Button } from "@/ui/button"
 import { Spinner } from '@/ui/spinner'
 
 const signUpSchema = z.object({
-    last_name: z.string().min(1, "Last name is required."),
-    first_name: z.string().min(1, "First name is required."),
-    middle_name: z.string().optional(),
-    suffix: z.string().optional(),
     email: z.string().email("Please enter a valid email address."),
     password: z.string().min(8, "Password must be at least 8 characters."),
 })
@@ -41,24 +37,17 @@ const SignUpForm = () => {
     } = useForm<SignUpFormValues>({
         resolver: zodResolver(signUpSchema),
         defaultValues: {
-            last_name: "",
-            first_name: "",
-            middle_name: "",
-            suffix: "",
             email: "",
             password: "",
         }
     })
 
     const onSubmit = async (data: SignUpFormValues) => {
-        const fullName = [data.first_name, data.middle_name, data.last_name, data.suffix]
-            .filter(Boolean)
-            .join(" ")
-        
+        // Set placeholder name - user will provide their actual name in the application form
         await authClient.signUp.email({
             email: data.email,
             password: data.password,
-            name: fullName,
+            name: "User",
             callbackURL: "/auth/verified",
         }, {
             onRequest: () => {
@@ -95,58 +84,6 @@ const SignUpForm = () => {
     <form onSubmit={handleSubmit(onSubmit)} className="w-full space-y-4">
         <FieldGroup>
             <FieldSet className="gap-3">
-                <div className='grid grid-cols-1 md:grid-cols-12 gap-3'>
-                    <div className="md:col-span-3">
-                        <TextField
-                            name="last_name"
-                            label="Last Name"
-                            type="text"
-                            register={register}
-                            error={errors.last_name?.message}
-                            disabled={isPending}
-                            autoCapitalize="words"
-                            placeholder="eg. Dela Cruz"
-                        />
-                    </div>
-                    <div className="md:col-span-3">
-                        <TextField
-                            name="first_name"
-                            label="First Name"
-                            type="text"
-                            register={register}
-                            error={errors.first_name?.message}
-                            disabled={isPending}
-                            autoCapitalize="words"
-                            placeholder="eg. Juan"
-                        />
-                    </div>
-                    <div className="md:col-span-3">
-                        <TextField
-                            name="middle_name"
-                            label="Middle Name"
-                            type="text"
-                            register={register}
-                            error={errors.middle_name?.message}
-                            disabled={isPending}
-                            autoCapitalize="words"
-                            placeholder="eg. Antonio"
-                        />
-                    </div>
-                    <div className="md:col-span-3">
-                        <TextField
-                            name="suffix"
-                            label="Suffix"
-                            type="text"
-                            register={register}
-                            error={errors.suffix?.message}
-                            disabled={isPending}
-                            autoCapitalize="words"
-                            placeholder="eg. Jr"
-                        />
-                    </div>
-                </div>
-            </FieldSet>
-            <FieldSet className="gap-3">
                 <TextField
                     name="email"
                     label="Email"
@@ -168,7 +105,7 @@ const SignUpForm = () => {
                 />
             </FieldSet>
 
-            <FieldSet className="space-y-2 pt-4">
+            <FieldSet className="flex flex-col gap-2 pt-4">
                 <Button type="submit" className="w-full" size="lg" disabled={isPending}>
                     {isPending ? (
                         <>
