@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo, useRef } from "react";
 import { Input } from "@/ui/input";
 import { Button } from "@/ui/button";
 import { X, Ruler } from "lucide-react";
@@ -22,6 +22,7 @@ import {
   ComboboxEmpty,
 } from "@/ui/combobox";
 import { TextField } from "@/components/shared";
+import { useAutoCapitalize } from "@/hooks/use-auto-capitalize";
 import type { FormSectionWithFieldArrayProps } from "./types";
 
 // CLDR language data type
@@ -53,6 +54,7 @@ const BasicInfoSection: React.FC<FormSectionWithFieldArrayProps> = ({
   isPending,
   watch,
   setValue,
+  userEmail,
 }) => {
   // Height converter state
   const [feet, setFeet] = useState<string>("");
@@ -64,12 +66,27 @@ const BasicInfoSection: React.FC<FormSectionWithFieldArrayProps> = ({
     { code: string; name: string }[]
   >([]);
   const [languageSearch, setLanguageSearch] = useState("");
+  
+  // Track if email has been pre-filled
+  const emailPrefilledRef = useRef(false);
 
   // Watch form values for reactivity
   const birthdate = watch?.("profileBirthdate");
   const currentSex = watch?.("profileSex");
   const currentAge = watch?.("profileAge");
+  const currentEmail = watch?.("profileEmail");
   const selectedLanguages = watch?.("profileLanguageDialect") || [];
+
+  // Auto-capitalize hook for name fields
+  const { handleBlur: autoCapitalizeBlur } = useAutoCapitalize(setValue);
+
+  // Pre-fill email from auth session (only once, editable by user)
+  useEffect(() => {
+    if (userEmail && setValue && !emailPrefilledRef.current && !currentEmail) {
+      setValue("profileEmail", userEmail, { shouldValidate: false });
+      emailPrefilledRef.current = true;
+    }
+  }, [userEmail, setValue, currentEmail]);
 
   // Load CLDR languages on mount
   useEffect(() => {
@@ -197,6 +214,7 @@ const BasicInfoSection: React.FC<FormSectionWithFieldArrayProps> = ({
               autoCapitalize="words"
               placeholder="Dela Cruz"
               required
+              onBlur={autoCapitalizeBlur("profileLastName")}
             />
 
             <TextField
@@ -208,6 +226,7 @@ const BasicInfoSection: React.FC<FormSectionWithFieldArrayProps> = ({
               autoCapitalize="words"
               placeholder="Juan"
               required
+              onBlur={autoCapitalizeBlur("profileFirstName")}
             />
 
             <TextField
@@ -218,6 +237,7 @@ const BasicInfoSection: React.FC<FormSectionWithFieldArrayProps> = ({
               disabled={isPending}
               autoCapitalize="words"
               placeholder="Antonio"
+              onBlur={autoCapitalizeBlur("profileMiddleName")}
             />
 
             <TextField
@@ -228,6 +248,7 @@ const BasicInfoSection: React.FC<FormSectionWithFieldArrayProps> = ({
               disabled={isPending}
               autoCapitalize="words"
               placeholder="Jr, Sr"
+              onBlur={autoCapitalizeBlur("profileSuffix")}
             />
           </div>
 
@@ -453,13 +474,12 @@ const BasicInfoSection: React.FC<FormSectionWithFieldArrayProps> = ({
 
             <TextField
               name="profileFacebook"
-              label="Facebook Profile URL"
+              label="Facebook Profile URL (Optional)"
               register={register}
               error={errors.profileFacebook?.message}
               disabled={isPending}
               type="url"
               placeholder="https://facebook.com/username"
-              required
             />
           </div>
 

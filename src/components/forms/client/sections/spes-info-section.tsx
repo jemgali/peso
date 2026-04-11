@@ -26,7 +26,7 @@ const SPESInfoSection: React.FC<FormSectionWithControlProps> = ({
 
       <FieldGroup>
         <FieldSet className="gap-6">
-          {/* 4Ps Beneficiary - keeping checkbox as-is */}
+          {/* 4Ps Beneficiary */}
           <div className="flex items-start gap-3 p-4 bg-muted/30 rounded-lg">
             <Controller
               name="isFourPsBeneficiary"
@@ -57,7 +57,7 @@ const SPESInfoSection: React.FC<FormSectionWithControlProps> = ({
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Field data-invalid={!!errors.applicationYear}>
-              <FieldLabel htmlFor="applicationYear">
+              <FieldLabel htmlFor="applicationYear" required>
                 Application Year
               </FieldLabel>
               <select
@@ -88,16 +88,7 @@ const SPESInfoSection: React.FC<FormSectionWithControlProps> = ({
             disabled={isPending}
             placeholder="Share your reasons for applying to the SPES program. What do you hope to gain from this experience? How will it help you achieve your goals?"
             className="min-h-32"
-          />
-
-          <TextareaField
-            name="remarks"
-            label="Additional Remarks (Optional)"
-            register={register}
-            error={errors.remarks?.message}
-            disabled={isPending}
-            placeholder="Any additional information you would like us to know about your application"
-            className="min-h-24"
+            required
           />
         </FieldSet>
       </FieldGroup>

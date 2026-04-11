@@ -13,6 +13,12 @@ export interface FormSectionProps {
   register: UseFormRegister<SPESApplicationFormValues>;
   errors: FieldErrors<SPESApplicationFormValues>;
   isPending: boolean;
+  /** User email from auth session for pre-filling */
+  userEmail?: string;
+  /** Watch function for form values */
+  watch?: UseFormWatch<SPESApplicationFormValues>;
+  /** SetValue function for programmatic form updates */
+  setValue?: UseFormSetValue<SPESApplicationFormValues>;
 }
 
 // Extended props for sections that need control (for Controller components)
@@ -25,8 +31,6 @@ export interface FormSectionWithFieldArrayProps extends FormSectionWithControlPr
   siblingsFieldArray?: UseFieldArrayReturn<SPESApplicationFormValues, "siblings">;
   skillsFieldArray?: UseFieldArrayReturn<SPESApplicationFormValues, "skills">;
   languageFieldArray?: UseFieldArrayReturn<SPESApplicationFormValues, "profileLanguageDialect">;
-  watch?: UseFormWatch<SPESApplicationFormValues>;
-  setValue?: UseFormSetValue<SPESApplicationFormValues>;
 }
 
 // Props for the review section which needs form values

@@ -36,40 +36,40 @@ export const personalDetailsSchema = z.object({
   profilePwdId: z.string().optional(),
 });
 
-// ProfileAddress - Address Information
+// ProfileAddress - Address Information (all required)
 export const addressSchema = z.object({
-  profileHouseStreet: z.string().optional(),
-  profileBarangay: z.string().optional(),
-  profileMunicipality: z.string().optional(),
-  profileProvince: z.string().optional(),
+  profileHouseStreet: z.string().min(1, "House/Street address is required"),
+  profileBarangay: z.string().min(1, "Barangay is required"),
+  profileMunicipality: z.string().min(1, "City/Municipality is required"),
+  profileProvince: z.string().min(1, "Province is required"),
 });
 
 // ProfileFamily - Family Information
 export const siblingSchema = z.object({
-  name: z.string().optional(),
+  name: z.string().min(1, "Sibling name is required"),
   age: z.coerce.number().optional(),
-  sex: z.string().optional(),
+  occupation: z.string().optional(),
 });
 
 export const familySchema = z.object({
-  fatherName: z.string().optional(),
+  fatherName: z.string().min(1, "Father's name is required"),
   fatherOccupation: z.string().optional(),
   fatherContact: z.string().optional(),
-  motherMaidenName: z.string().optional(),
+  motherMaidenName: z.string().min(1, "Mother's maiden name is required"),
   motherOccupation: z.string().optional(),
   motherContact: z.string().optional(),
-  numberOfSiblings: z.coerce.number().optional(),
+  numberOfSiblings: z.coerce.number().min(0).optional(),
   siblings: z.array(siblingSchema).optional(),
 });
 
-// ProfileGuardian - Guardian Information
+// ProfileGuardian - Guardian Information (name, relationship, contact required)
 export const guardianSchema = z.object({
-  guardianName: z.string().optional(),
-  guardianContact: z.string().optional(),
+  guardianName: z.string().min(1, "Guardian name is required"),
+  guardianContact: z.string().min(1, "Guardian contact number is required"),
   guardianAddress: z.string().optional(),
   guardianAge: z.coerce.number().optional(),
   guardianOccupation: z.string().optional(),
-  guardianRelationship: z.string().optional(),
+  guardianRelationship: z.string().min(1, "Guardian relationship is required"),
 });
 
 // ProfileBenefactor - Benefactor Information
@@ -78,12 +78,12 @@ export const benefactorSchema = z.object({
   benefactorRelationship: z.string().optional(),
 });
 
-// ProfileEducation - Education Information
+// ProfileEducation - Education Information (all required)
 export const educationSchema = z.object({
-  gradeYear: z.string().optional(),
-  schoolName: z.string().optional(),
-  trackCourse: z.string().optional(),
-  schoolYear: z.string().optional(),
+  gradeYear: z.string().min(1, "Grade/Year level is required"),
+  schoolName: z.string().min(1, "School name is required"),
+  trackCourse: z.string().min(1, "Track/Course is required"),
+  schoolYear: z.string().min(1, "School year is required"),
 });
 
 // ProfileSkills - Skills Information
@@ -95,12 +95,15 @@ export const skillsSchema = z.object({
   skills: z.array(skillItemSchema).optional(),
 });
 
-// ProfileSPES - SPES-Specific Information
+// ProfileSPES - SPES-Specific Information (motivation required, remarks removed - admin only)
 export const spesInfoSchema = z.object({
   isFourPsBeneficiary: z.boolean().optional(),
-  applicationYear: z.number().optional(),
-  motivation: z.string().optional(),
-  remarks: z.string().optional(),
+  // Fix: use z.coerce.number() to handle string from select, or preprocess
+  applicationYear: z.preprocess(
+    (val) => (val === "" || val === undefined ? undefined : Number(val)),
+    z.number().min(2020, "Please select a valid application year").optional()
+  ),
+  motivation: z.string().min(1, "Please provide your motivation for applying"),
 });
 
 // ProfileDocuments - Documents (placeholder, actual upload handled separately)
@@ -158,13 +161,32 @@ export const sectionRequiredFields: Record<string, string[]> = {
     "profileLanguageDialect",
   ],
   "personal-details": [], // Not used (merged into basic-info)
-  address: [], // All optional
-  family: [], // All optional
-  guardian: [], // All optional
+  address: [
+    "profileHouseStreet",
+    "profileBarangay",
+    "profileMunicipality",
+    "profileProvince",
+  ],
+  family: [
+    "fatherName",
+    "motherMaidenName",
+  ],
+  guardian: [
+    "guardianName",
+    "guardianRelationship",
+    "guardianContact",
+  ],
   benefactor: [], // All optional
-  education: [], // All optional
+  education: [
+    "gradeYear",
+    "schoolName",
+    "trackCourse",
+    "schoolYear",
+  ],
   skills: [], // All optional
-  "spes-info": [], // All optional
+  "spes-info": [
+    "motivation",
+  ],
   documents: [], // All optional (placeholder)
   review: [], // No fields, just review
 };

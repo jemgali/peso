@@ -336,7 +336,6 @@ export async function POST(
             isFourPsBeneficiary: data.isFourPsBeneficiary || false,
             applicationYear: data.applicationYear || null,
             motivation: data.motivation || null,
-            remarks: data.remarks || null,
           },
         });
       } else {
@@ -347,7 +346,6 @@ export async function POST(
             isFourPsBeneficiary: data.isFourPsBeneficiary || false,
             applicationYear: data.applicationYear || null,
             motivation: data.motivation || null,
-            remarks: data.remarks || null,
           },
         });
       }
