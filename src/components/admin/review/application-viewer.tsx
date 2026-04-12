@@ -3,7 +3,37 @@
 import React from "react";
 import { Card } from "@/ui/card";
 import { Badge } from "@/ui/badge";
+import { FileText, ExternalLink, CheckCircle2 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import type { ApplicationDetailResponse } from "@/lib/validations/application-review";
+
+// Document type labels for display in the viewer
+const DOCUMENT_LABELS: Record<string, { name: string; required: boolean }> = {
+  psaCertificate: { name: "Original PSA Certificate", required: true },
+  grades: { name: "Grades", required: true },
+  affidavitLowIncome: { name: "Affidavit of Low Income (PAO)", required: true },
+  barangayCertLowIncome: { name: "Barangay Certificate of Low Income (Parents)", required: true },
+  barangayCertResidency: { name: "Barangay Certificate of Residency (Applicant)", required: true },
+  incomeTaxReturn: { name: "Income Tax Return", required: true },
+  affidavitSoloParent: { name: "Affidavit of Solo Parent", required: false },
+  affidavitDiscrepancy: { name: "Affidavit of Discrepancy", required: false },
+  deathCertificate: { name: "Death Certificate (if parent/s deceased)", required: false },
+};
+
+interface DocumentEntry {
+  key: string;
+  url: string;
+  fileName: string;
+  fileType: string;
+  fileSize: number;
+  uploadedAt: string;
+}
+
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
 
 interface ApplicationViewerProps {
   data: NonNullable<ApplicationDetailResponse["data"]>;
@@ -51,7 +81,7 @@ const formatDate = (dateStr: string | null | undefined): string => {
 };
 
 const ApplicationViewer: React.FC<ApplicationViewerProps> = ({ data }) => {
-  const { profile, personal, address, family, guardian, benefactor, education, skills, spes } = data;
+  const { profile, personal, address, family, guardian, benefactor, education, skills, documents, spes } = data;
 
   return (
     <div className="space-y-6">
@@ -156,6 +186,90 @@ const ApplicationViewer: React.FC<ApplicationViewerProps> = ({ data }) => {
         </Card>
       )}
 
+      {/* Documents */}
+      {documents && (
+        <Card className="p-4">
+          <h3 className="font-semibold mb-3 text-lg">Uploaded Documents</h3>
+          {(() => {
+            const docs = (documents as Record<string, unknown>).documents as Record<string, DocumentEntry> | undefined;
+            if (!docs || Object.keys(docs).length === 0) {
+              return <p className="text-muted-foreground">No documents uploaded</p>;
+            }
+
+            // Show all document types, marking uploaded vs not uploaded
+            const allDocTypes = Object.keys(DOCUMENT_LABELS);
+            return (
+              <div className="space-y-2">
+                {allDocTypes.map((docType) => {
+                  const doc = docs[docType];
+                  const label = DOCUMENT_LABELS[docType];
+                  return (
+                    <div
+                      key={docType}
+                      className={cn(
+                        "flex items-center justify-between p-3 rounded-lg border",
+                        doc
+                          ? "border-green-200 dark:border-green-800 bg-green-50/50 dark:bg-green-950/20"
+                          : label.required
+                            ? "border-red-200 dark:border-red-800 bg-red-50/50 dark:bg-red-950/20"
+                            : "border-muted"
+                      )}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className={cn(
+                          "p-1.5 rounded",
+                          doc ? "bg-green-100 dark:bg-green-900/50" : "bg-muted"
+                        )}>
+                          {doc ? (
+                            <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
+                          ) : (
+                            <FileText className="h-4 w-4 text-muted-foreground" />
+                          )}
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium">{label.name}</span>
+                            {label.required ? (
+                              <Badge variant="secondary" className="text-xs bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400">
+                                Required
+                              </Badge>
+                            ) : (
+                              <Badge variant="secondary" className="text-xs bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400">
+                                If Applicable
+                              </Badge>
+                            )}
+                          </div>
+                          {doc && (
+                            <p className="text-xs text-muted-foreground mt-0.5">
+                              {doc.fileName} ({formatFileSize(doc.fileSize)}) — Uploaded {new Date(doc.uploadedAt).toLocaleDateString()}
+                            </p>
+                          )}
+                          {!doc && (
+                            <p className="text-xs text-muted-foreground mt-0.5">
+                              {label.required ? "Not yet uploaded" : "Not submitted"}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      {doc && (
+                        <a
+                          href={doc.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:underline"
+                        >
+                          View <ExternalLink className="h-3 w-3" />
+                        </a>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })()}
+        </Card>
+      )}
+
       {/* SPES Information */}
       {spes && (
         <Section title="SPES Information">
@@ -165,12 +279,6 @@ const ApplicationViewer: React.FC<ApplicationViewerProps> = ({ data }) => {
             <p className="text-sm text-muted-foreground">Motivation</p>
             <p className="font-medium whitespace-pre-wrap">
               {(spes.motivation as string | null) || "—"}
-            </p>
-          </div>
-          <div className="col-span-2">
-            <p className="text-sm text-muted-foreground">Remarks</p>
-            <p className="font-medium whitespace-pre-wrap">
-              {(spes.remarks as string | null) || "—"}
             </p>
           </div>
         </Section>

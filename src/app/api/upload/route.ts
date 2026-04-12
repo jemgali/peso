@@ -5,12 +5,12 @@ import { PrismaClient, Prisma } from "@/generated/prisma/client";
 import { Pool } from "pg";
 import { PrismaPg } from "@prisma/adapter-pg";
 import {
-  uploadFile,
+  saveFile,
   generateFileKey,
   validateFile,
   DOCUMENT_TYPES,
   type DocumentType,
-} from "@/lib/r2";
+} from "@/lib/storage";
 import { randomUUID } from "crypto";
 
 const pool = new Pool({
@@ -94,10 +94,10 @@ export async function POST(
       );
     }
 
-    // Generate file key and upload
+    // Generate file key and save to local storage
     const key = generateFileKey(userId, documentType as DocumentType, file.name);
     const buffer = Buffer.from(await file.arrayBuffer());
-    const { url } = await uploadFile(buffer, key, file.type);
+    const { url } = await saveFile(buffer, key, file.type);
 
     // Get or create profile documents record
     const profile = await prisma.profileUser.findUnique({
