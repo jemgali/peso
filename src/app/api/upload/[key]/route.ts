@@ -4,7 +4,7 @@ import { headers } from "next/headers";
 import { PrismaClient, Prisma } from "@/generated/prisma/client";
 import { Pool } from "pg";
 import { PrismaPg } from "@prisma/adapter-pg";
-import { deleteFile } from "@/lib/r2";
+import { deleteFile } from "@/lib/storage";
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -67,7 +67,7 @@ export async function DELETE(
     const keyParts = decodedKey.split("/");
     const documentType = keyParts[2]; // documents/{userId}/{documentType}/{filename}
 
-    // Delete from R2
+    // Delete from local storage
     await deleteFile(decodedKey);
 
     // Update profile documents to remove this file

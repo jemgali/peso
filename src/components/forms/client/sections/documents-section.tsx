@@ -25,38 +25,56 @@ interface DocumentsMap {
 const REQUIRED_DOCUMENTS = [
   {
     id: "psaCertificate",
-    name: "PSA Birth Certificate",
-    description: "Original or authenticated copy",
-    required: true,
-  },
-  {
-    id: "schoolId",
-    name: "School ID or Certificate of Enrollment",
-    description: "Valid for current school year",
+    name: "Original PSA Certificate",
+    description: "Original or authenticated PSA birth certificate",
     required: true,
   },
   {
     id: "grades",
-    name: "Report Card / Grades",
-    description: "Latest available grades",
+    name: "Grades",
+    description: "Latest available report card or transcript of records",
+    required: true,
+  },
+  {
+    id: "affidavitLowIncome",
+    name: "Affidavit of Low Income (PAO)",
+    description: "Affidavit of low income from the Public Attorney's Office",
+    required: true,
+  },
+  {
+    id: "barangayCertLowIncome",
+    name: "Barangay Certificate of Low Income (Parents)",
+    description: "Certificate of low income issued by the barangay for parents",
+    required: true,
+  },
+  {
+    id: "barangayCertResidency",
+    name: "Barangay Certificate of Residency (Applicant)",
+    description: "Certificate of residency issued by the barangay for the applicant",
+    required: true,
+  },
+  {
+    id: "incomeTaxReturn",
+    name: "Income Tax Return",
+    description: "Latest Income Tax Return (ITR) of parent/guardian",
+    required: true,
+  },
+  {
+    id: "affidavitSoloParent",
+    name: "Affidavit of Solo Parent",
+    description: "If applicable — submit affidavit of solo parent status",
     required: false,
   },
   {
-    id: "barangayCertificate",
-    name: "Barangay Certificate of Indigency",
-    description: "Proof of residency and indigency status",
+    id: "affidavitDiscrepancy",
+    name: "Affidavit of Discrepancy",
+    description: "If applicable — submit affidavit of discrepancy in documents",
     required: false,
   },
   {
-    id: "fourPsId",
-    name: "4Ps ID (if applicable)",
-    description: "For 4Ps program beneficiaries",
-    required: false,
-  },
-  {
-    id: "medicalCertificate",
-    name: "Medical Certificate",
-    description: "Fit to work certification",
+    id: "deathCertificate",
+    name: "Death Certificate",
+    description: "If parent/s is/are deceased — submit death certificate",
     required: false,
   },
 ];
@@ -188,6 +206,123 @@ const DocumentsSection: React.FC<FormSectionProps> = ({
     e.target.value = "";
   };
 
+  // Separate required and optional documents for display
+  const requiredDocs = REQUIRED_DOCUMENTS.filter((d) => d.required);
+  const optionalDocs = REQUIRED_DOCUMENTS.filter((d) => !d.required);
+
+  const renderDocumentCard = (doc: (typeof REQUIRED_DOCUMENTS)[number]) => {
+    const uploaded = uploadedDocs[doc.id];
+    const isUploading = uploading[doc.id];
+    const isDeleting = deleting[doc.id];
+    const isImage = uploaded?.fileType?.startsWith("image/");
+
+    return (
+      <Card
+        key={doc.id}
+        className={cn(
+          "p-4 transition-colors",
+          isPending && "opacity-50",
+          uploaded && "border-green-200 dark:border-green-800 bg-green-50/50 dark:bg-green-950/20"
+        )}
+      >
+        <div className="flex items-start gap-3">
+          <div className={cn(
+            "p-2 rounded-lg shrink-0",
+            uploaded ? "bg-green-100 dark:bg-green-900/50" : "bg-muted"
+          )}>
+            {uploaded ? (
+              <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400" />
+            ) : isImage ? (
+              <ImageIcon className="h-5 w-5 text-muted-foreground" />
+            ) : (
+              <FileText className="h-5 w-5 text-muted-foreground" />
+            )}
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <h4 className="text-sm font-medium">{doc.name}</h4>
+              {doc.required ? (
+                <span className="text-xs px-1.5 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded">
+                  Required
+                </span>
+              ) : (
+                <span className="text-xs px-1.5 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded">
+                  If Applicable
+                </span>
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {doc.description}
+            </p>
+            {uploaded && (
+              <div className="mt-2 flex items-center gap-2 text-xs text-green-700 dark:text-green-400">
+                <span className="truncate max-w-[200px]">{uploaded.fileName}</span>
+                <span className="text-muted-foreground">({formatFileSize(uploaded.fileSize)})</span>
+                <a
+                  href={uploaded.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1 hover:underline"
+                >
+                  View <ExternalLink className="h-3 w-3" />
+                </a>
+              </div>
+            )}
+          </div>
+          <div className="shrink-0 flex items-center gap-2">
+            {uploaded && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                disabled={isDeleting || isPending}
+                onClick={() => handleDelete(doc.id)}
+                className="text-red-600 hover:text-red-700 hover:bg-red-100 dark:hover:bg-red-900/30"
+              >
+                {isDeleting ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <X className="h-4 w-4" />
+                )}
+              </Button>
+            )}
+            <input
+              type="file"
+              ref={(el) => { fileInputRefs.current[doc.id] = el; }}
+              onChange={(e) => handleInputChange(doc.id, e)}
+              accept={ALLOWED_TYPES.join(",")}
+              className="hidden"
+            />
+            <Button
+              type="button"
+              variant={uploaded ? "outline" : "default"}
+              size="sm"
+              disabled={isUploading || isPending}
+              onClick={() => fileInputRefs.current[doc.id]?.click()}
+            >
+              {isUploading ? (
+                <>
+                  <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                  Uploading...
+                </>
+              ) : uploaded ? (
+                <>
+                  <Upload className="h-3.5 w-3.5 mr-1.5" />
+                  Replace
+                </>
+              ) : (
+                <>
+                  <Upload className="h-3.5 w-3.5 mr-1.5" />
+                  Upload
+                </>
+              )}
+            </Button>
+          </div>
+        </div>
+      </Card>
+    );
+  };
+
   return (
     <div id="documents" className="scroll-mt-24">
       <div className="mb-4">
@@ -199,115 +334,21 @@ const DocumentsSection: React.FC<FormSectionProps> = ({
 
       <FieldGroup>
         <div className="space-y-3">
-          {REQUIRED_DOCUMENTS.map((doc) => {
-            const uploaded = uploadedDocs[doc.id];
-            const isUploading = uploading[doc.id];
-            const isDeleting = deleting[doc.id];
-            const isImage = uploaded?.fileType?.startsWith("image/");
-
-            return (
-              <Card
-                key={doc.id}
-                className={cn(
-                  "p-4 transition-colors",
-                  isPending && "opacity-50",
-                  uploaded && "border-green-200 dark:border-green-800 bg-green-50/50 dark:bg-green-950/20"
-                )}
-              >
-                <div className="flex items-start gap-3">
-                  <div className={cn(
-                    "p-2 rounded-lg shrink-0",
-                    uploaded ? "bg-green-100 dark:bg-green-900/50" : "bg-muted"
-                  )}>
-                    {uploaded ? (
-                      <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400" />
-                    ) : isImage ? (
-                      <ImageIcon className="h-5 w-5 text-muted-foreground" />
-                    ) : (
-                      <FileText className="h-5 w-5 text-muted-foreground" />
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <h4 className="text-sm font-medium">{doc.name}</h4>
-                      {doc.required && (
-                        <span className="text-xs px-1.5 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded">
-                          Required
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      {doc.description}
-                    </p>
-                    {uploaded && (
-                      <div className="mt-2 flex items-center gap-2 text-xs text-green-700 dark:text-green-400">
-                        <span className="truncate max-w-[200px]">{uploaded.fileName}</span>
-                        <span className="text-muted-foreground">({formatFileSize(uploaded.fileSize)})</span>
-                        <a
-                          href={uploaded.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center gap-1 hover:underline"
-                        >
-                          View <ExternalLink className="h-3 w-3" />
-                        </a>
-                      </div>
-                    )}
-                  </div>
-                  <div className="shrink-0 flex items-center gap-2">
-                    {uploaded && (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        disabled={isDeleting || isPending}
-                        onClick={() => handleDelete(doc.id)}
-                        className="text-red-600 hover:text-red-700 hover:bg-red-100 dark:hover:bg-red-900/30"
-                      >
-                        {isDeleting ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <X className="h-4 w-4" />
-                        )}
-                      </Button>
-                    )}
-                    <input
-                      type="file"
-                      ref={(el) => { fileInputRefs.current[doc.id] = el; }}
-                      onChange={(e) => handleInputChange(doc.id, e)}
-                      accept={ALLOWED_TYPES.join(",")}
-                      className="hidden"
-                    />
-                    <Button
-                      type="button"
-                      variant={uploaded ? "outline" : "default"}
-                      size="sm"
-                      disabled={isUploading || isPending}
-                      onClick={() => fileInputRefs.current[doc.id]?.click()}
-                    >
-                      {isUploading ? (
-                        <>
-                          <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
-                          Uploading...
-                        </>
-                      ) : uploaded ? (
-                        <>
-                          <Upload className="h-3.5 w-3.5 mr-1.5" />
-                          Replace
-                        </>
-                      ) : (
-                        <>
-                          <Upload className="h-3.5 w-3.5 mr-1.5" />
-                          Upload
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                </div>
-              </Card>
-            );
-          })}
+          {requiredDocs.map(renderDocumentCard)}
         </div>
+
+        {optionalDocs.length > 0 && (
+          <>
+            <div className="mt-6 mb-3">
+              <h3 className="text-base font-medium text-muted-foreground">
+                Additional Documents (If Applicable)
+              </h3>
+            </div>
+            <div className="space-y-3">
+              {optionalDocs.map(renderDocumentCard)}
+            </div>
+          </>
+        )}
 
         <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg">
           <div className="flex gap-2">
