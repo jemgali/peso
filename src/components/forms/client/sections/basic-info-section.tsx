@@ -96,7 +96,12 @@ const BasicInfoSection: React.FC<FormSectionWithFieldArrayProps & { disableEmail
       .then((data: CLDRLanguageData) => {
         const langs = data.main.en.localeDisplayNames.languages;
         const parsed = Object.entries(langs)
-          .filter(([code]) => !code.includes("-alt-") && !code.includes("-"))
+          .filter(([code, name]) => 
+            !code.includes("-alt-") && 
+            !code.includes("-") &&
+            !name.toLowerCase().includes("old ") &&
+            !name.toLowerCase().includes("variant")
+          )
           .map(([code, name]) => ({ code, name }))
           .sort((a, b) => a.name.localeCompare(b.name));
         setCldrLanguages(parsed);
@@ -300,6 +305,7 @@ const BasicInfoSection: React.FC<FormSectionWithFieldArrayProps & { disableEmail
 
             <Field data-invalid={!!errors.profileSex}>
               <FieldLabel required>Sex</FieldLabel>
+              <input type="hidden" {...register("profileSex")} />
               <RadioGroup
                 value={currentSex || ""}
                 onValueChange={(val) =>
@@ -358,7 +364,12 @@ const BasicInfoSection: React.FC<FormSectionWithFieldArrayProps & { disableEmail
                         Convert
                       </InputGroupButton>
                     </PopoverTrigger>
-                    <PopoverContent className="w-64" align="end">
+                    <PopoverContent 
+                      className="w-64" 
+                      align="end" 
+                      onPointerDown={(e) => e.stopPropagation()}
+                      onClick={(e) => e.stopPropagation()}
+                    >
                       <div className="space-y-3">
                         <h4 className="font-medium text-sm">
                           Height Converter
@@ -527,7 +538,9 @@ const BasicInfoSection: React.FC<FormSectionWithFieldArrayProps & { disableEmail
               />
               <ComboboxContent>
                 <ComboboxList>
-                  <ComboboxEmpty>No languages found</ComboboxEmpty>
+                  {filteredLanguages.length === 0 && (
+                    <ComboboxEmpty>No languages found</ComboboxEmpty>
+                  )}
                   {filteredLanguages.map((lang) => (
                     <ComboboxItem
                       key={lang.code}
@@ -550,22 +563,79 @@ const BasicInfoSection: React.FC<FormSectionWithFieldArrayProps & { disableEmail
 
           {/* Disability Information */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-            <TextField
-              name="profileDisability"
-              label="Disability (if applicable)"
-              register={register}
-              error={errors.profileDisability?.message}
-              disabled={isPending}
-              placeholder="Type of disability"
-            />
+            <div className="space-y-3">
+              <FieldLabel>Disability (if applicable)</FieldLabel>
+              <div className="grid grid-cols-2 gap-2">
+                {["Visual", "Speech", "Hearing", "Physical", "Psychosocial"].map((d) => (
+                  <label key={d} className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      className="rounded border-input text-primary focus:ring-primary"
+                      checked={(watch?.("profileDisability") || "").includes(d)}
+                      disabled={isPending}
+                      onChange={(e) => {
+                        const current = watch?.("profileDisability") || "";
+                        const items = current.split(",").map(i => i.trim()).filter(Boolean);
+                        let next;
+                        if (e.target.checked) {
+                          next = [...items, d].join(", ");
+                        } else {
+                          next = items.filter(i => i !== d).join(", ");
+                        }
+                        setValue?.("profileDisability", next, { shouldValidate: true });
+                      }}
+                    />
+                    {d}
+                  </label>
+                ))}
+                <label className="flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    className="rounded border-input text-primary focus:ring-primary"
+                    checked={(watch?.("profileDisability") || "").includes("Others:")}
+                    disabled={isPending}
+                    onChange={(e) => {
+                      const current = watch?.("profileDisability") || "";
+                      const items = current.split(",").map(i => i.trim()).filter(Boolean);
+                      let next;
+                      if (e.target.checked) {
+                        next = [...items, "Others:"].join(", ");
+                      } else {
+                        // Remove "Others:" and whatever follows it in the string if we had a dedicated array,
+                        // but since it's a string, we just remove "Others:" and the custom text.
+                        next = items.filter(i => !i.startsWith("Others:")).join(", ");
+                      }
+                      setValue?.("profileDisability", next, { shouldValidate: true });
+                    }}
+                  />
+                  Others
+                </label>
+              </div>
+              {(watch?.("profileDisability") || "").includes("Others:") && (
+                <Input
+                  className="mt-2"
+                  placeholder="Please specify"
+                  disabled={isPending}
+                  value={(watch?.("profileDisability") || "").split("Others:")[1]?.trim() || ""}
+                  onChange={(e) => {
+                    const current = watch?.("profileDisability") || "";
+                    const items = current.split(",").map(i => i.trim()).filter(Boolean);
+                    const specified = e.target.value;
+                    const next = items.map(i => i.startsWith("Others:") ? `Others: ${specified}` : i).join(", ");
+                    setValue?.("profileDisability", next, { shouldValidate: true });
+                  }}
+                />
+              )}
+            </div>
 
             <TextField
               name="profilePwdId"
               label="PWD ID Number"
               register={register}
               error={errors.profilePwdId?.message}
-              disabled={isPending}
-              placeholder="PWD ID (if applicable)"
+              disabled={isPending || !(watch?.("profileDisability") || "").trim()}
+              placeholder={!(watch?.("profileDisability") || "").trim() ? "N/A" : "PWD ID"}
+              required={!!(watch?.("profileDisability") || "").trim()}
             />
           </div>
         </FieldSet>

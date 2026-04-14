@@ -11,6 +11,8 @@ import ApplicationProgress, {
 import { Card } from "@/ui/card";
 import { cn } from "@/lib/utils";
 
+import TypeSelection, { type ApplicationType } from "@/components/client/content/type-selection";
+
 const steps = SECTION_IDS.map((id) => ({
   id,
   title: SECTION_TITLES[id],
@@ -29,9 +31,11 @@ const initialStepStatuses: Record<string, StepStatus> = SECTION_IDS.reduce(
 interface ApplicationFormProps {
   userEmail?: string;
   defaultValues?: Record<string, unknown>;
+  revisionFeedback?: Record<string, any>;
 }
 
-const ApplicationForm: React.FC<ApplicationFormProps> = ({ userEmail, defaultValues }) => {
+const ApplicationForm: React.FC<ApplicationFormProps> = ({ userEmail, defaultValues, revisionFeedback }) => {
+  const [applicationType, setApplicationType] = useState<ApplicationType | null>(null);
   const [currentStep, setCurrentStep] = useState(0);
   const [stepStatuses, setStepStatuses] =
     useState<Record<string, StepStatus>>(initialStepStatuses);
@@ -73,6 +77,10 @@ const ApplicationForm: React.FC<ApplicationFormProps> = ({ userEmail, defaultVal
     []
   );
 
+  if (!applicationType) {
+    return <TypeSelection onSelect={setApplicationType} />;
+  }
+
   const currentStepId = SECTION_IDS[currentStep];
 
   return (
@@ -87,6 +95,8 @@ const ApplicationForm: React.FC<ApplicationFormProps> = ({ userEmail, defaultVal
             onMount={handleFormMount}
             userEmail={userEmail}
             defaultValues={defaultValues}
+            applicationType={applicationType}
+            revisionFeedback={revisionFeedback}
           />
         </Card>
       </div>

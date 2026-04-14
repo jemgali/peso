@@ -1,6 +1,7 @@
 import React from "react";
 import { Controller } from "react-hook-form";
 import { Checkbox } from "@/ui/checkbox";
+import { Input } from "@/ui/input";
 import { FieldSet, FieldGroup, Field, FieldLabel, FieldError } from "@/ui/field";
 import { TextareaField } from "@/components/shared";
 import type { FormSectionWithControlProps } from "./types";
@@ -10,6 +11,7 @@ const SPESInfoSection: React.FC<FormSectionWithControlProps> = ({
   errors,
   isPending,
   control,
+  applicationType,
 }) => {
   const currentYear = new Date().getFullYear();
   const applicationYearOptions = [currentYear, currentYear + 1];
@@ -57,27 +59,41 @@ const SPESInfoSection: React.FC<FormSectionWithControlProps> = ({
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Field data-invalid={!!errors.applicationYear}>
-              <FieldLabel htmlFor="applicationYear" required>
-                Application Year
-              </FieldLabel>
-              <select
-                {...register("applicationYear")}
+              <FieldLabel htmlFor="applicationYear">Application Year</FieldLabel>
+              <input type="hidden" {...register("applicationYear", { valueAsNumber: true })} value={currentYear} />
+              <Input
                 id="applicationYear"
-                disabled={isPending}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                type="number"
+                disabled
+                readOnly
+                value={currentYear}
+                className="bg-muted"
                 aria-invalid={!!errors.applicationYear}
-              >
-                <option value="">Select year...</option>
-                {applicationYearOptions.map((year) => (
-                  <option key={year} value={year}>
-                    {year}
-                  </option>
-                ))}
-              </select>
+              />
               {errors.applicationYear && (
                 <FieldError>{errors.applicationYear.message}</FieldError>
               )}
             </Field>
+
+            {applicationType === "spes-baby" && (
+              <Field data-invalid={!!errors.spesBabiesAvailmentYears}>
+                <FieldLabel htmlFor="spesBabiesAvailmentYears" required>
+                  Years of Availment
+                </FieldLabel>
+                <Input
+                  {...register("spesBabiesAvailmentYears", { valueAsNumber: true })}
+                  type="number"
+                  id="spesBabiesAvailmentYears"
+                  disabled={isPending}
+                  placeholder="e.g. 1"
+                  min={1}
+                  aria-invalid={!!errors.spesBabiesAvailmentYears}
+                />
+                {errors.spesBabiesAvailmentYears && (
+                  <FieldError>{errors.spesBabiesAvailmentYears.message}</FieldError>
+                )}
+              </Field>
+            )}
           </div>
 
           <TextareaField

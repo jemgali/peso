@@ -112,9 +112,9 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({ userEmail }) => {
       }
 
       toast.success("Profile setup completed! Welcome to PESO.");
-      // Force full page reload to re-run server component (layout check)
+      // Force full page reload to clear router cache and route to application page
       router.refresh();
-      window.location.reload();
+      window.location.href = "/protected/client/application";
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "Failed to save profile"

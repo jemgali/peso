@@ -21,6 +21,10 @@ export interface FormSectionProps {
   setValue?: UseFormSetValue<SPESApplicationFormValues>;
   /** Full form values */
   formValues?: SPESApplicationFormValues;
+  /** SPES application type (New vs Baby) */
+  applicationType?: "new" | "spes-baby";
+  /** Feedback from admin if application needs revision */
+  revisionFeedback?: Record<string, string>;
 }
 
 // Extended props for sections that need control (for Controller components)
