@@ -19,6 +19,9 @@ const ReviewSection: React.FC<ReviewSectionProps> = ({
   isPending,
   isValid,
   onSubmitRequest,
+  errors,
+  incompleteSections,
+  triggerValidation,
 }) => {
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
@@ -306,6 +309,27 @@ const ReviewSection: React.FC<ReviewSectionProps> = ({
             </div>
           )}
         </Card>
+
+        {/* Documents */}
+        <Card className="p-4 bg-muted/30">
+          <h3 className="text-sm font-semibold mb-3">Documents</h3>
+          <div className="space-y-2">
+            {formValues.documents && Object.keys(formValues.documents).length > 0 ? (
+              Object.entries(formValues.documents).map(([docId, doc]: [string, any]) => (
+                <div key={docId} className="flex justify-between items-center text-sm border-b border-muted/50 pb-2 last:border-0 last:pb-0">
+                  <span className="font-medium text-muted-foreground">
+                    {doc.fileName || docId}
+                  </span>
+                  <a href={doc.url} target="_blank" rel="noreferrer" className="text-blue-500 hover:underline">
+                    View
+                  </a>
+                </div>
+              ))
+            ) : (
+              <p className="text-sm text-muted-foreground">No documents uploaded.</p>
+            )}
+          </div>
+        </Card>
       </div>
 
       {/* Submit Button */}
@@ -326,9 +350,48 @@ const ReviewSection: React.FC<ReviewSectionProps> = ({
           )}
         </Button>
         {!isValid && (
-          <p className="mt-2 text-sm text-muted-foreground">
-            Please complete all required fields before submitting.
-          </p>
+          <div className="mt-4 p-4 bg-red-50/50 dark:bg-red-950/20 text-red-600 dark:text-red-400 text-sm rounded border border-red-200 dark:border-red-900 leading-relaxed">
+            <div className="flex items-center justify-between mb-3">
+              <p className="font-semibold text-base">Cannot Submit - Missing Information</p>
+              {triggerValidation && (
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  size="sm" 
+                  className="bg-red-100/50 hover:bg-red-100 dark:bg-red-950/50 dark:hover:bg-red-900/80 border-red-200 dark:border-red-800 text-red-700 dark:text-red-300"
+                  onClick={() => {
+                    triggerValidation().then(() => {
+                      if (!isValid) console.log("Missing fields triggered. Check UI below.");
+                    });
+                  }}
+                >
+                  Scan for Errors
+                </Button>
+              )}
+            </div>
+            
+            {incompleteSections && incompleteSections.length > 0 && (
+              <div className="mb-4">
+                <p className="font-medium mb-1">Please return and complete these sections:</p>
+                <ul className="list-disc pl-5 opacity-90 space-y-1">
+                  {incompleteSections.map((section) => (
+                    <li key={section}>{section}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {errors && Object.keys(errors).length > 0 && (
+              <div>
+                <p className="font-medium mb-1">Specific field errors:</p>
+                <ul className="list-disc pl-5 opacity-90">
+                  {Object.entries(errors).map(([key, err]: [string, any]) => (
+                    <li key={key} className="capitalize">{key.replace(/([A-Z])/g, ' $1')}: {err?.message}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
         )}
       </div>
 

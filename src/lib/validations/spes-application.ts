@@ -22,7 +22,7 @@ export const basicInfoSchema = z.object({
 // ProfilePersonal - Personal Details
 export const personalDetailsSchema = z.object({
   profileBirthdate: z.string().min(1, "Date of birth is required"),
-  profileAge: z.coerce.number().optional(), // Auto-calculated, stays optional
+  profileAge: z.preprocess((v) => (v === "" || v === undefined ? undefined : Number(v)), z.number().optional()), // Auto-calculated, stays optional
   profilePlaceOfBirth: z.string().optional(),
   profileSex: z.string().min(1, "Sex is required"),
   profileHeight: z.coerce.number().min(1, "Height is required"),
@@ -47,7 +47,7 @@ export const addressSchema = z.object({
 // ProfileFamily - Family Information
 export const siblingSchema = z.object({
   name: z.string().min(1, "Sibling name is required"),
-  age: z.coerce.number().optional(),
+  age: z.preprocess((v) => (v === "" || v === undefined ? undefined : Number(v)), z.number().optional()),
   occupation: z.string().optional(),
 });
 
@@ -58,7 +58,7 @@ export const familySchema = z.object({
   motherMaidenName: z.string().min(1, "Mother's maiden name is required"),
   motherOccupation: z.string().optional(),
   motherContact: z.string().optional(),
-  numberOfSiblings: z.coerce.number().min(0).optional(),
+  numberOfSiblings: z.preprocess((v) => (v === "" || v === undefined ? undefined : Number(v)), z.number().min(0).optional()),
   siblings: z.array(siblingSchema).optional(),
 });
 
@@ -67,7 +67,7 @@ export const guardianSchema = z.object({
   guardianName: z.string().min(1, "Guardian name is required"),
   guardianContact: z.string().min(1, "Guardian contact number is required"),
   guardianAddress: z.string().optional(),
-  guardianAge: z.coerce.number().optional(),
+  guardianAge: z.preprocess((v) => (v === "" || v === undefined ? undefined : Number(v)), z.number().optional()),
   guardianOccupation: z.string().optional(),
   guardianRelationship: z.string().min(1, "Guardian relationship is required"),
 });
@@ -210,6 +210,14 @@ export function validateSection(
 
   if (requiredFields.length === 0) {
     return true; // No required fields, always valid
+  }
+
+  if (sectionId === "documents") {
+    const docs = formValues.documents || {};
+    return requiredFields.every((field) => {
+      const value = docs[field];
+      return value !== undefined && value !== null;
+    });
   }
 
   return requiredFields.every((field) => {

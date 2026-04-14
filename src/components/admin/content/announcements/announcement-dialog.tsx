@@ -99,6 +99,7 @@ export function AnnouncementDialog({
         title: announcement.title,
         description: announcement.description || "",
         type: "announcement" as const,
+        visibility: (announcement.visibility || "all") as "all" | "clients" | "employees",
         startDate: announcement.startDate,
         endDate: announcement.endDate,
         allDay: announcement.allDay,
@@ -106,6 +107,7 @@ export function AnnouncementDialog({
     }
     return {
       type: "announcement" as const,
+      visibility: "all" as const,
       startDate: new Date(),
       allDay: true, // Announcements are typically all-day events
     }

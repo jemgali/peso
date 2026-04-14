@@ -19,6 +19,8 @@ export interface FormSectionProps {
   watch?: UseFormWatch<SPESApplicationFormValues>;
   /** SetValue function for programmatic form updates */
   setValue?: UseFormSetValue<SPESApplicationFormValues>;
+  /** Full form values */
+  formValues?: SPESApplicationFormValues;
 }
 
 // Extended props for sections that need control (for Controller components)
@@ -39,6 +41,9 @@ export interface ReviewSectionProps {
   isPending: boolean;
   isValid: boolean;
   onSubmitRequest: () => void;
+  errors?: FieldErrors<SPESApplicationFormValues>;
+  incompleteSections?: string[];
+  triggerValidation?: () => Promise<boolean>;
 }
 
 // Re-export validation types for convenience

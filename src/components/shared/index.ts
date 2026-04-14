@@ -2,6 +2,9 @@
 export { SidebarShell, type SidebarShellProps } from "./sidebar-shell";
 export { SideNav, type NavItem, type SideNavProps } from "./side-nav";
 
+// Layout components
+export { PageHeader } from "./page-header";
+
 // Data table components
 export {
   DataTable,

@@ -90,8 +90,11 @@ function formatFileSize(bytes: number): string {
 
 const DocumentsSection: React.FC<FormSectionProps> = ({
   isPending,
+  setValue,
+  formValues,
 }) => {
-  const [uploadedDocs, setUploadedDocs] = useState<DocumentsMap>({});
+  const formDocs = formValues?.documents as DocumentsMap | undefined;
+  const [uploadedDocs, setUploadedDocs] = useState<DocumentsMap>(formDocs || {});
   const [uploading, setUploading] = useState<Record<string, boolean>>({});
   const [deleting, setDeleting] = useState<Record<string, boolean>>({});
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
@@ -99,12 +102,17 @@ const DocumentsSection: React.FC<FormSectionProps> = ({
   // Fetch existing documents on mount
   useEffect(() => {
     const fetchDocuments = async () => {
+      // If we already have docs in form state, no need to overwrite
+      if (formDocs && Object.keys(formDocs).length > 0) return;
       try {
         const response = await fetch("/api/client/application/status");
         if (response.ok) {
           const data = await response.json();
           if (data.data?.documents?.documents) {
             setUploadedDocs(data.data.documents.documents as DocumentsMap);
+            if (setValue) {
+              setValue("documents", data.data.documents.documents, { shouldValidate: true, shouldTouch: true });
+            }
           }
         }
       } catch {
@@ -145,17 +153,23 @@ const DocumentsSection: React.FC<FormSectionProps> = ({
       }
 
       // Update local state
-      setUploadedDocs((prev) => ({
-        ...prev,
-        [documentId]: {
-          key: result.data.key,
-          url: result.data.url,
-          fileName: file.name,
-          fileType: file.type,
-          fileSize: file.size,
-          uploadedAt: new Date().toISOString(),
-        },
-      }));
+      setUploadedDocs((prev) => {
+        const newDocs = {
+          ...prev,
+          [documentId]: {
+            key: result.data.key,
+            url: result.data.url,
+            fileName: file.name,
+            fileType: file.type,
+            fileSize: file.size,
+            uploadedAt: new Date().toISOString(),
+          },
+        };
+        if (setValue) {
+          setTimeout(() => setValue("documents", newDocs, { shouldValidate: true, shouldTouch: true }), 0);
+        }
+        return newDocs;
+      });
 
       toast.success("Document uploaded successfully!");
     } catch (error) {
@@ -186,6 +200,9 @@ const DocumentsSection: React.FC<FormSectionProps> = ({
       setUploadedDocs((prev) => {
         const newDocs = { ...prev };
         delete newDocs[documentId];
+        if (setValue) {
+          setTimeout(() => setValue("documents", newDocs, { shouldValidate: true, shouldTouch: true }), 0);
+        }
         return newDocs;
       });
 

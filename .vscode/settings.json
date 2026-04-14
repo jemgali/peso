@@ -9,5 +9,7 @@
 
   "[prisma]": {
     "editor.defaultFormatter": "Prisma.prisma"
-  } 
+  },
+  "editor.fontLigatures": false,
+  "editor.fontFamily": "'JetBrains Mono', Consolas, 'Courier New', monospace"
 }

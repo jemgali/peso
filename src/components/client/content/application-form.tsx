@@ -28,9 +28,10 @@ const initialStepStatuses: Record<string, StepStatus> = SECTION_IDS.reduce(
 
 interface ApplicationFormProps {
   userEmail?: string;
+  defaultValues?: Record<string, unknown>;
 }
 
-const ApplicationForm: React.FC<ApplicationFormProps> = ({ userEmail }) => {
+const ApplicationForm: React.FC<ApplicationFormProps> = ({ userEmail, defaultValues }) => {
   const [currentStep, setCurrentStep] = useState(0);
   const [stepStatuses, setStepStatuses] =
     useState<Record<string, StepStatus>>(initialStepStatuses);
@@ -85,6 +86,7 @@ const ApplicationForm: React.FC<ApplicationFormProps> = ({ userEmail }) => {
             onValidationChange={handleValidationChange}
             onMount={handleFormMount}
             userEmail={userEmail}
+            defaultValues={defaultValues}
           />
         </Card>
       </div>

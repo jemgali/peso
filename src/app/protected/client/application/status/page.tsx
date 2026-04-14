@@ -8,6 +8,7 @@ import { Badge } from "@/ui/badge";
 import { ArrowLeft, FileText, History } from "lucide-react";
 import Link from "next/link";
 import { ApplicationStatusCard, FeedbackDisplay } from "@/components/client";
+import { PageHeader } from "@/components/shared";
 import { ApplicationStatusSkeleton } from "@/ui/skeletons";
 import type {
   ClientApplicationStatusResponse,
@@ -103,11 +104,11 @@ export default function ApplicationStatusPage() {
           <ArrowLeft className="h-4 w-4 mr-1" />
           Back to Dashboard
         </Button>
-        <h1 className="text-2xl font-bold">Application Status</h1>
-        <p className="text-muted-foreground">
-          Track your SPES application progress and view feedback
-        </p>
       </div>
+      <PageHeader
+        title="Application Status"
+        description="Track your SPES application progress and view feedback"
+      />
 
       {/* Status Card */}
       {submission && (

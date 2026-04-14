@@ -61,6 +61,7 @@ export function EventForm({
       title: "",
       description: "",
       type: "schedule" as const,
+      visibility: "all" as const,
       startDate: new Date(),
       endDate: null,
       allDay: false,
@@ -69,6 +70,7 @@ export function EventForm({
   })
 
   const type = watch("type")
+  const visibility = watch("visibility")
   const allDay = watch("allDay")
   const startDate = watch("startDate")
 
@@ -109,6 +111,22 @@ export function EventForm({
             error={errors.type?.message}
             disabled={isPending}
             placeholder="Select type"
+            required
+          />
+
+          <SelectField
+            name="visibility"
+            label="Visibility"
+            value={visibility}
+            onValueChange={(value) => setValue("visibility", value as "all" | "clients" | "employees")}
+            options={[
+              { value: "all", label: "All" },
+              { value: "clients", label: "Clients Only" },
+              { value: "employees", label: "Employees Only" },
+            ]}
+            error={errors.visibility?.message}
+            disabled={isPending}
+            placeholder="Select visibility"
             required
           />
 

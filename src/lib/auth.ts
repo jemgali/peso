@@ -79,6 +79,26 @@ export const auth = betterAuth({
           }
           return { data: user };
         },
+        after: async (user) => {
+          // Auto-create ProfileUser in public schema with email + role
+          try {
+            const existing = await prisma.profileUser.findUnique({
+              where: { userId: user.id },
+            });
+            if (!existing) {
+              await prisma.profileUser.create({
+                data: {
+                  profileId: crypto.randomUUID(),
+                  userId: user.id,
+                  profileEmail: user.email,
+                  profileRole: (user.role as string) || "client",
+                },
+              });
+            }
+          } catch (error) {
+            console.error("Failed to auto-create ProfileUser:", error);
+          }
+        },
       },
     },
   },
@@ -123,7 +143,7 @@ export const auth = betterAuth({
   },
   
   plugins: [
-    nextCookies(),
+    nextCookies() as any,
     admin(),
   ]
 });

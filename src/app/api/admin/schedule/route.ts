@@ -77,6 +77,7 @@ export async function POST(request: NextRequest) {
         title: validated.title,
         description: validated.description || null,
         type: validated.type,
+        visibility: validated.visibility,
         startDate: validated.startDate,
         endDate: validated.endDate || null,
         allDay: validated.allDay,

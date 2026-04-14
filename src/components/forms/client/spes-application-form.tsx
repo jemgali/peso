@@ -138,7 +138,7 @@ const TOUCHED_FIELDS: Record<string, string[]> = {
   education: ["gradeYear", "schoolName", "trackCourse", "schoolYear"],
   skills: ["skills"],
   "spes-info": ["applicationYear", "motivation"],
-  documents: [],
+  documents: ["documents"],
   review: [],
 };
 
@@ -174,6 +174,7 @@ export interface SPESApplicationFormProps {
   onValidationChange?: (stepStatuses: Record<string, StepStatus>) => void;
   onMount?: (goToStep: (stepIndex: number) => Promise<void>) => void;
   userEmail?: string;
+  defaultValues?: Record<string, unknown>;
 }
 
 const SPESApplicationForm: React.FC<SPESApplicationFormProps> = ({
@@ -182,10 +183,12 @@ const SPESApplicationForm: React.FC<SPESApplicationFormProps> = ({
   onValidationChange,
   onMount,
   userEmail,
+  defaultValues: externalDefaults,
 }) => {
   const [internalStep, setInternalStep] = useState(0);
   const [isPending, setIsPending] = useState(false);
   const [isValidating, setIsValidating] = useState(false);
+  const [visitedSteps, setVisitedSteps] = useState<Set<number>>(new Set([0]));
 
   // Use controlled step if provided, otherwise use internal state
   const currentStep = controlledStep ?? internalStep;
@@ -260,11 +263,20 @@ const SPESApplicationForm: React.FC<SPESApplicationFormProps> = ({
       motivation: "",
       // Documents (placeholder)
       documents: {},
+      // Merge in pre-populated values from onboarding
+      ...(externalDefaults as Partial<SPESApplicationFormValues>),
     },
     mode: "onChange",
   });
 
   const formValues = watch();
+
+  useEffect(() => {
+    setVisitedSteps((prev) => {
+      if (prev.has(currentStep)) return prev;
+      return new Set(prev).add(currentStep);
+    });
+  }, [currentStep]);
 
   // Field arrays for dynamic fields
   const siblingsFieldArray = useFieldArray({
@@ -289,7 +301,8 @@ const SPESApplicationForm: React.FC<SPESApplicationFormProps> = ({
     SECTION_IDS.forEach((sectionId, index) => {
       const sectionHasErrors = checkSectionErrors(sectionId, errors);
       const sectionIsValid = validateSection(sectionId, formValues);
-      const sectionTouched = checkSectionTouched(sectionId, touchedFields);
+      const isOptional = ["skills", "benefactor"].includes(sectionId);
+      const sectionTouched = checkSectionTouched(sectionId, touchedFields) || (isOptional && visitedSteps.has(index));
 
       if (sectionHasErrors) {
         statuses[sectionId] = "error";
@@ -435,6 +448,7 @@ const SPESApplicationForm: React.FC<SPESApplicationFormProps> = ({
     isPending,
     watch,
     setValue,
+    formValues,
   };
 
   // Props for sections with control
@@ -472,15 +486,24 @@ const SPESApplicationForm: React.FC<SPESApplicationFormProps> = ({
         return <SPESInfoSection {...sectionWithControlProps} />;
       case 8:
         return <DocumentsSection {...sectionProps} />;
-      case 9:
+      case 9: {
+        const statuses = getStepStatuses();
+        const incompleteSections = SECTION_IDS.filter(
+          (id) => id !== "review" && statuses[id] !== "complete"
+        ).map((id) => SECTION_TITLES[id]);
+
         return (
           <ReviewSection
             formValues={formValues}
             isPending={isPending}
             isValid={isValid}
+            errors={errors}
+            incompleteSections={incompleteSections}
+            triggerValidation={trigger as () => Promise<boolean>}
             onSubmitRequest={handleSubmitRequest}
           />
         );
+      }
       default:
         return null;
     }

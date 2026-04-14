@@ -1,11 +1,13 @@
 import { z } from "zod"
 
 export const eventTypeSchema = z.enum(["announcement", "schedule", "deadline"])
+export const eventVisibilitySchema = z.enum(["all", "clients", "employees"])
 
 export const createScheduleEventSchema = z.object({
   title: z.string().min(1, "Title is required."),
   description: z.string().optional(),
   type: eventTypeSchema,
+  visibility: eventVisibilitySchema,
   startDate: z.date(),
   endDate: z.date().optional().nullable(),
   allDay: z.boolean(),
@@ -23,6 +25,7 @@ export type ScheduleEventData = {
   title: string
   description: string | null
   type: string
+  visibility: string
   startDate: Date
   endDate: Date | null
   allDay: boolean
@@ -31,6 +34,7 @@ export type ScheduleEventData = {
 }
 
 export type EventType = "announcement" | "schedule" | "deadline"
+export type EventVisibility = "all" | "clients" | "employees"
 
 export const EVENT_TYPE_LABELS: Record<EventType, string> = {
   announcement: "Announcement",
