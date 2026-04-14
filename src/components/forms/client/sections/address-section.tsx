@@ -130,9 +130,11 @@ const AddressSection: React.FC<FormSectionProps> = ({
                 />
                 <ComboboxContent>
                   <ComboboxList>
-                    <ComboboxEmpty>
-                      {isLoadingProvinces ? "Loading provinces..." : "No province found"}
-                    </ComboboxEmpty>
+                    {filteredProvinces.length === 0 && (
+                      <ComboboxEmpty>
+                        {isLoadingProvinces ? "Loading provinces..." : "No province found"}
+                      </ComboboxEmpty>
+                    )}
                     {filteredProvinces.map((province) => (
                       <ComboboxItem key={province.code} value={province.name}>
                         {province.name}
@@ -175,9 +177,11 @@ const AddressSection: React.FC<FormSectionProps> = ({
                 />
                 <ComboboxContent>
                   <ComboboxList>
-                    <ComboboxEmpty>
-                      {isLoadingCities ? "Loading cities..." : "No city found"}
-                    </ComboboxEmpty>
+                    {filteredCities.length === 0 && (
+                      <ComboboxEmpty>
+                        {isLoadingCities ? "Loading cities..." : "No city found"}
+                      </ComboboxEmpty>
+                    )}
                     {filteredCities.map((city) => (
                       <ComboboxItem key={city.code} value={city.name}>
                         {city.name}
@@ -220,9 +224,11 @@ const AddressSection: React.FC<FormSectionProps> = ({
                 />
                 <ComboboxContent>
                   <ComboboxList>
-                    <ComboboxEmpty>
-                      {isLoadingBarangays ? "Loading barangays..." : "No barangay found"}
-                    </ComboboxEmpty>
+                    {filteredBarangays.length === 0 && (
+                      <ComboboxEmpty>
+                        {isLoadingBarangays ? "Loading barangays..." : "No barangay found"}
+                      </ComboboxEmpty>
+                    )}
                     {filteredBarangays.map((barangay) => (
                       <ComboboxItem key={barangay.code} value={barangay.name}>
                         {barangay.name}

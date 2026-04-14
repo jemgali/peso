@@ -103,6 +103,10 @@ export const spesInfoSchema = z.object({
     (val) => (val === "" || val === undefined ? undefined : Number(val)),
     z.number().min(2020, "Please select a valid application year").optional()
   ),
+  spesBabiesAvailmentYears: z.preprocess(
+    (val) => (val === "" || val === undefined ? undefined : Number(val)),
+    z.number().min(1, "Please provide the number of years").optional()
+  ),
   motivation: z.string().min(1, "Please provide your motivation for applying"),
 });
 

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useForm, useFieldArray, FieldErrors, Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
@@ -175,6 +175,8 @@ export interface SPESApplicationFormProps {
   onMount?: (goToStep: (stepIndex: number) => Promise<void>) => void;
   userEmail?: string;
   defaultValues?: Record<string, unknown>;
+  applicationType?: "new" | "spes-baby";
+  revisionFeedback?: Record<string, any>;
 }
 
 const SPESApplicationForm: React.FC<SPESApplicationFormProps> = ({
@@ -184,6 +186,8 @@ const SPESApplicationForm: React.FC<SPESApplicationFormProps> = ({
   onMount,
   userEmail,
   defaultValues: externalDefaults,
+  applicationType,
+  revisionFeedback,
 }) => {
   const [internalStep, setInternalStep] = useState(0);
   const [isPending, setIsPending] = useState(false);
@@ -449,6 +453,8 @@ const SPESApplicationForm: React.FC<SPESApplicationFormProps> = ({
     watch,
     setValue,
     formValues,
+    applicationType,
+    revisionFeedback,
   };
 
   // Props for sections with control
@@ -512,10 +518,43 @@ const SPESApplicationForm: React.FC<SPESApplicationFormProps> = ({
   const isLastStep = currentStep === SECTION_IDS.length - 1;
   const isFirstStep = currentStep === 0;
 
+  const currentSectionId = SECTION_IDS[currentStep];
+  const currentSectionFields = SECTION_FIELDS[currentSectionId] || [];
+  
+  const currentSectionFeedback = useMemo(() => {
+    if (!revisionFeedback) return [];
+    return Object.entries(revisionFeedback).filter(([field]) => 
+      currentSectionFields.includes(field as any) || field === currentSectionId
+    );
+  }, [revisionFeedback, currentSectionId, currentSectionFields]);
+
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="w-full">
       {/* Current Section Content */}
-      <div className="min-h-100">{renderCurrentSection()}</div>
+      <div className="min-h-100">
+        {currentSectionFeedback.length > 0 && currentStep !== SECTION_IDS.length - 1 && (
+          <div className="mb-6 p-4 rounded-lg bg-red-50 border border-red-200 dark:bg-red-950/20 dark:border-red-900/50">
+            <h3 className="text-sm font-semibold text-red-800 dark:text-red-400 mb-2">
+              ⚠️ Admin Feedback (Needs Revision)
+            </h3>
+            <ul className="text-sm text-red-700 dark:text-red-300 list-disc pl-5 space-y-1">
+              {currentSectionFeedback.map(([field, comment]: [string, any]) => {
+                const formattedName = field
+                  .replace(/^profile/, "")
+                  .replace(/([A-Z])/g, " $1")
+                  .trim();
+                return (
+                  <li key={field}>
+                    <strong>{formattedName ? formattedName.charAt(0).toUpperCase() + formattedName.slice(1) : field}: </strong> {comment}
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        )}
+        
+        {renderCurrentSection()}
+      </div>
 
       {/* Navigation Buttons */}
       <div className="flex justify-between items-center mt-8 pt-6 border-t">

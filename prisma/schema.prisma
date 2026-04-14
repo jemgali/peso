@@ -293,6 +293,7 @@ model ProfileSPES {
   // Other fields
   isFourPsBeneficiary Boolean?    @map("is_four_ps_beneficiary")
   applicationYear     Int?        @map("application_year")
+  spesBabiesAvailmentYears Int?   @map("spes_babies_availment_years")
   motivation          String?     @map("motivation")
   remarks             String?     @map("remarks")
 
