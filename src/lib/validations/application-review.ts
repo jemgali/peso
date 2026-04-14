@@ -67,8 +67,8 @@ export interface ApplicationListItem {
   submittedAt: string;
   updatedAt: string;
   applicant: {
-    firstName: string;
-    lastName: string;
+    firstName: string | null;
+    lastName: string | null;
     email: string;
   };
 }
@@ -110,10 +110,11 @@ export interface ApplicationDetailResponse {
     };
     profile: {
       profileId: string;
-      profileLastName: string;
-      profileFirstName: string;
+      profileLastName: string | null;
+      profileFirstName: string | null;
       profileMiddleName: string | null;
       profileSuffix: string | null;
+      profileEmail: string | null;
       profileRole: string;
     };
     personal: Record<string, unknown> | null;

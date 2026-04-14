@@ -22,6 +22,7 @@ const SECTION_FIELDS: Record<
     { id: "firstName", label: "First Name", fieldName: "profileFirstName" },
     { id: "middleName", label: "Middle Name", fieldName: "profileMiddleName" },
     { id: "suffix", label: "Suffix", fieldName: "profileSuffix" },
+    { id: "email", label: "Email", fieldName: "profileEmail" },
     { id: "role", label: "Role", fieldName: "profileRole" },
   ],
   "personal-details": [
@@ -32,7 +33,6 @@ const SECTION_FIELDS: Record<
     { id: "height", label: "Height", fieldName: "profileHeight" },
     { id: "civilStatus", label: "Civil Status", fieldName: "profileCivilStatus" },
     { id: "religion", label: "Religion", fieldName: "profileReligion" },
-    { id: "email", label: "Email", fieldName: "profileEmail" },
     { id: "contact", label: "Contact", fieldName: "profileContact" },
     { id: "facebook", label: "Facebook", fieldName: "profileFacebook" },
     { id: "disability", label: "Disability", fieldName: "profileDisability" },

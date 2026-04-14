@@ -48,13 +48,14 @@ function calculateAge(birthdate: string): number {
   return age;
 }
 
-const BasicInfoSection: React.FC<FormSectionWithFieldArrayProps> = ({
+const BasicInfoSection: React.FC<FormSectionWithFieldArrayProps & { disableEmail?: boolean }> = ({
   register,
   errors,
   isPending,
   watch,
   setValue,
   userEmail,
+  disableEmail,
 }) => {
   // Height converter state
   const [feet, setFeet] = useState<string>("");
@@ -455,10 +456,11 @@ const BasicInfoSection: React.FC<FormSectionWithFieldArrayProps> = ({
               label="Email Address"
               register={register}
               error={errors.profileEmail?.message}
-              disabled={isPending}
+              disabled={isPending || disableEmail}
               type="email"
               placeholder="email@example.com"
               required
+              className={disableEmail ? "bg-muted" : ""}
             />
 
             <TextField

@@ -77,6 +77,7 @@ export async function PATCH(
         title: validated.title,
         description: validated.description !== undefined ? validated.description || null : undefined,
         type: validated.type,
+        visibility: validated.visibility,
         startDate: validated.startDate,
         endDate: validated.endDate !== undefined ? validated.endDate || null : undefined,
         allDay: validated.allDay,

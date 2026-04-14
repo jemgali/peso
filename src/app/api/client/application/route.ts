@@ -83,6 +83,7 @@ export async function POST(
             profileFirstName: data.profileFirstName,
             profileMiddleName: data.profileMiddleName || null,
             profileSuffix: data.profileSuffix || null,
+            profileEmail: data.profileEmail || null,
             profileRole: data.profileRole,
           },
         });
@@ -96,6 +97,7 @@ export async function POST(
             profileFirstName: data.profileFirstName,
             profileMiddleName: data.profileMiddleName || null,
             profileSuffix: data.profileSuffix || null,
+            profileEmail: data.profileEmail || null,
             profileRole: session.user.role || "client", // Auto-set from auth context
           },
         });
@@ -124,7 +126,6 @@ export async function POST(
             profileCivilStatus: data.profileCivilStatus || null,
             profileReligion: data.profileReligion || null,
             profileLanguageDialect: languageDialects as string[],
-            profileEmail: data.profileEmail || null,
             profileContact: data.profileContact || null,
             profileFacebook: data.profileFacebook || null,
             profileDisability: data.profileDisability || null,
@@ -145,7 +146,6 @@ export async function POST(
             profileCivilStatus: data.profileCivilStatus || null,
             profileReligion: data.profileReligion || null,
             profileLanguageDialect: languageDialects as string[],
-            profileEmail: data.profileEmail || null,
             profileContact: data.profileContact || null,
             profileFacebook: data.profileFacebook || null,
             profileDisability: data.profileDisability || null,

@@ -110,10 +110,11 @@ model ProfileUser {
   // Primary Key
   profileId         String             @id @map("profile_id")
   // Other fields
-  profileLastName   String             @map("profile_last_name")
-  profileFirstName  String             @map("profile_first_name")
+  profileLastName   String?            @map("profile_last_name")
+  profileFirstName  String?            @map("profile_first_name")
   profileMiddleName String?            @map("profile_middle_name")
   profileSuffix     String?            @map("profile_suffix")
+  profileEmail      String?            @map("profile_email")
   profileRole       String             @map("profile_role")
   // Relationships
   personal          ProfilePersonal?
@@ -148,7 +149,7 @@ model ProfilePersonal {
   profileCivilStatus     String?     @map("profile_civil_status")
   profileReligion        String?     @map("profile_religion")
   profileLanguageDialect Json?       @map("profile_language_dialect")
-  profileEmail           String?     @map("profile_email")
+
   profileContact         String?     @map("profile_contact")
   profileFacebook        String?     @map("profile_facebook")
   // Disability (if applicable)
@@ -440,6 +441,7 @@ model ScheduleEvent {
   title       String
   description String?
   type        String    // announcement, schedule, deadline
+  visibility  String    @default("all") // all, clients, employees
   // Date/Time
   startDate   DateTime  @map("start_date")
   endDate     DateTime? @map("end_date")

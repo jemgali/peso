@@ -91,6 +91,7 @@ const ApplicationViewer: React.FC<ApplicationViewerProps> = ({ data }) => {
         <Field label="First Name" value={profile.profileFirstName} />
         <Field label="Middle Name" value={profile.profileMiddleName} />
         <Field label="Suffix" value={profile.profileSuffix} />
+        <Field label="Email" value={profile.profileEmail} />
         <Field label="Role" value={profile.profileRole} />
       </Section>
 
@@ -107,7 +108,6 @@ const ApplicationViewer: React.FC<ApplicationViewerProps> = ({ data }) => {
           <Field label="Height (cm)" value={personal.profileHeight as number | null} />
           <Field label="Civil Status" value={personal.profileCivilStatus as string | null} />
           <Field label="Religion" value={personal.profileReligion as string | null} />
-          <Field label="Email" value={personal.profileEmail as string | null} />
           <Field label="Contact" value={personal.profileContact as string | null} />
           <Field label="Facebook" value={personal.profileFacebook as string | null} />
           <Field label="Disability" value={personal.profileDisability as string | null} />
