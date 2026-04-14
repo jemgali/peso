@@ -21,14 +21,15 @@ const AddressSection: React.FC<FormSectionProps> = ({
   isPending,
   watch,
   setValue,
+  formValues,
 }) => {
   // Auto-capitalize for house/street field
   const { handleBlur: autoCapitalizeBlur } = useAutoCapitalize(setValue);
   
-  // Watch values for initial state
-  const currentProvince = watch?.("profileProvince") || "";
-  const currentCity = watch?.("profileMunicipality") || "";
-  const currentBarangay = watch?.("profileBarangay") || "";
+  // Use static form values for initial state to prevent re-renders on change
+  const currentProvince = formValues?.profileProvince || "";
+  const currentCity = formValues?.profileMunicipality || "";
+  const currentBarangay = formValues?.profileBarangay || "";
   
   // PSGC address hook for cascading selection
   const {

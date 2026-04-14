@@ -22,16 +22,25 @@ export const basicInfoSchema = z.object({
 // ProfilePersonal - Personal Details
 export const personalDetailsSchema = z.object({
   profileBirthdate: z.string().min(1, "Date of birth is required"),
-  profileAge: z.preprocess((v) => (v === "" || v === undefined ? undefined : Number(v)), z.number().optional()), // Auto-calculated, stays optional
+  profileAge: z.preprocess(
+    (v) => (v === "" || v === undefined ? undefined : Number(v)),
+    z.number().optional(),
+  ), // Auto-calculated, stays optional
   profilePlaceOfBirth: z.string().optional(),
   profileSex: z.string().min(1, "Sex is required"),
   profileHeight: z.coerce.number().min(1, "Height is required"),
   profileCivilStatus: z.string().min(1, "Civil status is required"),
   profileReligion: z.string().min(1, "Religion is required"),
-  profileLanguageDialect: z.array(languageItemSchema).min(1, "At least one language is required"),
+  profileLanguageDialect: z
+    .array(languageItemSchema)
+    .min(1, "At least one language is required"),
   profileEmail: z.string().email("Valid email is required"),
   profileContact: z.string().min(1, "Contact number is required"),
-  profileFacebook: z.string().url("Please enter a valid Facebook URL").optional().or(z.literal("")),
+  profileFacebook: z
+    .string()
+    .url("Please enter a valid Facebook URL")
+    .optional()
+    .or(z.literal("")),
   profileDisability: z.string().optional(),
   profilePwdId: z.string().optional(),
 });
@@ -47,7 +56,10 @@ export const addressSchema = z.object({
 // ProfileFamily - Family Information
 export const siblingSchema = z.object({
   name: z.string().min(1, "Sibling name is required"),
-  age: z.preprocess((v) => (v === "" || v === undefined ? undefined : Number(v)), z.number().optional()),
+  age: z.preprocess(
+    (v) => (v === "" || v === undefined ? undefined : Number(v)),
+    z.number(),
+  ),
   occupation: z.string().optional(),
 });
 
@@ -58,7 +70,10 @@ export const familySchema = z.object({
   motherMaidenName: z.string().min(1, "Mother's maiden name is required"),
   motherOccupation: z.string().optional(),
   motherContact: z.string().optional(),
-  numberOfSiblings: z.preprocess((v) => (v === "" || v === undefined ? undefined : Number(v)), z.number().min(0).optional()),
+  numberOfSiblings: z.preprocess(
+    (v) => (v === "" || v === undefined ? undefined : Number(v)),
+    z.number().min(0).optional(),
+  ),
   siblings: z.array(siblingSchema).optional(),
 });
 
@@ -67,7 +82,10 @@ export const guardianSchema = z.object({
   guardianName: z.string().min(1, "Guardian name is required"),
   guardianContact: z.string().min(1, "Guardian contact number is required"),
   guardianAddress: z.string().optional(),
-  guardianAge: z.preprocess((v) => (v === "" || v === undefined ? undefined : Number(v)), z.number().optional()),
+  guardianAge: z.preprocess(
+    (v) => (v === "" || v === undefined ? undefined : Number(v)),
+    z.number().optional(),
+  ),
   guardianOccupation: z.string().optional(),
   guardianRelationship: z.string().min(1, "Guardian relationship is required"),
 });
@@ -101,11 +119,11 @@ export const spesInfoSchema = z.object({
   // Fix: use z.coerce.number() to handle string from select, or preprocess
   applicationYear: z.preprocess(
     (val) => (val === "" || val === undefined ? undefined : Number(val)),
-    z.number().min(2020, "Please select a valid application year").optional()
+    z.number().min(2020, "Please select a valid application year").optional(),
   ),
   spesBabiesAvailmentYears: z.preprocess(
     (val) => (val === "" || val === undefined ? undefined : Number(val)),
-    z.number().min(1, "Please provide the number of years").optional()
+    z.number().min(1, "Please provide the number of years").optional(),
   ),
   motivation: z.string().min(1, "Please provide your motivation for applying"),
 });
@@ -171,26 +189,12 @@ export const sectionRequiredFields: Record<string, string[]> = {
     "profileMunicipality",
     "profileProvince",
   ],
-  family: [
-    "fatherName",
-    "motherMaidenName",
-  ],
-  guardian: [
-    "guardianName",
-    "guardianRelationship",
-    "guardianContact",
-  ],
+  family: ["fatherName", "motherMaidenName"],
+  guardian: ["guardianName", "guardianRelationship", "guardianContact"],
   benefactor: [], // All optional
-  education: [
-    "gradeYear",
-    "schoolName",
-    "trackCourse",
-    "schoolYear",
-  ],
+  education: ["gradeYear", "schoolName", "trackCourse", "schoolYear"],
   skills: [], // All optional
-  "spes-info": [
-    "motivation",
-  ],
+  "spes-info": ["motivation"],
   documents: [
     "psaCertificate",
     "grades",

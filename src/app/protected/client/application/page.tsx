@@ -35,6 +35,7 @@ const Page = async () => {
         guardian: true,
         education: true,
         spes: true,
+        documents: true,
       },
     });
 
@@ -46,6 +47,7 @@ const Page = async () => {
       const guardian = profile.guardian;
       const education = profile.education;
       const spes = profile.spes;
+      const documentsProfile = profile.documents;
       
       // Transform language dialect from string[] back to { value: string }[] // Assuming simple format here for Combobox or Multi-select
       const languageDialect = personal?.profileLanguageDialect
@@ -118,6 +120,10 @@ const Page = async () => {
           applicationYear: spes.applicationYear ?? new Date().getFullYear(),
           spesBabiesAvailmentYears: spes.spesBabiesAvailmentYears ?? undefined,
           motivation: spes.motivation || "",
+        }),
+        // From ProfileDocuments
+        ...(documentsProfile && {
+          documents: documentsProfile.documents ?? {},
         }),
       };
 
