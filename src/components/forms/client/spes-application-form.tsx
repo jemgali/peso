@@ -204,6 +204,7 @@ const SPESApplicationForm: React.FC<SPESApplicationFormProps> = ({
     control,
     trigger,
     setValue,
+    getValues,
     formState: { errors, isValid, touchedFields },
   } = useForm<SPESApplicationFormValues>({
     resolver: zodResolver(
@@ -270,10 +271,8 @@ const SPESApplicationForm: React.FC<SPESApplicationFormProps> = ({
       // Merge in pre-populated values from onboarding
       ...(externalDefaults as Partial<SPESApplicationFormValues>),
     },
-    mode: "onChange",
+    mode: "onBlur",
   });
-
-  const formValues = watch();
 
   useEffect(() => {
     setVisitedSteps((prev) => {
@@ -304,7 +303,7 @@ const SPESApplicationForm: React.FC<SPESApplicationFormProps> = ({
 
     SECTION_IDS.forEach((sectionId, index) => {
       const sectionHasErrors = checkSectionErrors(sectionId, errors);
-      const sectionIsValid = validateSection(sectionId, formValues);
+      const sectionIsValid = validateSection(sectionId, getValues());
       const isOptional = ["skills", "benefactor"].includes(sectionId);
       const sectionTouched = checkSectionTouched(sectionId, touchedFields) || (isOptional && visitedSteps.has(index));
 
@@ -322,7 +321,7 @@ const SPESApplicationForm: React.FC<SPESApplicationFormProps> = ({
     statuses["review"] = isValid ? "complete" : "incomplete";
 
     return statuses;
-  }, [errors, formValues, touchedFields, isValid, currentStep]);
+  }, [errors, getValues, touchedFields, isValid, currentStep]);
 
   // Update validation statuses when form state changes
   useEffect(() => {
@@ -452,7 +451,7 @@ const SPESApplicationForm: React.FC<SPESApplicationFormProps> = ({
     isPending,
     watch,
     setValue,
-    formValues,
+    formValues: getValues(),
     applicationType,
     revisionFeedback,
   };
@@ -500,7 +499,7 @@ const SPESApplicationForm: React.FC<SPESApplicationFormProps> = ({
 
         return (
           <ReviewSection
-            formValues={formValues}
+            formValues={getValues()}
             isPending={isPending}
             isValid={isValid}
             errors={errors}
