@@ -91,7 +91,6 @@ export const auth = betterAuth({
                   profileId: crypto.randomUUID(),
                   userId: user.id,
                   profileEmail: user.email,
-                  profileRole: (user.role as string) || "client",
                 },
               });
             }

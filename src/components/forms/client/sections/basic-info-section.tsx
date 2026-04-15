@@ -230,6 +230,81 @@ const LanguageGroup = ({ control, setValue, isPending, errors }: any) => {
   );
 };
 
+const ReligionDropdown = ({ control, setValue, isPending, errors }: any) => {
+  const [religions, setReligions] = useState<string[]>([]);
+  const [isOthers, setIsOthers] = useState(false);
+  const [customReligion, setCustomReligion] = useState("");
+
+  useEffect(() => {
+    fetch("/data/religion-list.json")
+      .then((res) => res.json())
+      .then((data: Record<string, string>) => {
+        setReligions(Object.keys(data));
+      })
+      .catch(console.error);
+  }, []);
+
+  // Check if current value is "Others" custom value
+  const currentValue = useWatch({ control, name: "profileReligion" }) || "";
+  
+  useEffect(() => {
+    if (currentValue && religions.length > 0) {
+      const isKnown = religions.some((r) => r === currentValue && r !== "Others");
+      if (!isKnown && currentValue !== "Others") {
+        setIsOthers(true);
+        setCustomReligion(currentValue);
+      }
+    }
+  }, [currentValue, religions]);
+
+  return (
+    <Field data-invalid={!!errors.profileReligion}>
+      <FieldLabel htmlFor="profileReligion" required>
+        Religion
+      </FieldLabel>
+      <select
+        value={isOthers ? "Others" : currentValue}
+        onChange={(e) => {
+          const val = e.target.value;
+          if (val === "Others") {
+            setIsOthers(true);
+            setCustomReligion("");
+            setValue?.("profileReligion", "", { shouldValidate: true });
+          } else {
+            setIsOthers(false);
+            setCustomReligion("");
+            setValue?.("profileReligion", val, { shouldValidate: true });
+          }
+        }}
+        disabled={isPending}
+        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        <option value="">Select religion...</option>
+        {religions.map((religion) => (
+          <option key={religion} value={religion}>
+            {religion}
+          </option>
+        ))}
+      </select>
+      {isOthers && (
+        <Input
+          className="mt-2"
+          placeholder="Please specify your religion"
+          disabled={isPending}
+          value={customReligion}
+          onChange={(e) => {
+            setCustomReligion(e.target.value);
+            setValue?.("profileReligion", e.target.value, { shouldValidate: true });
+          }}
+        />
+      )}
+      {errors.profileReligion && (
+        <FieldError>{errors.profileReligion.message}</FieldError>
+      )}
+    </Field>
+  );
+};
+
 const BasicInfoSection: React.FC<FormSectionWithFieldArrayProps & { disableEmail?: boolean }> = ({
   register,
   errors,
@@ -560,15 +635,7 @@ const BasicInfoSection: React.FC<FormSectionWithFieldArrayProps & { disableEmail
               )}
             </Field>
 
-            <TextField
-              name="profileReligion"
-              label="Religion"
-              register={register}
-              error={errors.profileReligion?.message}
-              disabled={isPending}
-              placeholder="e.g., Catholic, Christian, Muslim"
-              required
-            />
+            <ReligionDropdown control={control} setValue={setValue} isPending={isPending} errors={errors} />
 
             {/* Contact Details - merged below Religion */}
             <TextField

@@ -81,7 +81,6 @@ export async function POST(
             profileMiddleName: data.profileMiddleName || null,
             profileSuffix: data.profileSuffix || null,
             profileEmail: data.profileEmail,
-            profileRole: session.user.role || "client",
           },
         });
       } else {
@@ -94,7 +93,6 @@ export async function POST(
             profileMiddleName: data.profileMiddleName || null,
             profileSuffix: data.profileSuffix || null,
             profileEmail: data.profileEmail,
-            profileRole: session.user.role || "client",
           },
         });
       }

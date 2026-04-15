@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { useForm, useFieldArray, FieldErrors, Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
@@ -189,6 +190,7 @@ const SPESApplicationForm: React.FC<SPESApplicationFormProps> = ({
   applicationType,
   revisionFeedback,
 }) => {
+  const router = useRouter();
   const [internalStep, setInternalStep] = useState(0);
   const [isPending, setIsPending] = useState(false);
   const [isValidating, setIsValidating] = useState(false);
@@ -216,7 +218,6 @@ const SPESApplicationForm: React.FC<SPESApplicationFormProps> = ({
       profileFirstName: "",
       profileMiddleName: "",
       profileSuffix: "",
-      profileRole: "",
       // Personal Details
       profileBirthdate: "",
       profileAge: undefined,
@@ -335,6 +336,23 @@ const SPESApplicationForm: React.FC<SPESApplicationFormProps> = ({
   }, [currentStep, onStepChange]);
 
   // Navigate to specific step (from sidebar)
+  const validateStepBeforeAdvance = useCallback(
+    async (sectionId: (typeof SECTION_IDS)[number]) => {
+      const fieldsToValidate = SECTION_FIELDS[sectionId];
+      const isFieldValid = await trigger(fieldsToValidate);
+
+      if (!isFieldValid) return false;
+
+      if (sectionId === "documents") {
+        return validateSection("documents", getValues());
+      }
+
+      return true;
+    },
+    [getValues, trigger],
+  );
+
+  // Navigate to specific step (from sidebar)
   const goToStep = useCallback(
     async (stepIndex: number) => {
       // Allow going back to any previous step
@@ -349,13 +367,16 @@ const SPESApplicationForm: React.FC<SPESApplicationFormProps> = ({
       // For forward navigation, validate all steps up to and including the target
       for (let i = currentStep; i < stepIndex; i++) {
         const sectionId = SECTION_IDS[i];
-        const fieldsToValidate = SECTION_FIELDS[sectionId];
-        const isStepValid = await trigger(fieldsToValidate);
+        const isStepValid = await validateStepBeforeAdvance(sectionId);
 
         if (!isStepValid) {
-          toast.error(
-            `Please complete the "${SECTION_TITLES[sectionId]}" section first.`,
-          );
+          if (sectionId === "documents") {
+            toast.error("Please upload all required documents before proceeding.");
+          } else {
+            toast.error(
+              `Please complete the "${SECTION_TITLES[sectionId]}" section first.`,
+            );
+          }
           if (controlledStep === undefined) {
             setInternalStep(i);
           }
@@ -370,7 +391,7 @@ const SPESApplicationForm: React.FC<SPESApplicationFormProps> = ({
       }
       onStepChange?.(stepIndex);
     },
-    [currentStep, controlledStep, onStepChange, trigger],
+    [currentStep, controlledStep, onStepChange, validateStepBeforeAdvance],
   );
 
   // Expose goToStep function to parent via onMount callback
@@ -381,12 +402,10 @@ const SPESApplicationForm: React.FC<SPESApplicationFormProps> = ({
   // Navigate to next step with validation
   const handleNext = async () => {
     const sectionId = SECTION_IDS[currentStep];
-    const fieldsToValidate = SECTION_FIELDS[sectionId];
 
     setIsValidating(true);
 
-    // Trigger validation for current section fields
-    const isStepValid = await trigger(fieldsToValidate);
+    const isStepValid = await validateStepBeforeAdvance(sectionId);
 
     setIsValidating(false);
 
@@ -399,7 +418,11 @@ const SPESApplicationForm: React.FC<SPESApplicationFormProps> = ({
         onStepChange?.(newStep);
       }
     } else {
-      toast.error("Please fill in all required fields before proceeding.");
+      if (sectionId === "documents") {
+        toast.error("Please upload all required documents before proceeding.");
+      } else {
+        toast.error("Please fill in all required fields before proceeding.");
+      }
     }
   };
 
@@ -430,6 +453,8 @@ const SPESApplicationForm: React.FC<SPESApplicationFormProps> = ({
       }
 
       toast.success("Application submitted successfully!");
+      // Redirect to dashboard after successful submission
+      router.push("/protected/client");
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "Failed to submit application",

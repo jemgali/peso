@@ -9,18 +9,14 @@ import { Card } from "@/ui/card";
 import {
   Loader2,
   ArrowLeft,
-  User,
-  FileText,
   ClipboardCheck,
+  FileText,
   Send,
 } from "lucide-react";
 import { toast } from "sonner";
-import {
-  ApplicationViewer,
-  ReviewForm,
-  DocumentReview,
-  ReviewSubmit,
-} from "@/components/admin/review";
+import ApplicationViewer from "@/components/admin/review/application-viewer";
+import DocumentReview from "@/components/admin/review/document-review";
+import ReviewSubmit from "@/components/admin/review/review-submit";
 import type {
   ApplicationDetailResponse,
   ApplicationStatus,
@@ -194,49 +190,50 @@ export default function ApplicationReviewPage({ params }: PageProps) {
         </div>
       </div>
 
-      {/* Review Tabs */}
+      {/* 3-Tab Layout */}
       {isReviewable ? (
         <Tabs defaultValue="application" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger
               value="application"
               className="flex items-center gap-2"
             >
-              <User className="h-4 w-4" />
-              <span className="hidden sm:inline">Application</span>
-            </TabsTrigger>
-            <TabsTrigger value="fields" className="flex items-center gap-2">
               <ClipboardCheck className="h-4 w-4" />
-              <span className="hidden sm:inline">Field Review</span>
+              <span className="hidden sm:inline">Application Review</span>
+              <span className="sm:hidden">Review</span>
             </TabsTrigger>
             <TabsTrigger value="documents" className="flex items-center gap-2">
               <FileText className="h-4 w-4" />
-              <span className="hidden sm:inline">Documents</span>
+              <span className="hidden sm:inline">Documents & Verification</span>
+              <span className="sm:hidden">Docs</span>
             </TabsTrigger>
             <TabsTrigger value="submit" className="flex items-center gap-2">
               <Send className="h-4 w-4" />
-              <span className="hidden sm:inline">Submit</span>
+              <span className="hidden sm:inline">Submit Review</span>
+              <span className="sm:hidden">Submit</span>
             </TabsTrigger>
           </TabsList>
 
+          {/* Tab 1: Application Review — merged viewer + inline review */}
           <TabsContent value="application">
-            <ApplicationViewer data={data} />
-          </TabsContent>
-
-          <TabsContent value="fields">
-            <ReviewForm
+            <ApplicationViewer
+              data={data}
               fieldFeedback={fieldFeedback}
               onFieldFeedbackChange={setFieldFeedback}
+              isReviewable={isReviewable}
             />
           </TabsContent>
 
+          {/* Tab 2: Documents & Verification — uploaded docs display + review controls */}
           <TabsContent value="documents">
             <DocumentReview
+              data={data}
               documentFeedback={documentFeedback}
               onDocumentFeedbackChange={setDocumentFeedback}
             />
           </TabsContent>
 
+          {/* Tab 3: Submit Review */}
           <TabsContent value="submit">
             <ReviewSubmit
               decision={decision}
@@ -265,7 +262,12 @@ export default function ApplicationReviewPage({ params }: PageProps) {
               . View the application details below.
             </p>
           </Card>
-          <ApplicationViewer data={data} />
+          <ApplicationViewer
+            data={data}
+            fieldFeedback={fieldFeedback}
+            onFieldFeedbackChange={setFieldFeedback}
+            isReviewable={false}
+          />
 
           {/* Show review history if available */}
           {data.reviews.length > 0 && (

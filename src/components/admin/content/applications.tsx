@@ -23,6 +23,7 @@ import { Badge } from "@/ui/badge";
 import { Card } from "@/ui/card";
 import { Loader2, Search, Eye, ChevronLeft, ChevronRight } from "lucide-react";
 import { ApplicationsListSkeleton } from "@/ui/skeletons";
+import { toast } from "sonner";
 import type {
   ApplicationListItem,
   ApplicationStatus,
@@ -44,6 +45,14 @@ const STATUS_LABELS: Record<ApplicationStatus, string> = {
   rejected: "Rejected",
 };
 
+const STATUS_OPTIONS: ApplicationStatus[] = [
+  "pending",
+  "in_review",
+  "approved",
+  "needs_revision",
+  "rejected",
+];
+
 const Applications = () => {
   const router = useRouter();
   const [applications, setApplications] = useState<ApplicationListItem[]>([]);
@@ -53,6 +62,7 @@ const Applications = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
+  const [updatingStatusId, setUpdatingStatusId] = useState<string | null>(null);
   const pageSize = 20;
 
   useEffect(() => {
@@ -98,6 +108,47 @@ const Applications = () => {
     setPage(1);
   };
 
+  const handleStatusUpdate = async (
+    submissionId: string,
+    nextStatus: ApplicationStatus,
+    currentStatus: ApplicationStatus,
+  ) => {
+    if (nextStatus === currentStatus) return;
+
+    setUpdatingStatusId(submissionId);
+    try {
+      const response = await fetch(`/api/admin/applications/${submissionId}/status`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: nextStatus }),
+      });
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || "Failed to update status");
+      }
+
+      setApplications((prev) =>
+        prev.map((app) =>
+          app.submissionId === submissionId
+            ? {
+                ...app,
+                status: nextStatus,
+                updatedAt: data.data?.updatedAt ?? app.updatedAt,
+              }
+            : app,
+        ),
+      );
+      toast.success(`Status updated to ${STATUS_LABELS[nextStatus]}`);
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to update status",
+      );
+    } finally {
+      setUpdatingStatusId(null);
+    }
+  };
+
   const totalPages = Math.ceil(total / pageSize);
 
   return (
@@ -124,19 +175,19 @@ const Applications = () => {
             </div>
           </form>
 
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-full sm:w-[180px]">
-              <SelectValue placeholder="Filter by status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Statuses</SelectItem>
-              <SelectItem value="pending">Pending</SelectItem>
-              <SelectItem value="in_review">In Review</SelectItem>
-              <SelectItem value="approved">Approved</SelectItem>
-              <SelectItem value="needs_revision">Needs Revision</SelectItem>
-              <SelectItem value="rejected">Rejected</SelectItem>
-            </SelectContent>
-          </Select>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-full sm:w-[180px]">
+                <SelectValue placeholder="Filter by status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Statuses</SelectItem>
+                {STATUS_OPTIONS.map((status) => (
+                  <SelectItem key={status} value={status}>
+                    {STATUS_LABELS[status]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
         </div>
       </Card>
 
@@ -175,12 +226,42 @@ const Applications = () => {
                     </TableCell>
                     <TableCell>{app.applicant.email}</TableCell>
                     <TableCell>
-                      <Badge
-                        variant="secondary"
-                        className={STATUS_COLORS[app.status]}
-                      >
-                        {STATUS_LABELS[app.status]}
-                      </Badge>
+                      <div className="space-y-2">
+                        <Badge
+                          variant="secondary"
+                          className={STATUS_COLORS[app.status]}
+                        >
+                          {STATUS_LABELS[app.status]}
+                        </Badge>
+                        <Select
+                          value={app.status}
+                          onValueChange={(value) =>
+                            handleStatusUpdate(
+                              app.submissionId,
+                              value as ApplicationStatus,
+                              app.status,
+                            )
+                          }
+                          disabled={updatingStatusId === app.submissionId}
+                        >
+                          <SelectTrigger className="h-8 w-[160px]">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {STATUS_OPTIONS.map((status) => (
+                              <SelectItem key={status} value={status}>
+                                {STATUS_LABELS[status]}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        {updatingStatusId === app.submissionId && (
+                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                            Updating...
+                          </div>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell>{app.submissionNumber}</TableCell>
                     <TableCell>

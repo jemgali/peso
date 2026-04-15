@@ -4,12 +4,28 @@ import React from "react";
 import { Card } from "@/ui/card";
 import { Button } from "@/ui/button";
 import { Textarea } from "@/ui/textarea";
-import { Check, X, AlertCircle, MessageSquare } from "lucide-react";
+import { Check, X, AlertCircle, MessageSquare, ExternalLink, CheckCircle2, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type {
   DocumentFeedback,
   DocumentFeedbackStatus,
+  ApplicationDetailResponse,
 } from "@/lib/validations/application-review";
+
+interface DocumentEntry {
+  key: string;
+  url: string;
+  fileName: string;
+  fileType: string;
+  fileSize: number;
+  uploadedAt: string;
+}
+
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
 
 // Document types that can be reviewed
 const DOCUMENT_TYPES = [
@@ -222,14 +238,19 @@ const DocumentFeedbackInput: React.FC<DocumentFeedbackInputProps> = ({
 };
 
 interface DocumentReviewProps {
+  data: NonNullable<ApplicationDetailResponse["data"]>;
   documentFeedback: DocumentFeedback[];
   onDocumentFeedbackChange: (feedback: DocumentFeedback[]) => void;
 }
 
 const DocumentReview: React.FC<DocumentReviewProps> = ({
+  data,
   documentFeedback,
   onDocumentFeedbackChange,
 }) => {
+  // Extract uploaded documents from application data
+  const uploadedDocs = (data.documents as Record<string, unknown> | null)?.documents as Record<string, DocumentEntry> | undefined;
+
   const getFeedbackForDocument = (documentType: string) => {
     return documentFeedback.find((f) => f.documentType === documentType);
   };
@@ -310,18 +331,44 @@ const DocumentReview: React.FC<DocumentReviewProps> = ({
       </p>
 
       <div className="space-y-3">
-        {DOCUMENT_TYPES.map((doc) => (
-          <DocumentFeedbackInput
-            key={doc.id}
-            documentType={doc.id}
-            name={doc.name}
-            description={doc.description}
-            required={doc.required}
-            feedback={getFeedbackForDocument(doc.id)}
-            onFeedbackChange={handleFeedbackChange}
-            onFeedbackRemove={() => handleFeedbackRemove(doc.id)}
-          />
-        ))}
+        {DOCUMENT_TYPES.map((doc) => {
+          const uploaded = uploadedDocs?.[doc.id];
+          return (
+            <div key={doc.id}>
+              {/* Upload status */}
+              {uploaded && (
+                <div className="flex items-center gap-2 mb-1 px-4 pt-2 text-xs text-green-700 dark:text-green-400">
+                  <CheckCircle2 className="h-3 w-3" />
+                  <span className="truncate">{uploaded.fileName}</span>
+                  <span className="text-muted-foreground">({formatFileSize(uploaded.fileSize)})</span>
+                  <a
+                    href={uploaded.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1 ml-auto hover:underline text-blue-600 dark:text-blue-400"
+                  >
+                    View <ExternalLink className="h-3 w-3" />
+                  </a>
+                </div>
+              )}
+              {!uploaded && (
+                <div className="flex items-center gap-2 mb-1 px-4 pt-2 text-xs text-muted-foreground">
+                  <FileText className="h-3 w-3" />
+                  <span>{doc.required ? "Not uploaded" : "Not submitted"}</span>
+                </div>
+              )}
+              <DocumentFeedbackInput
+                documentType={doc.id}
+                name={doc.name}
+                description={doc.description}
+                required={doc.required}
+                feedback={getFeedbackForDocument(doc.id)}
+                onFeedbackChange={handleFeedbackChange}
+                onFeedbackRemove={() => handleFeedbackRemove(doc.id)}
+              />
+            </div>
+          );
+        })}
       </div>
     </div>
   );

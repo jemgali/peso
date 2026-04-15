@@ -3,6 +3,7 @@
 import React from "react";
 import { FieldSet, FieldGroup, FieldLabel, FieldError } from "@/ui/field";
 import { TextareaField } from "@/components/shared";
+import { Input } from "@/ui/input";
 import {
   Combobox,
   ComboboxInput,
@@ -15,6 +16,10 @@ import { usePsgcAddress } from "@/hooks/use-psgc-address";
 import { useAutoCapitalize } from "@/hooks/use-auto-capitalize";
 import type { FormSectionProps } from "./types";
 
+// Locked address values for Baguio City
+const LOCKED_PROVINCE = "Benguet";
+const LOCKED_CITY = "Baguio City";
+
 const AddressSection: React.FC<FormSectionProps> = ({
   register,
   errors,
@@ -26,24 +31,21 @@ const AddressSection: React.FC<FormSectionProps> = ({
   // Auto-capitalize for house/street field
   const { handleBlur: autoCapitalizeBlur } = useAutoCapitalize(setValue);
   
-  // Use static form values for initial state to prevent re-renders on change
-  const currentProvince = formValues?.profileProvince || "";
-  const currentCity = formValues?.profileMunicipality || "";
   const currentBarangay = formValues?.profileBarangay || "";
   
-  // PSGC address hook for cascading selection
+  // Auto-set province and city on mount
+  React.useEffect(() => {
+    if (setValue) {
+      setValue("profileProvince", LOCKED_PROVINCE, { shouldValidate: true });
+      setValue("profileMunicipality", LOCKED_CITY, { shouldValidate: true });
+    }
+  }, [setValue]);
+  
+  // PSGC address hook — only for barangay selection within Baguio
   const {
-    provinces,
-    citiesMunicipalities,
     barangays,
-    selectedProvince,
-    selectedMunicipality,
     selectedBarangay,
-    isLoadingProvinces,
-    isLoadingCities,
     isLoadingBarangays,
-    handleProvinceChange,
-    handleMunicipalityChange,
     handleBarangayChange,
   } = usePsgcAddress({
     setValue: setValue!,
@@ -53,31 +55,15 @@ const AddressSection: React.FC<FormSectionProps> = ({
       barangay: "profileBarangay",
     },
     initialValues: {
-      province: currentProvince,
-      municipality: currentCity,
+      province: LOCKED_PROVINCE,
+      municipality: LOCKED_CITY,
       barangay: currentBarangay,
     },
   });
   
-  // Filter provinces by search
-  const [provinceSearch, setProvinceSearch] = React.useState("");
-  const [citySearch, setCitySearch] = React.useState("");
+  // Filter barangays by search
   const [barangaySearch, setBarangaySearch] = React.useState("");
   
-  const filteredProvinces = React.useMemo(() => {
-    if (!provinceSearch) return provinces;
-    const search = provinceSearch.toLowerCase();
-    return provinces.filter((p) => p.name.toLowerCase().includes(search));
-  }, [provinces, provinceSearch]);
-  
-  // Filter cities by search
-  const filteredCities = React.useMemo(() => {
-    if (!citySearch) return citiesMunicipalities;
-    const search = citySearch.toLowerCase();
-    return citiesMunicipalities.filter((c) => c.name.toLowerCase().includes(search));
-  }, [citiesMunicipalities, citySearch]);
-  
-  // Filter barangays by search
   const filteredBarangays = React.useMemo(() => {
     if (!barangaySearch) return barangays;
     const search = barangaySearch.toLowerCase();
@@ -89,7 +75,7 @@ const AddressSection: React.FC<FormSectionProps> = ({
       <div className="mb-4">
         <h2 className="text-lg font-semibold">Address Information</h2>
         <p className="text-sm text-muted-foreground">
-          Where do you currently reside? All fields are required.
+          Where do you currently reside? Province and City are locked to Baguio City, Benguet.
         </p>
       </div>
 
@@ -108,95 +94,35 @@ const AddressSection: React.FC<FormSectionProps> = ({
           />
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {/* Province Combobox */}
+            {/* Province — Locked */}
             <div className="space-y-1.5">
               <FieldLabel htmlFor="profileProvince" required>Province</FieldLabel>
-              <Combobox<string>
-                inputValue={provinceSearch}
-                onInputValueChange={(value) => setProvinceSearch(value ?? "")}
-                value={selectedProvince}
-                onValueChange={(value) => {
-                  const province = provinces.find((p) => p.name === value);
-                  if (province) {
-                    handleProvinceChange(province.code, province.name);
-                    setProvinceSearch("");
-                  }
-                }}
-              >
-                <ComboboxInput
-                  placeholder={isLoadingProvinces ? "Loading..." : "Select province"}
-                  disabled={isPending || isLoadingProvinces}
-                  showTrigger
-                  showClear
-                />
-                <ComboboxContent>
-                  <ComboboxList>
-                    {filteredProvinces.length === 0 && (
-                      <ComboboxEmpty>
-                        {isLoadingProvinces ? "Loading provinces..." : "No province found"}
-                      </ComboboxEmpty>
-                    )}
-                    {filteredProvinces.map((province) => (
-                      <ComboboxItem key={province.code} value={province.name}>
-                        {province.name}
-                      </ComboboxItem>
-                    ))}
-                  </ComboboxList>
-                </ComboboxContent>
-              </Combobox>
+              <Input
+                value={LOCKED_PROVINCE}
+                disabled
+                readOnly
+                className="bg-muted"
+              />
               {errors.profileProvince && (
                 <FieldError>{errors.profileProvince.message}</FieldError>
               )}
             </div>
 
-            {/* City/Municipality Combobox */}
+            {/* City/Municipality — Locked */}
             <div className="space-y-1.5">
               <FieldLabel htmlFor="profileMunicipality" required>Municipality/City</FieldLabel>
-              <Combobox<string>
-                inputValue={citySearch}
-                onInputValueChange={(value) => setCitySearch(value ?? "")}
-                value={selectedMunicipality}
-                onValueChange={(value) => {
-                  const city = citiesMunicipalities.find((c) => c.name === value);
-                  if (city) {
-                    handleMunicipalityChange(city.code, city.name);
-                    setCitySearch("");
-                  }
-                }}
-              >
-                <ComboboxInput
-                  placeholder={
-                    !selectedProvince 
-                      ? "Select province first" 
-                      : isLoadingCities 
-                        ? "Loading..." 
-                        : "Select city/municipality"
-                  }
-                  disabled={isPending || !selectedProvince || isLoadingCities}
-                  showTrigger
-                  showClear
-                />
-                <ComboboxContent>
-                  <ComboboxList>
-                    {filteredCities.length === 0 && (
-                      <ComboboxEmpty>
-                        {isLoadingCities ? "Loading cities..." : "No city found"}
-                      </ComboboxEmpty>
-                    )}
-                    {filteredCities.map((city) => (
-                      <ComboboxItem key={city.code} value={city.name}>
-                        {city.name}
-                      </ComboboxItem>
-                    ))}
-                  </ComboboxList>
-                </ComboboxContent>
-              </Combobox>
+              <Input
+                value={LOCKED_CITY}
+                disabled
+                readOnly
+                className="bg-muted"
+              />
               {errors.profileMunicipality && (
                 <FieldError>{errors.profileMunicipality.message}</FieldError>
               )}
             </div>
 
-            {/* Barangay Combobox */}
+            {/* Barangay Combobox — Only editable field */}
             <div className="space-y-1.5">
               <FieldLabel htmlFor="profileBarangay" required>Barangay</FieldLabel>
               <Combobox<string>
@@ -213,13 +139,11 @@ const AddressSection: React.FC<FormSectionProps> = ({
               >
                 <ComboboxInput
                   placeholder={
-                    !selectedMunicipality 
-                      ? "Select city first" 
-                      : isLoadingBarangays 
-                        ? "Loading..." 
-                        : "Select barangay"
+                    isLoadingBarangays 
+                      ? "Loading..." 
+                      : "Select barangay"
                   }
-                  disabled={isPending || !selectedMunicipality || isLoadingBarangays}
+                  disabled={isPending || isLoadingBarangays}
                   showTrigger
                   showClear
                 />
