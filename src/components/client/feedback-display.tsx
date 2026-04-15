@@ -15,7 +15,6 @@ const FIELD_LABELS: Record<string, string> = {
   profileFirstName: "First Name",
   profileMiddleName: "Middle Name",
   profileSuffix: "Suffix",
-  profileRole: "Role",
   profileBirthdate: "Birthdate",
   profileAge: "Age",
   profilePlaceOfBirth: "Place of Birth",

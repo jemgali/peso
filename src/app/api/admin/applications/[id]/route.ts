@@ -117,7 +117,6 @@ export async function GET(
           profileMiddleName: submission.profile.profileMiddleName,
           profileSuffix: submission.profile.profileSuffix,
           profileEmail: submission.profile.profileEmail,
-          profileRole: submission.profile.profileRole,
         },
         personal: submission.profile.personal as Record<string, unknown> | null,
         address: submission.profile.address as Record<string, unknown> | null,

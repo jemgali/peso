@@ -115,7 +115,6 @@ export interface ApplicationDetailResponse {
       profileMiddleName: string | null;
       profileSuffix: string | null;
       profileEmail: string | null;
-      profileRole: string;
     };
     personal: Record<string, unknown> | null;
     address: Record<string, unknown> | null;

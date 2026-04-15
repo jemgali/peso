@@ -115,7 +115,6 @@ model ProfileUser {
   profileMiddleName String?            @map("profile_middle_name")
   profileSuffix     String?            @map("profile_suffix")
   profileEmail      String?            @map("profile_email")
-  profileRole       String             @map("profile_role")
   // Relationships
   personal          ProfilePersonal?
   address           ProfileAddress?

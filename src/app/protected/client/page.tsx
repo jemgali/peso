@@ -5,7 +5,6 @@ import Link from "next/link"
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
@@ -15,7 +14,8 @@ import { Spinner } from "@/components/ui/spinner"
 import { FileText, LayoutGrid, Activity } from "lucide-react"
 import { PageHeader } from "@/components/shared"
 import DashboardStatusTracker from "@/components/client/dashboard-status-tracker"
-import DashboardAnnouncements from "@/components/client/dashboard-announcements"
+import DashboardNotifications from "@/components/client/dashboard-notifications"
+import DashboardCalendar from "@/components/client/dashboard-calendar"
 import type { ClientApplicationStatusResponse } from "@/lib/validations/application-review"
 
 function getStatusLabel(status: string) {
@@ -148,26 +148,8 @@ const Page = () => {
             </Card>
           </div>
 
-          {/* Get Started card (no application) */}
-          {!statusData?.hasApplication && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Get Started</CardTitle>
-                <CardDescription>
-                  Start your SPES application process by filling out the
-                  application form below.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button asChild>
-                  <Link href="/protected/client/application">
-                    <FileText data-icon="inline-start" />
-                    Start Application Form
-                  </Link>
-                </Button>
-              </CardContent>
-            </Card>
-          )}
+          {/* Notifications Bar — replaces Get Started */}
+          <DashboardNotifications />
 
           {/* Quick Actions (has application, not approved) */}
           {statusData?.hasApplication &&
@@ -196,8 +178,25 @@ const Page = () => {
               </Card>
             )}
 
-          {/* Announcements */}
-          <DashboardAnnouncements />
+          {/* No application — show apply button */}
+          {!statusData?.hasApplication && (
+            <Card>
+              <CardContent className="flex items-center justify-between py-4">
+                <p className="text-sm text-muted-foreground">
+                  No active application. Start your SPES application today.
+                </p>
+                <Button asChild size="sm">
+                  <Link href="/protected/client/application">
+                    <FileText data-icon="inline-start" />
+                    Apply Now
+                  </Link>
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Calendar with Announcements — replaces DashboardAnnouncements */}
+          <DashboardCalendar />
         </div>
 
         {/* Right sidebar — Status Tracker */}

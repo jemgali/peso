@@ -99,12 +99,6 @@ const ReviewSection: React.FC<ReviewSectionProps> = ({
               <p className="text-muted-foreground">Legal Name</p>
               <p className="font-medium">{formatName()}</p>
             </div>
-            <div>
-              <p className="text-muted-foreground">Role</p>
-              <p className="font-medium">
-                {formValues.profileRole || "Not provided"}
-              </p>
-            </div>
           </div>
         </Card>
 

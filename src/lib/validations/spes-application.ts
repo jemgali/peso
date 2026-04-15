@@ -16,7 +16,6 @@ export const basicInfoSchema = z.object({
   profileFirstName: z.string().min(1, "First name is required"),
   profileMiddleName: z.string().optional(),
   profileSuffix: z.string().optional(),
-  profileRole: z.string().optional(), // Auto-set from auth context, not user input
 });
 
 // ProfilePersonal - Personal Details
@@ -171,7 +170,6 @@ export const sectionRequiredFields: Record<string, string[]> = {
   "basic-info": [
     "profileLastName",
     "profileFirstName",
-    // profileRole is auto-set from auth context
     "profileBirthdate",
     "profileSex",
     "profileHeight",

@@ -4,7 +4,14 @@ import React, { useState, useRef, useEffect } from "react";
 import { Card } from "@/ui/card";
 import { FieldGroup } from "@/ui/field";
 import { Button } from "@/ui/button";
-import { FileText, Upload, X, Loader2, CheckCircle2, ExternalLink, Image as ImageIcon } from "lucide-react";
+import { FileText, Upload, X, Loader2, CheckCircle2, ExternalLink, Image as ImageIcon, Eye } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/ui/dialog";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import type { FormSectionProps } from "./types";
@@ -78,6 +85,88 @@ const REQUIRED_DOCUMENTS = [
     required: false,
   },
 ];
+
+// Sample document descriptions for the "View Sample" dialog
+const DOCUMENT_SAMPLES: Record<string, { title: string; tips: string[] }> = {
+  psaCertificate: {
+    title: "PSA Birth Certificate",
+    tips: [
+      "Must be an original or authenticated copy from the Philippine Statistics Authority (PSA)",
+      "The document should be clear and readable with no blurred sections",
+      "All pages must be included if multi-page",
+      "Scan or photo must show the full document including the security paper",
+    ],
+  },
+  grades: {
+    title: "Report Card / Grades",
+    tips: [
+      "Latest available report card or transcript of records",
+      "Should show your full name and school name",
+      "Include all pages with grades visible",
+      "An official copy with school seal or stamp is preferred",
+    ],
+  },
+  affidavitLowIncome: {
+    title: "Affidavit of Low Income (PAO)",
+    tips: [
+      "Obtained from the Public Attorney's Office (PAO)",
+      "Must state your family's income status",
+      "Document must be notarized",
+      "Should be recent (within the current year)",
+    ],
+  },
+  barangayCertLowIncome: {
+    title: "Barangay Certificate of Low Income",
+    tips: [
+      "Issued by the barangay where your parents reside",
+      "Must state your parent's/guardian's income status",
+      "Should include the barangay official's signature and seal",
+      "Must be current and not expired",
+    ],
+  },
+  barangayCertResidency: {
+    title: "Barangay Certificate of Residency",
+    tips: [
+      "Issued by the barangay where you currently reside",
+      "Must state your name and address clearly",
+      "Should include the barangay official's signature and seal",
+      "Must be current and not expired",
+    ],
+  },
+  incomeTaxReturn: {
+    title: "Income Tax Return (ITR)",
+    tips: [
+      "Latest Income Tax Return of parent or guardian",
+      "BIR Form 2316 or any applicable ITR form",
+      "If parent is not employed, a Certificate of No Filing from BIR may be submitted",
+      "All pages of the document must be included",
+    ],
+  },
+  affidavitSoloParent: {
+    title: "Affidavit of Solo Parent",
+    tips: [
+      "Only required if you have a solo parent",
+      "Document must be notarized",
+      "Should state the circumstances of solo parenthood",
+    ],
+  },
+  affidavitDiscrepancy: {
+    title: "Affidavit of Discrepancy",
+    tips: [
+      "Only required if there are discrepancies in your documents (e.g., name spelling differences)",
+      "Document must be notarized",
+      "Should clearly state and explain the discrepancy",
+    ],
+  },
+  deathCertificate: {
+    title: "Death Certificate",
+    tips: [
+      "Only required if parent/s is/are deceased",
+      "Must be from PSA or local civil registry",
+      "Document should be clear and legible",
+    ],
+  },
+};
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/gif", "image/webp", "application/pdf"];
@@ -271,6 +360,43 @@ const DocumentsSection: React.FC<FormSectionProps> = ({
             <p className="text-xs text-muted-foreground mt-0.5">
               {doc.description}
             </p>
+            {/* View Sample button */}
+            {DOCUMENT_SAMPLES[doc.id] && (
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="link"
+                    size="sm"
+                    className="p-0 h-auto text-xs text-blue-600 dark:text-blue-400 mt-1"
+                  >
+                    <Eye className="h-3 w-3 mr-1" />
+                    View Requirements
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>{DOCUMENT_SAMPLES[doc.id].title}</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-3">
+                    <p className="text-sm text-muted-foreground">Make sure your document meets these requirements:</p>
+                    <ul className="space-y-2">
+                      {DOCUMENT_SAMPLES[doc.id].tips.map((tip, i) => (
+                        <li key={i} className="flex gap-2 text-sm">
+                          <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0 mt-0.5" />
+                          <span>{tip}</span>
+                        </li>
+                      ))}
+                    </ul>
+                    <div className="p-3 bg-muted rounded-lg">
+                      <p className="text-xs text-muted-foreground">
+                        Accepted formats: JPEG, PNG, GIF, WebP, PDF (max 10MB)
+                      </p>
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            )}
             {uploaded && (
               <div className="mt-2 flex items-center gap-2 text-xs text-green-700 dark:text-green-400">
                 <span className="truncate max-w-[200px]">{uploaded.fileName}</span>

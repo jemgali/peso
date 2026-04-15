@@ -1,42 +1,24 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { Card } from "@/ui/card";
 import { Badge } from "@/ui/badge";
-import { FileText, ExternalLink, CheckCircle2 } from "lucide-react";
+import { Button } from "@/ui/button";
+import { Input } from "@/ui/input";
+import { Check, X, MessageSquare, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { ApplicationDetailResponse } from "@/lib/validations/application-review";
-
-// Document type labels for display in the viewer
-const DOCUMENT_LABELS: Record<string, { name: string; required: boolean }> = {
-  psaCertificate: { name: "Original PSA Certificate", required: true },
-  grades: { name: "Grades", required: true },
-  affidavitLowIncome: { name: "Affidavit of Low Income (PAO)", required: true },
-  barangayCertLowIncome: { name: "Barangay Certificate of Low Income (Parents)", required: true },
-  barangayCertResidency: { name: "Barangay Certificate of Residency (Applicant)", required: true },
-  incomeTaxReturn: { name: "Income Tax Return", required: true },
-  affidavitSoloParent: { name: "Affidavit of Solo Parent", required: false },
-  affidavitDiscrepancy: { name: "Affidavit of Discrepancy", required: false },
-  deathCertificate: { name: "Death Certificate (if parent/s deceased)", required: false },
-};
-
-interface DocumentEntry {
-  key: string;
-  url: string;
-  fileName: string;
-  fileType: string;
-  fileSize: number;
-  uploadedAt: string;
-}
-
-function formatFileSize(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/ui/popover";
+import type { ApplicationDetailResponse, FieldFeedback } from "@/lib/validations/application-review";
 
 interface ApplicationViewerProps {
   data: NonNullable<ApplicationDetailResponse["data"]>;
+  fieldFeedback: FieldFeedback[];
+  onFieldFeedbackChange: (feedback: FieldFeedback[]) => void;
+  isReviewable?: boolean;
 }
 
 interface SectionProps {
@@ -51,120 +33,282 @@ const Section: React.FC<SectionProps> = ({ title, children }) => (
   </Card>
 );
 
-interface FieldProps {
-  label: string;
-  value: string | number | boolean | null | undefined;
-}
-
-const Field: React.FC<FieldProps> = ({ label, value }) => {
-  let displayValue: string;
-  
-  if (value === null || value === undefined || value === "") {
-    displayValue = "—";
-  } else if (typeof value === "boolean") {
-    displayValue = value ? "Yes" : "No";
-  } else {
-    displayValue = String(value);
-  }
-
-  return (
-    <div>
-      <p className="text-sm text-muted-foreground">{label}</p>
-      <p className="font-medium">{displayValue}</p>
-    </div>
-  );
-};
-
 const formatDate = (dateStr: string | null | undefined): string => {
   if (!dateStr) return "—";
   return new Date(dateStr).toLocaleDateString();
 };
 
-const ApplicationViewer: React.FC<ApplicationViewerProps> = ({ data }) => {
-  const { profile, personal, address, family, guardian, benefactor, education, skills, documents, spes } = data;
+// Reviewable field — shows label with check/cross/comment controls, then value below
+interface ReviewableFieldProps {
+  label: string;
+  fieldName: string;
+  sectionId: string;
+  value: string | number | boolean | null | undefined;
+  fieldFeedback: FieldFeedback[];
+  onFieldFeedbackChange: (feedback: FieldFeedback[]) => void;
+  isReviewable?: boolean;
+}
+
+const ReviewableField: React.FC<ReviewableFieldProps> = ({
+  label,
+  fieldName,
+  sectionId,
+  value,
+  fieldFeedback,
+  onFieldFeedbackChange,
+  isReviewable = true,
+}) => {
+  const [commentOpen, setCommentOpen] = useState(false);
+  const [commentText, setCommentText] = useState("");
+
+  // Get current feedback for this field
+  const currentFeedback = fieldFeedback.find(
+    (f) => f.fieldName === fieldName && f.sectionId === sectionId
+  );
+
+  const displayValue =
+    value === null || value === undefined || value === ""
+      ? "—"
+      : typeof value === "boolean"
+        ? value ? "Yes" : "No"
+        : String(value);
+
+  const setFeedbackStatus = (status: "valid" | "invalid") => {
+    const updated = fieldFeedback.filter(
+      (f) => !(f.fieldName === fieldName && f.sectionId === sectionId)
+    );
+    // If clicking the same status, toggle it off
+    if (currentFeedback?.status === status) {
+      onFieldFeedbackChange(updated);
+    } else {
+      updated.push({
+        sectionId,
+        fieldName,
+        status,
+        comment: currentFeedback?.comment,
+      });
+      onFieldFeedbackChange(updated);
+    }
+  };
+
+  const saveComment = () => {
+    const updated = fieldFeedback.filter(
+      (f) => !(f.fieldName === fieldName && f.sectionId === sectionId)
+    );
+    updated.push({
+      sectionId,
+      fieldName,
+      status: currentFeedback?.status || "invalid",
+      comment: commentText || undefined,
+    });
+    onFieldFeedbackChange(updated);
+    setCommentOpen(false);
+  };
+
+  // Initialize comment text when popover opens
+  const handleCommentOpen = (open: boolean) => {
+    if (open) {
+      setCommentText(currentFeedback?.comment || "");
+    }
+    setCommentOpen(open);
+  };
+
+  return (
+    <div className={cn(
+      "rounded-lg p-3 transition-colors",
+      currentFeedback?.status === "valid" && "bg-green-50/50 dark:bg-green-950/10",
+      currentFeedback?.status === "invalid" && "bg-red-50/50 dark:bg-red-950/10",
+    )}>
+      {/* Label row with review controls */}
+      <div className="flex items-center gap-2 mb-1">
+        <p className="text-sm text-muted-foreground flex-1">{label}</p>
+        {isReviewable && (
+          <div className="flex items-center gap-1">
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className={cn(
+                "h-6 w-6",
+                currentFeedback?.status === "valid" && "text-green-600 bg-green-100 dark:bg-green-900/50"
+              )}
+              onClick={() => setFeedbackStatus("valid")}
+              title="Mark as valid"
+            >
+              <Check className="h-3.5 w-3.5" />
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className={cn(
+                "h-6 w-6",
+                currentFeedback?.status === "invalid" && "text-red-600 bg-red-100 dark:bg-red-900/50"
+              )}
+              onClick={() => setFeedbackStatus("invalid")}
+              title="Mark as invalid"
+            >
+              <X className="h-3.5 w-3.5" />
+            </Button>
+            <Popover open={commentOpen} onOpenChange={handleCommentOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className={cn(
+                    "h-6 w-6",
+                    currentFeedback?.comment && "text-blue-600 bg-blue-100 dark:bg-blue-900/50"
+                  )}
+                  title="Add comment"
+                >
+                  <MessageSquare className="h-3.5 w-3.5" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-72" align="end">
+                <div className="space-y-2">
+                  <p className="text-sm font-medium">Comment for {label}</p>
+                  <Input
+                    value={commentText}
+                    onChange={(e) => setCommentText(e.target.value)}
+                    placeholder="Add feedback comment..."
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") saveComment();
+                    }}
+                  />
+                  <div className="flex gap-2 justify-end">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setCommentOpen(false)}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={saveComment}
+                    >
+                      Save
+                    </Button>
+                  </div>
+                </div>
+              </PopoverContent>
+            </Popover>
+          </div>
+        )}
+      </div>
+      {/* Value */}
+      <p className="font-medium">{displayValue}</p>
+      {/* Show comment if exists */}
+      {currentFeedback?.comment && (
+        <p className="text-xs text-blue-600 dark:text-blue-400 mt-1 italic">
+          💬 {currentFeedback.comment}
+        </p>
+      )}
+    </div>
+  );
+};
+
+const ApplicationViewer: React.FC<ApplicationViewerProps> = ({
+  data,
+  fieldFeedback,
+  onFieldFeedbackChange,
+  isReviewable = true,
+}) => {
+  const { profile, personal, address, family, guardian, benefactor, education, skills, spes } = data;
+
+  const rf = (label: string, fieldName: string, sectionId: string, value: string | number | boolean | null | undefined) => (
+    <ReviewableField
+      label={label}
+      fieldName={fieldName}
+      sectionId={sectionId}
+      value={value}
+      fieldFeedback={fieldFeedback}
+      onFieldFeedbackChange={onFieldFeedbackChange}
+      isReviewable={isReviewable}
+    />
+  );
 
   return (
     <div className="space-y-6">
       {/* Basic Information */}
       <Section title="Basic Information">
-        <Field label="Last Name" value={profile.profileLastName} />
-        <Field label="First Name" value={profile.profileFirstName} />
-        <Field label="Middle Name" value={profile.profileMiddleName} />
-        <Field label="Suffix" value={profile.profileSuffix} />
-        <Field label="Email" value={profile.profileEmail} />
-        <Field label="Role" value={profile.profileRole} />
+        {rf("Last Name", "profileLastName", "basic-info", profile.profileLastName)}
+        {rf("First Name", "profileFirstName", "basic-info", profile.profileFirstName)}
+        {rf("Middle Name", "profileMiddleName", "basic-info", profile.profileMiddleName)}
+        {rf("Suffix", "profileSuffix", "basic-info", profile.profileSuffix)}
+        {rf("Email", "profileEmail", "basic-info", profile.profileEmail)}
       </Section>
 
       {/* Personal Details */}
       {personal && (
         <Section title="Personal Details">
-          <Field 
-            label="Birthdate" 
-            value={formatDate(personal.profileBirthdate as string | null)} 
-          />
-          <Field label="Age" value={personal.profileAge as number | null} />
-          <Field label="Place of Birth" value={personal.profilePlaceOfBirth as string | null} />
-          <Field label="Sex" value={personal.profileSex as string | null} />
-          <Field label="Height (cm)" value={personal.profileHeight as number | null} />
-          <Field label="Civil Status" value={personal.profileCivilStatus as string | null} />
-          <Field label="Religion" value={personal.profileReligion as string | null} />
-          <Field label="Contact" value={personal.profileContact as string | null} />
-          <Field label="Facebook" value={personal.profileFacebook as string | null} />
-          <Field label="Disability" value={personal.profileDisability as string | null} />
-          <Field label="PWD ID" value={personal.profilePwdId as string | null} />
+          {rf("Birthdate", "profileBirthdate", "personal-details", formatDate(personal.profileBirthdate as string | null))}
+          {rf("Age", "profileAge", "personal-details", personal.profileAge as number | null)}
+          {rf("Place of Birth", "profilePlaceOfBirth", "personal-details", personal.profilePlaceOfBirth as string | null)}
+          {rf("Sex", "profileSex", "personal-details", personal.profileSex as string | null)}
+          {rf("Height (cm)", "profileHeight", "personal-details", personal.profileHeight as number | null)}
+          {rf("Civil Status", "profileCivilStatus", "personal-details", personal.profileCivilStatus as string | null)}
+          {rf("Religion", "profileReligion", "personal-details", personal.profileReligion as string | null)}
+          {rf("Contact", "profileContact", "personal-details", personal.profileContact as string | null)}
+          {rf("Facebook", "profileFacebook", "personal-details", personal.profileFacebook as string | null)}
+          {rf("Disability", "profileDisability", "personal-details", personal.profileDisability as string | null)}
+          {rf("PWD ID", "profilePwdId", "personal-details", personal.profilePwdId as string | null)}
         </Section>
       )}
 
       {/* Address */}
       {address && (
         <Section title="Address">
-          <Field label="House/Street" value={address.profileHouseStreet as string | null} />
-          <Field label="Barangay" value={address.profileBarangay as string | null} />
-          <Field label="Municipality" value={address.profileMunicipality as string | null} />
-          <Field label="Province" value={address.profileProvince as string | null} />
+          {rf("House/Street", "profileHouseStreet", "address", address.profileHouseStreet as string | null)}
+          {rf("Barangay", "profileBarangay", "address", address.profileBarangay as string | null)}
+          {rf("Municipality", "profileMunicipality", "address", address.profileMunicipality as string | null)}
+          {rf("Province", "profileProvince", "address", address.profileProvince as string | null)}
         </Section>
       )}
 
       {/* Family Information */}
       {family && (
         <Section title="Family Information">
-          <Field label="Father's Name" value={family.fatherName as string | null} />
-          <Field label="Father's Occupation" value={family.fatherOccupation as string | null} />
-          <Field label="Father's Contact" value={family.fatherContact as string | null} />
-          <Field label="Mother's Maiden Name" value={family.motherMaidenName as string | null} />
-          <Field label="Mother's Occupation" value={family.motherOccupation as string | null} />
-          <Field label="Mother's Contact" value={family.motherContact as string | null} />
-          <Field label="Number of Siblings" value={family.numberOfSiblings as number | null} />
+          {rf("Father's Name", "fatherName", "family", family.fatherName as string | null)}
+          {rf("Father's Occupation", "fatherOccupation", "family", family.fatherOccupation as string | null)}
+          {rf("Father's Contact", "fatherContact", "family", family.fatherContact as string | null)}
+          {rf("Mother's Maiden Name", "motherMaidenName", "family", family.motherMaidenName as string | null)}
+          {rf("Mother's Occupation", "motherOccupation", "family", family.motherOccupation as string | null)}
+          {rf("Mother's Contact", "motherContact", "family", family.motherContact as string | null)}
+          {rf("Number of Siblings", "numberOfSiblings", "family", family.numberOfSiblings as number | null)}
         </Section>
       )}
 
       {/* Guardian Information */}
       {guardian && (
         <Section title="Guardian Information">
-          <Field label="Guardian Name" value={guardian.guardianName as string | null} />
-          <Field label="Guardian Contact" value={guardian.guardianContact as string | null} />
-          <Field label="Guardian Address" value={guardian.guardianAddress as string | null} />
-          <Field label="Guardian Age" value={guardian.guardianAge as number | null} />
-          <Field label="Guardian Occupation" value={guardian.guardianOccupation as string | null} />
-          <Field label="Relationship" value={guardian.guardianRelationship as string | null} />
+          {rf("Guardian Name", "guardianName", "guardian", guardian.guardianName as string | null)}
+          {rf("Guardian Contact", "guardianContact", "guardian", guardian.guardianContact as string | null)}
+          {rf("Guardian Address", "guardianAddress", "guardian", guardian.guardianAddress as string | null)}
+          {rf("Guardian Age", "guardianAge", "guardian", guardian.guardianAge as number | null)}
+          {rf("Guardian Occupation", "guardianOccupation", "guardian", guardian.guardianOccupation as string | null)}
+          {rf("Relationship", "guardianRelationship", "guardian", guardian.guardianRelationship as string | null)}
         </Section>
       )}
 
       {/* Benefactor Information */}
       {benefactor && (
         <Section title="Benefactor Information">
-          <Field label="Benefactor Name" value={benefactor.benefactorName as string | null} />
-          <Field label="Relationship" value={benefactor.benefactorRelationship as string | null} />
+          {rf("Benefactor Name", "benefactorName", "benefactor", benefactor.benefactorName as string | null)}
+          {rf("Relationship", "benefactorRelationship", "benefactor", benefactor.benefactorRelationship as string | null)}
         </Section>
       )}
 
       {/* Education */}
       {education && (
         <Section title="Education">
-          <Field label="Grade/Year Level" value={education.gradeYear as string | null} />
-          <Field label="School Name" value={education.schoolName as string | null} />
-          <Field label="Track/Course" value={education.trackCourse as string | null} />
-          <Field label="School Year" value={education.schoolYear as string | null} />
+          {rf("Grade/Year Level", "gradeYear", "education", education.gradeYear as string | null)}
+          {rf("School Name", "schoolName", "education", education.schoolName as string | null)}
+          {rf("Track/Course", "trackCourse", "education", education.trackCourse as string | null)}
+          {rf("School Year", "schoolYear", "education", education.schoolYear as string | null)}
         </Section>
       )}
 
@@ -186,100 +330,13 @@ const ApplicationViewer: React.FC<ApplicationViewerProps> = ({ data }) => {
         </Card>
       )}
 
-      {/* Documents */}
-      {documents && (
-        <Card className="p-4">
-          <h3 className="font-semibold mb-3 text-lg">Uploaded Documents</h3>
-          {(() => {
-            const docs = (documents as Record<string, unknown>).documents as Record<string, DocumentEntry> | undefined;
-            if (!docs || Object.keys(docs).length === 0) {
-              return <p className="text-muted-foreground">No documents uploaded</p>;
-            }
-
-            // Show all document types, marking uploaded vs not uploaded
-            const allDocTypes = Object.keys(DOCUMENT_LABELS);
-            return (
-              <div className="space-y-2">
-                {allDocTypes.map((docType) => {
-                  const doc = docs[docType];
-                  const label = DOCUMENT_LABELS[docType];
-                  return (
-                    <div
-                      key={docType}
-                      className={cn(
-                        "flex items-center justify-between p-3 rounded-lg border",
-                        doc
-                          ? "border-green-200 dark:border-green-800 bg-green-50/50 dark:bg-green-950/20"
-                          : label.required
-                            ? "border-red-200 dark:border-red-800 bg-red-50/50 dark:bg-red-950/20"
-                            : "border-muted"
-                      )}
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className={cn(
-                          "p-1.5 rounded",
-                          doc ? "bg-green-100 dark:bg-green-900/50" : "bg-muted"
-                        )}>
-                          {doc ? (
-                            <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
-                          ) : (
-                            <FileText className="h-4 w-4 text-muted-foreground" />
-                          )}
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm font-medium">{label.name}</span>
-                            {label.required ? (
-                              <Badge variant="secondary" className="text-xs bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400">
-                                Required
-                              </Badge>
-                            ) : (
-                              <Badge variant="secondary" className="text-xs bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400">
-                                If Applicable
-                              </Badge>
-                            )}
-                          </div>
-                          {doc && (
-                            <p className="text-xs text-muted-foreground mt-0.5">
-                              {doc.fileName} ({formatFileSize(doc.fileSize)}) — Uploaded {new Date(doc.uploadedAt).toLocaleDateString()}
-                            </p>
-                          )}
-                          {!doc && (
-                            <p className="text-xs text-muted-foreground mt-0.5">
-                              {label.required ? "Not yet uploaded" : "Not submitted"}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                      {doc && (
-                        <a
-                          href={doc.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:underline"
-                        >
-                          View <ExternalLink className="h-3 w-3" />
-                        </a>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            );
-          })()}
-        </Card>
-      )}
-
       {/* SPES Information */}
       {spes && (
         <Section title="SPES Information">
-          <Field label="4Ps Beneficiary" value={spes.isFourPsBeneficiary as boolean | null} />
-          <Field label="Application Year" value={spes.applicationYear as number | null} />
+          {rf("4Ps Beneficiary", "isFourPsBeneficiary", "spes", spes.isFourPsBeneficiary as boolean | null)}
+          {rf("Application Year", "applicationYear", "spes", spes.applicationYear as number | null)}
           <div className="col-span-2">
-            <p className="text-sm text-muted-foreground">Motivation</p>
-            <p className="font-medium whitespace-pre-wrap">
-              {(spes.motivation as string | null) || "—"}
-            </p>
+            {rf("Motivation", "motivation", "spes", spes.motivation as string | null)}
           </div>
         </Section>
       )}

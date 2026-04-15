@@ -63,7 +63,6 @@ const Page = async () => {
         profileMiddleName: profile.profileMiddleName || "",
         profileSuffix: profile.profileSuffix || "",
         profileEmail: profile.profileEmail || userEmail,
-        profileRole: profile.profileRole || "",
         // From ProfilePersonal
         ...(personal && {
           profileBirthdate: personal.profileBirthdate
