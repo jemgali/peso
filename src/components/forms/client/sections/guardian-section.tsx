@@ -31,28 +31,27 @@ const GuardianSection: React.FC<FormSectionProps> = ({
       <div className="mb-4">
         <h2 className="text-lg font-semibold">Guardian Information</h2>
         <p className="text-sm text-muted-foreground">
-          Provide details about your legal guardian. Name, relationship, and contact are required.
+          This section is optional. You may skip it if not applicable.
         </p>
       </div>
 
       <FieldGroup>
         <FieldSet className="gap-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <TextField
-              name="guardianName"
-              label="Guardian Name"
-              register={register}
-              error={errors.guardianName?.message}
-              disabled={isPending}
-              placeholder="Full name of guardian"
-              required
-              onBlur={autoCapitalizeBlur("guardianName")}
-            />
+              <TextField
+                name="guardianName"
+                label="Guardian Name"
+                register={register}
+                error={errors.guardianName?.message}
+                disabled={isPending}
+                placeholder="Full name of guardian"
+                onBlur={autoCapitalizeBlur("guardianName")}
+              />
 
-            <Field data-invalid={!!errors.guardianRelationship}>
-              <FieldLabel htmlFor="guardianRelationship" required>
-                Relationship to You
-              </FieldLabel>
+              <Field data-invalid={!!errors.guardianRelationship}>
+                <FieldLabel htmlFor="guardianRelationship">
+                  Relationship to You
+                </FieldLabel>
               <select
                 {...register("guardianRelationship")}
                 id="guardianRelationship"
@@ -91,16 +90,15 @@ const GuardianSection: React.FC<FormSectionProps> = ({
               onBlur={autoCapitalizeBlur("guardianOccupation")}
             />
 
-            <TextField
-              name="guardianContact"
-              label="Contact Number"
-              register={register}
-              error={errors.guardianContact?.message}
-              disabled={isPending}
-              type="tel"
-              placeholder="+63 9XX-XXX-XXXX"
-              required
-            />
+              <TextField
+                name="guardianContact"
+                label="Contact Number"
+                register={register}
+                error={errors.guardianContact?.message}
+                disabled={isPending}
+                type="tel"
+                placeholder="+63 9XX-XXX-XXXX"
+              />
           </div>
 
           <TextareaField

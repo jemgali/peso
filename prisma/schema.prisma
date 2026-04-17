@@ -8,6 +8,39 @@ datasource db {
   schemas  = ["auth", "public"]
 }
 
+enum SpesWorkflowStage {
+  APPLICATION_APPROVED
+  INTERVIEW_SCHEDULED
+  PRIORITY_ASSIGNED
+  EXAM_SCHEDULED
+  EXAM_EVALUATED
+  QUALIFIED
+  WAITLISTED
+  GRANTEE_SELECTED
+  DOCUMENTS_RELEASED
+  ORIENTATION_SCHEDULED
+  BATCH_ASSIGNED
+  OFFICE_ASSIGNED
+
+  @@schema("public")
+}
+
+enum SpesPriorityLevel {
+  HIGH
+  MODERATE
+  LOW
+
+  @@schema("public")
+}
+
+enum SpesExamResult {
+  PENDING
+  PASSED
+  FAILED
+
+  @@schema("public")
+}
+
 // ----- AUTH MODELS -----
 
 model User {
@@ -30,6 +63,10 @@ model User {
   profile       ProfileUser?
   reviews       ApplicationReview[]
   notifications Notification[]
+  examSettingsUpdates SpesExamSettings[] @relation("SpesExamSettingsUpdatedBy")
+  createdSpesBatches SpesBatch[] @relation("SpesBatchCreatedBy")
+  selectedSpesWorkflows SpesWorkflow[] @relation("SpesSelectedBy")
+  spesStageChanges SpesStageHistory[] @relation("SpesStageChangedBy")
 
   // Other things
   @@unique([email])
@@ -119,6 +156,7 @@ model ProfileUser {
   personal          ProfilePersonal?
   address           ProfileAddress?
   family            ProfileFamily?
+  siblings          ProfileSibling[]
   guardian          ProfileGuardian?
   benefactor        ProfileBenefactor?
   education         ProfileEducation?
@@ -193,10 +231,27 @@ model ProfileFamily {
   motherContact    String?     @map("mother_contact")
   // Siblings information
   numberOfSiblings Int?        @map("number_of_siblings")
-  // siblings: [{ name: String, age: Int?, sex: String? }, ...]
+  // Legacy sibling JSON field (deprecated; replaced by ProfileSibling entity)
   siblings         Json?       @map("siblings")
 
   @@map("profile_family")
+  @@schema("public")
+}
+
+model ProfileSibling {
+  // Foreign Key
+  profileId         String      @map("profile_id")
+  profile           ProfileUser @relation(fields: [profileId], references: [profileId], onDelete: Cascade)
+  // Primary Key
+  siblingId         String      @id @map("sibling_id")
+  // Sibling fields
+  siblingName       String      @map("sibling_name")
+  siblingAge        Int         @map("sibling_age")
+  siblingOccupation String?     @map("sibling_occupation")
+  siblingOrder      Int         @default(0) @map("sibling_order")
+
+  @@index([profileId])
+  @@map("profile_sibling")
   @@schema("public")
 }
 
@@ -317,10 +372,112 @@ model ApplicationSubmission {
   updatedAt       DateTime            @updatedAt @map("updated_at")
   // Relationships
   reviews         ApplicationReview[]
+  spesWorkflow    SpesWorkflow?
 
   @@index([profileId])
   @@index([status])
   @@map("application_submission")
+  @@schema("public")
+}
+
+model SpesExamSettings {
+  // Primary Key
+  settingsId               String   @id @map("settings_id")
+  // Scope identifier
+  scope                    String   @unique @default("spes") @map("scope")
+  // Exam computation settings
+  totalScore               Int      @default(100) @map("total_score")
+  passingThresholdPercent  Int      @default(75) @map("passing_threshold_percent")
+  // Audit fields
+  updatedById              String?  @map("updated_by_id")
+  updatedBy                User?    @relation("SpesExamSettingsUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+  createdAt                DateTime @default(now()) @map("created_at")
+  updatedAt                DateTime @updatedAt @map("updated_at")
+
+  @@map("spes_exam_settings")
+  @@schema("public")
+}
+
+model SpesBatch {
+  // Primary Key
+  batchId       String         @id @map("batch_id")
+  // Batch details
+  batchName     String         @map("batch_name")
+  startDate     DateTime       @map("start_date") @db.Date
+  officeName    String?        @map("office_name")
+  // Audit fields
+  createdById   String?        @map("created_by_id")
+  createdBy     User?          @relation("SpesBatchCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt     DateTime       @default(now()) @map("created_at")
+  updatedAt     DateTime       @updatedAt @map("updated_at")
+  // Relationships
+  workflows     SpesWorkflow[]
+
+  @@index([startDate])
+  @@map("spes_batch")
+  @@schema("public")
+}
+
+model SpesWorkflow {
+  // Primary Key
+  workflowId                   String             @id @map("workflow_id")
+  // Application reference
+  submissionId                 String             @unique @map("submission_id")
+  submission                   ApplicationSubmission @relation(fields: [submissionId], references: [submissionId], onDelete: Cascade)
+  // Workflow state
+  stage                        SpesWorkflowStage  @default(APPLICATION_APPROVED) @map("stage")
+  priority                     SpesPriorityLevel? @map("priority")
+  // Schedule links
+  interviewScheduleEventId     String?            @map("interview_schedule_event_id")
+  examScheduleEventId          String?            @map("exam_schedule_event_id")
+  orientationScheduleEventId   String?            @map("orientation_schedule_event_id")
+  interviewScheduleEvent       ScheduleEvent?     @relation("SpesInterviewEvent", fields: [interviewScheduleEventId], references: [id], onDelete: SetNull)
+  examScheduleEvent            ScheduleEvent?     @relation("SpesExamEvent", fields: [examScheduleEventId], references: [id], onDelete: SetNull)
+  orientationScheduleEvent     ScheduleEvent?     @relation("SpesOrientationEvent", fields: [orientationScheduleEventId], references: [id], onDelete: SetNull)
+  // Evaluation fields
+  examScore                    Float?             @map("exam_score")
+  examResult                   SpesExamResult     @default(PENDING) @map("exam_result")
+  rankPosition                 Int?               @map("rank_position")
+  isWaitlisted                 Boolean            @default(false) @map("is_waitlisted")
+  // Grantee fields
+  isGrantee                    Boolean            @default(false) @map("is_grantee")
+  selectedById                 String?            @map("selected_by_id")
+  selectedBy                   User?              @relation("SpesSelectedBy", fields: [selectedById], references: [id], onDelete: SetNull)
+  selectedAt                   DateTime?          @map("selected_at")
+  // Deployment fields
+  batchId                      String?            @map("batch_id")
+  batch                        SpesBatch?         @relation(fields: [batchId], references: [batchId], onDelete: SetNull)
+  assignedOffice               String?            @map("assigned_office")
+  // Audit fields
+  createdAt                    DateTime           @default(now()) @map("created_at")
+  updatedAt                    DateTime           @updatedAt @map("updated_at")
+  // Relationships
+  stageHistory                 SpesStageHistory[]
+
+  @@index([stage])
+  @@index([priority])
+  @@index([examResult])
+  @@index([isGrantee])
+  @@map("spes_workflow")
+  @@schema("public")
+}
+
+model SpesStageHistory {
+  // Primary Key
+  historyId     String            @id @map("history_id")
+  // Workflow reference
+  workflowId    String            @map("workflow_id")
+  workflow      SpesWorkflow      @relation(fields: [workflowId], references: [workflowId], onDelete: Cascade)
+  // Stage snapshot
+  stage         SpesWorkflowStage @map("stage")
+  note          String?           @map("note")
+  // Audit fields
+  createdById   String?           @map("created_by_id")
+  createdBy     User?             @relation("SpesStageChangedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt     DateTime          @default(now()) @map("created_at")
+
+  @@index([workflowId, createdAt])
+  @@map("spes_stage_history")
   @@schema("public")
 }
 
@@ -449,6 +606,9 @@ model ScheduleEvent {
   // Timestamps
   createdAt   DateTime  @default(now()) @map("created_at")
   updatedAt   DateTime  @updatedAt @map("updated_at")
+  interviewWorkflows   SpesWorkflow[] @relation("SpesInterviewEvent")
+  examWorkflows        SpesWorkflow[] @relation("SpesExamEvent")
+  orientationWorkflows SpesWorkflow[] @relation("SpesOrientationEvent")
 
   @@index([startDate])
   @@index([type])

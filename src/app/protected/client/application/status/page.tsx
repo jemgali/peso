@@ -13,7 +13,30 @@ import { ApplicationStatusSkeleton } from "@/ui/skeletons";
 import type {
   ClientApplicationStatusResponse,
   ReviewHistoryItem,
+  WorkflowScheduleSummary,
 } from "@/lib/validations/application-review";
+
+function toLabel(value: string): string {
+  return value
+    .split("_")
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+    .join(" ");
+}
+
+function formatScheduleSummaryDate(schedule: WorkflowScheduleSummary): string {
+  const start = new Date(schedule.startDate);
+  const end = schedule.endDate ? new Date(schedule.endDate) : null;
+
+  if (schedule.allDay) {
+    return end
+      ? `${start.toLocaleDateString()} - ${end.toLocaleDateString()}`
+      : start.toLocaleDateString();
+  }
+
+  return end
+    ? `${start.toLocaleString()} - ${end.toLocaleString()}`
+    : start.toLocaleString();
+}
 
 export default function ApplicationStatusPage() {
   const router = useRouter();
@@ -94,7 +117,18 @@ export default function ApplicationStatusPage() {
     );
   }
 
-  const { submission, latestReview, reviewHistory } = data;
+  const { submission, latestReview, reviewHistory, workflow } = data;
+  const scheduleSummaries: Array<{ label: string; schedule: WorkflowScheduleSummary }> = [];
+
+  if (workflow?.schedules.interview) {
+    scheduleSummaries.push({ label: "Interview", schedule: workflow.schedules.interview });
+  }
+  if (workflow?.schedules.exam) {
+    scheduleSummaries.push({ label: "Exam", schedule: workflow.schedules.exam });
+  }
+  if (workflow?.schedules.orientation) {
+    scheduleSummaries.push({ label: "Orientation", schedule: workflow.schedules.orientation });
+  }
 
   return (
     <div className="space-y-6">
@@ -140,6 +174,98 @@ export default function ApplicationStatusPage() {
               </Button>
             </Link>
           </div>
+        </Card>
+      )}
+
+      {workflow?.isGrantee && (
+        <Card className="p-4 bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-800">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div>
+              <h3 className="font-medium text-green-800 dark:text-green-300">
+                SPES Grantee Documents
+              </h3>
+              <p className="text-sm text-green-700 dark:text-green-400">
+                Your printable DOLE SPES forms are now available.
+              </p>
+            </div>
+            <Link href="/protected/client/application/documents">
+              <Button>
+                <FileText className="h-4 w-4 mr-2" />
+                View & Print Documents
+              </Button>
+            </Link>
+          </div>
+        </Card>
+      )}
+
+      {submission?.status === "approved" && !workflow?.isGrantee && (
+        <Card className="p-4 bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800">
+          <div className="space-y-1">
+            <h3 className="font-medium text-blue-800 dark:text-blue-300">
+              Approved Application
+            </h3>
+            <p className="text-sm text-blue-700 dark:text-blue-400">
+              You can track your SPES workflow progress below. Printable forms become available
+              only after grantee selection.
+            </p>
+          </div>
+        </Card>
+      )}
+
+      {workflow && (
+        <Card className="p-6 space-y-4">
+          <div className="flex flex-col gap-1">
+            <h3 className="font-semibold text-lg">SPES Workflow Progress</h3>
+            <p className="text-sm text-muted-foreground">
+              Stage: <span className="font-medium text-foreground">{toLabel(workflow.stage)}</span>
+            </p>
+          </div>
+
+          <div className="grid gap-2 text-sm sm:grid-cols-2">
+            <p>
+              Exam Result: <span className="font-medium">{toLabel(workflow.examResult)}</span>
+            </p>
+            <p>
+              Grantee Status:{" "}
+              <span className="font-medium">{workflow.isGrantee ? "Selected" : "Not selected"}</span>
+            </p>
+            {workflow.batch && (
+              <p>
+                Batch: <span className="font-medium">{workflow.batch.batchName}</span>
+              </p>
+            )}
+            {(workflow.assignedOffice || workflow.batch?.officeName) && (
+              <p>
+                Office:{" "}
+                <span className="font-medium">
+                  {workflow.assignedOffice || workflow.batch?.officeName}
+                </span>
+              </p>
+            )}
+          </div>
+
+          {scheduleSummaries.length > 0 && (
+            <div className="space-y-2">
+              <h4 className="font-medium">Upcoming Schedules</h4>
+              <div className="space-y-2">
+                {scheduleSummaries.map((item) => (
+                  <div key={item.schedule.eventId} className="rounded-md border p-3">
+                    <p className="text-sm font-medium">
+                      {item.label}: {item.schedule.title}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {formatScheduleSummaryDate(item.schedule)}
+                    </p>
+                    {item.schedule.description && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {item.schedule.description}
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </Card>
       )}
 

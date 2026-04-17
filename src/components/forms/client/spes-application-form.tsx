@@ -134,7 +134,7 @@ const TOUCHED_FIELDS: Record<string, string[]> = {
     "profileProvince",
   ],
   family: ["fatherName", "motherMaidenName"],
-  guardian: ["guardianName", "guardianRelationship", "guardianContact"],
+  guardian: [],
   benefactor: ["benefactorName"],
   education: ["gradeYear", "schoolName", "trackCourse", "schoolYear"],
   skills: ["skills"],
@@ -166,6 +166,23 @@ function checkSectionTouched(
       return value.some((v) => v === true);
     }
     return value === true;
+  });
+}
+
+function checkSectionHasData(
+  sectionId: string,
+  values: SPESApplicationFormValues,
+): boolean {
+  const fields = SECTION_FIELDS[sectionId] || [];
+  return fields.some((field) => {
+    const value = values[field];
+    if (typeof value === "string") {
+      return value.trim().length > 0;
+    }
+    if (Array.isArray(value)) {
+      return value.length > 0;
+    }
+    return value !== undefined && value !== null;
   });
 }
 
@@ -305,12 +322,16 @@ const SPESApplicationForm: React.FC<SPESApplicationFormProps> = ({
     SECTION_IDS.forEach((sectionId, index) => {
       const sectionHasErrors = checkSectionErrors(sectionId, errors);
       const sectionIsValid = validateSection(sectionId, getValues());
-      const isOptional = ["skills", "benefactor"].includes(sectionId);
-      const sectionTouched = checkSectionTouched(sectionId, touchedFields) || (isOptional && visitedSteps.has(index));
+      const isOptional = ["skills", "benefactor", "guardian"].includes(sectionId);
+      const sectionTouched = checkSectionTouched(sectionId, touchedFields);
+      const sectionHasData = checkSectionHasData(sectionId, getValues());
 
       if (sectionHasErrors) {
         statuses[sectionId] = "error";
-      } else if (sectionIsValid && sectionTouched) {
+      } else if (
+        sectionIsValid &&
+        (sectionTouched || sectionHasData || (isOptional && visitedSteps.has(index)))
+      ) {
         statuses[sectionId] = "complete";
       } else if (index === currentStep) {
         statuses[sectionId] = "current";

@@ -663,12 +663,13 @@ const BasicInfoSection: React.FC<FormSectionWithFieldArrayProps & { disableEmail
 
             <TextField
               name="profileFacebook"
-              label="Facebook Profile URL (Optional)"
+              label="Facebook Profile URL"
               register={register}
               error={errors.profileFacebook?.message}
               disabled={isPending}
               type="url"
               placeholder="https://facebook.com/username"
+              required
             />
           </div>
 

@@ -71,16 +71,16 @@ const Page = () => {
   }
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex h-full min-h-0 flex-col gap-4">
       <PageHeader
         title="Dashboard"
         description="Overview of your applications and latest updates"
       />
 
       {/* Main layout: left content + right sidebar */}
-      <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
+      <div className="grid min-h-0 flex-1 gap-4 lg:grid-cols-[1fr_320px]">
         {/* Left content */}
-        <div className="flex flex-col gap-6">
+        <div className="flex min-h-0 flex-col gap-4">
           {/* Top cards */}
           <div className="grid gap-4 sm:grid-cols-2">
             {/* Active Applications */}
@@ -177,23 +177,6 @@ const Page = () => {
                 </CardContent>
               </Card>
             )}
-
-          {/* No application — show apply button */}
-          {!statusData?.hasApplication && (
-            <Card>
-              <CardContent className="flex items-center justify-between py-4">
-                <p className="text-sm text-muted-foreground">
-                  No active application. Start your SPES application today.
-                </p>
-                <Button asChild size="sm">
-                  <Link href="/protected/client/application">
-                    <FileText data-icon="inline-start" />
-                    Apply Now
-                  </Link>
-                </Button>
-              </CardContent>
-            </Card>
-          )}
 
           {/* Calendar with Announcements — replaces DashboardAnnouncements */}
           <DashboardCalendar />

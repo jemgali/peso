@@ -14,16 +14,22 @@ export const ROUTES = {
     PROGRAMS: "/protected/admin/programs",
     ANNOUNCEMENTS: "/protected/admin/announcements",
     APPLICATIONS: "/protected/admin/applications",
+    EVALUATION: "/protected/admin/evaluation",
+    BATCHES: "/protected/admin/batches",
     SCHEDULE: "/protected/admin/schedule",
     USERS: "/protected/admin/users",
     REPORTS: "/protected/admin/reports",
+    SERVICE_SELECTION: "/protected/service-selection",
   },
 
   // Client routes
   CLIENT: {
     DASHBOARD: "/protected/client",
     APPLICATION: "/protected/client/application",
-    APPLICATIONS: "/protected/client/applications",
+    APPLICATION_SPES: "/protected/client/application",
+    APPLICATION_GIP: "/protected/client/application/gip",
+    APPLICATION_DILP: "/protected/client/application/dilp",
+    DOCUMENTS: "/protected/client/application/documents",
   },
 
   // Employee routes
@@ -39,6 +45,12 @@ export const ROUTES = {
       PROGRAMS: "/api/admin/programs",
       SCHEDULE: "/api/admin/schedule",
       APPLICATIONS: "/api/admin/applications",
+      SERVICE_CONTEXT: "/api/admin/service-context",
+      SPES: {
+        EVALUATION_SETTINGS: "/api/admin/spes/evaluation-settings",
+        BATCHES: "/api/admin/spes/batches",
+        WORKFLOWS: "/api/admin/spes/workflows",
+      },
     },
     CLIENT: {
       APPLICATION: "/api/client/application",

@@ -5,7 +5,9 @@ import { PrismaClient } from "@/generated/prisma/client";
 import { Pool } from "pg";
 import { PrismaPg } from "@prisma/adapter-pg";
 import ApplicationForm from "@/components/client/content/application-form";
+import SubmittedApplicationView from "@/components/client/submitted-application-view";
 import { PageHeader } from "@/components/shared";
+import { redirect } from "next/navigation";
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -23,18 +25,30 @@ const Page = async () => {
 
   // Fetch existing profile data (from onboarding or previous saves) to pre-populate the form
   let defaultValues: Record<string, unknown> | undefined;
-  let revisionFeedback: Record<string, any> | undefined;
+  let revisionFeedback: Record<string, string> | undefined;
+  let latestSubmission:
+      | {
+        status: string;
+        submissionNumber: number;
+        submittedAt: Date;
+        updatedAt: Date;
+        isGrantee: boolean;
+      }
+    | undefined;
 
   if (userId) {
     const profile = await prisma.profileUser.findUnique({
       where: { userId },
-      include: { 
-        personal: true,
-        address: true,
-        family: true,
-        guardian: true,
-        education: true,
-        spes: true,
+        include: { 
+          personal: true,
+          address: true,
+          family: true,
+          siblings: {
+            orderBy: { siblingOrder: "asc" },
+          },
+          guardian: true,
+          education: true,
+          spes: true,
         documents: true,
       },
     });
@@ -47,11 +61,12 @@ const Page = async () => {
       const guardian = profile.guardian;
       const education = profile.education;
       const spes = profile.spes;
+      const siblings = profile.siblings;
       const documentsProfile = profile.documents;
       
       // Transform language dialect from string[] back to { value: string }[] // Assuming simple format here for Combobox or Multi-select
       const languageDialect = personal?.profileLanguageDialect
-        ? (personal.profileLanguageDialect as { value: string }[] | string[]).map((lang: any) => 
+        ? (personal.profileLanguageDialect as Array<string | { value: string }>).map((lang) => 
             typeof lang === 'string' ? { value: lang } : lang
           )
         : [];
@@ -96,6 +111,11 @@ const Page = async () => {
           motherOccupation: family.motherOccupation || "",
           motherContact: family.motherContact || "",
           numberOfSiblings: family.numberOfSiblings ?? undefined,
+          siblings: siblings.map((sibling) => ({
+            name: sibling.siblingName,
+            age: sibling.siblingAge,
+            occupation: sibling.siblingOccupation || "",
+          })),
         }),
         // From ProfileGuardian
         ...(guardian && {
@@ -126,11 +146,16 @@ const Page = async () => {
         }),
       };
 
-      // Check for needs_revision submission
-      const revisionSubmission = await prisma.applicationSubmission.findFirst({
-        where: { profileId: profile.profileId, status: "needs_revision" },
+      // Check latest submission
+      const latest = await prisma.applicationSubmission.findFirst({
+        where: { profileId: profile.profileId },
         orderBy: { submittedAt: "desc" },
         include: {
+          spesWorkflow: {
+            select: {
+              isGrantee: true,
+            },
+          },
           reviews: {
             orderBy: { reviewedAt: "desc" },
             take: 1,
@@ -139,8 +164,18 @@ const Page = async () => {
         },
       });
 
-      if (revisionSubmission && revisionSubmission.reviews.length > 0) {
-        const latestReview = revisionSubmission.reviews[0];
+      latestSubmission = latest
+        ? {
+            status: latest.status,
+            submissionNumber: latest.submissionNumber,
+            submittedAt: latest.submittedAt,
+            updatedAt: latest.updatedAt,
+            isGrantee: latest.spesWorkflow?.isGrantee ?? false,
+          }
+        : undefined;
+
+      if (latest?.status === "needs_revision" && latest.reviews.length > 0) {
+        const latestReview = latest.reviews[0];
         const feedbackMap: Record<string, string> = {};
         
         latestReview.fieldFeedback.forEach(fb => {
@@ -152,6 +187,42 @@ const Page = async () => {
         revisionFeedback = feedbackMap;
       }
     }
+  }
+
+  if (latestSubmission?.status === "approved") {
+    if (latestSubmission.isGrantee) {
+      redirect("/protected/client/application/documents");
+    }
+
+    redirect("/protected/client/application/status");
+  }
+
+  if (
+    latestSubmission &&
+    (latestSubmission.status === "pending" || latestSubmission.status === "in_review")
+  ) {
+    return (
+      <div className="flex flex-col gap-6">
+        <PageHeader
+          title="Application Form"
+          description="You already have an active SPES application. Here is your latest submitted data."
+        />
+        <SubmittedApplicationView
+          submission={{
+            status: latestSubmission.status as
+              | "pending"
+              | "in_review"
+              | "approved"
+              | "needs_revision"
+              | "rejected",
+            submissionNumber: latestSubmission.submissionNumber,
+            submittedAt: latestSubmission.submittedAt.toISOString(),
+            updatedAt: latestSubmission.updatedAt.toISOString(),
+          }}
+          snapshot={defaultValues || {}}
+        />
+      </div>
+    );
   }
 
   return (
