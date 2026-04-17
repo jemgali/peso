@@ -196,7 +196,7 @@ export async function POST(
             motherOccupation: data.motherOccupation || null,
             motherContact: data.motherContact || null,
             numberOfSiblings: data.numberOfSiblings || null,
-            siblings: data.siblings || [],
+            siblings: [],
           },
         });
       } else {
@@ -211,8 +211,30 @@ export async function POST(
             motherOccupation: data.motherOccupation || null,
             motherContact: data.motherContact || null,
             numberOfSiblings: data.numberOfSiblings || null,
-            siblings: data.siblings || [],
+            siblings: [],
           },
+        });
+      }
+
+      // Handle siblings via dedicated ProfileSibling entity
+      await tx.profileSibling.deleteMany({
+        where: { profileId: profile.profileId },
+      });
+
+      const siblingsToPersist = (data.siblings || [])
+        .filter((s) => s.name && s.age !== undefined && s.age !== null)
+        .map((sibling, index) => ({
+          siblingId: randomUUID(),
+          profileId: profile.profileId,
+          siblingName: sibling.name,
+          siblingAge: Number(sibling.age),
+          siblingOccupation: sibling.occupation || null,
+          siblingOrder: index,
+        }));
+
+      if (siblingsToPersist.length > 0) {
+        await tx.profileSibling.createMany({
+          data: siblingsToPersist,
         });
       }
 

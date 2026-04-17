@@ -141,7 +141,7 @@ const FamilySection: React.FC<FormSectionWithFieldArrayProps> = ({
                   Siblings
                 </h3>
                 <p className="text-xs text-muted-foreground">
-                  Add information about your siblings (name is required)
+                  Add information about your siblings (name and age are required if a sibling is added)
                 </p>
               </div>
               <Field data-invalid={!!errors.numberOfSiblings} className="w-32">
@@ -188,9 +188,14 @@ const FamilySection: React.FC<FormSectionWithFieldArrayProps> = ({
                       })}
                       type="number"
                       disabled={isPending}
-                      placeholder="Age (Optional)"
-                      min={0}
+                      placeholder="Age *"
+                      min={1}
                     />
+                    {errors.siblings?.[index]?.age && (
+                      <FieldError className="text-xs">
+                        {errors.siblings[index].age?.message}
+                      </FieldError>
+                    )}
                     <Input
                       {...register(`siblings.${index}.occupation` as const)}
                       type="text"
@@ -216,7 +221,7 @@ const FamilySection: React.FC<FormSectionWithFieldArrayProps> = ({
                 variant="outline"
                 size="sm"
                 onClick={() =>
-                  siblingsFieldArray?.append({ name: "", age: undefined, occupation: "" })
+                  siblingsFieldArray?.append({ name: "", age: 0, occupation: "" })
                 }
                 disabled={isPending}
               >

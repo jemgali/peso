@@ -43,9 +43,9 @@ const UserProfile = () => {
     const displayName = user.name || user.email;
     const role = user.role || 'client';
 
-    let dashboardRoute = '/protected/client';
+    let dashboardRoute = '/protected';
     if (role === 'admin') {
-        dashboardRoute = '/protected/admin';
+        dashboardRoute = '/protected';
     } else if (role === 'employee') {
         dashboardRoute = '/protected/employee';
     }

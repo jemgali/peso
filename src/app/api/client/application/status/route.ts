@@ -10,7 +10,9 @@ import type {
   ReviewDecision,
   FieldFeedback,
   DocumentFeedback,
+  WorkflowScheduleSummary,
 } from "@/lib/validations/application-review";
+import type { ExamResult, SpesWorkflowStage } from "@/lib/validations/spes-workflow";
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -39,6 +41,20 @@ export async function GET(): Promise<NextResponse<ClientApplicationStatusRespons
     // Get user's profile
     const profile = await prisma.profileUser.findUnique({
       where: { userId },
+      include: {
+        personal: true,
+        address: true,
+        family: true,
+        siblings: {
+          orderBy: { siblingOrder: "asc" },
+        },
+        guardian: true,
+        benefactor: true,
+        education: true,
+        skills: true,
+        documents: true,
+        spes: true,
+      },
     });
 
     if (!profile) {
@@ -55,6 +71,47 @@ export async function GET(): Promise<NextResponse<ClientApplicationStatusRespons
       where: { profileId: profile.profileId },
       orderBy: { submittedAt: "desc" },
       include: {
+        spesWorkflow: {
+          include: {
+            batch: {
+              select: {
+                batchId: true,
+                batchName: true,
+                officeName: true,
+              },
+            },
+            interviewScheduleEvent: {
+              select: {
+                id: true,
+                title: true,
+                description: true,
+                startDate: true,
+                endDate: true,
+                allDay: true,
+              },
+            },
+            examScheduleEvent: {
+              select: {
+                id: true,
+                title: true,
+                description: true,
+                startDate: true,
+                endDate: true,
+                allDay: true,
+              },
+            },
+            orientationScheduleEvent: {
+              select: {
+                id: true,
+                title: true,
+                description: true,
+                startDate: true,
+                endDate: true,
+                allDay: true,
+              },
+            },
+          },
+        },
         reviews: {
           include: {
             reviewer: {
@@ -114,6 +171,55 @@ export async function GET(): Promise<NextResponse<ClientApplicationStatusRespons
       documentFeedback: formatDocumentFeedback(review.documentFeedback),
     }));
 
+    const formatScheduleSummary = (
+      schedule:
+        | {
+            id: string;
+            title: string;
+            description: string | null;
+            startDate: Date;
+            endDate: Date | null;
+            allDay: boolean;
+          }
+        | null
+        | undefined
+    ): WorkflowScheduleSummary | null =>
+      schedule
+        ? {
+            eventId: schedule.id,
+            title: schedule.title,
+            description: schedule.description,
+            startDate: schedule.startDate.toISOString(),
+            endDate: schedule.endDate?.toISOString() || null,
+            allDay: schedule.allDay,
+          }
+        : null;
+
+    const workflow = submission.spesWorkflow;
+    const formattedWorkflow = workflow
+        ? {
+          workflowId: workflow.workflowId,
+          stage: workflow.stage.toLowerCase() as SpesWorkflowStage,
+          isGrantee: workflow.isGrantee,
+          examResult: workflow.examResult.toLowerCase() as ExamResult,
+          rankPosition: workflow.rankPosition,
+          isWaitlisted: workflow.isWaitlisted,
+          assignedOffice: workflow.assignedOffice,
+          batch: workflow.batch
+            ? {
+                batchId: workflow.batch.batchId,
+                batchName: workflow.batch.batchName,
+                officeName: workflow.batch.officeName,
+              }
+            : null,
+          schedules: {
+            interview: formatScheduleSummary(workflow.interviewScheduleEvent),
+            exam: formatScheduleSummary(workflow.examScheduleEvent),
+            orientation: formatScheduleSummary(workflow.orientationScheduleEvent),
+          },
+        }
+      : null;
+
     return NextResponse.json({
       success: true,
       data: {
@@ -127,6 +233,24 @@ export async function GET(): Promise<NextResponse<ClientApplicationStatusRespons
         },
         latestReview: formattedReviews[0] || undefined,
         reviewHistory: formattedReviews,
+        profile: profile as Record<string, unknown>,
+        personal: profile.personal as Record<string, unknown> | null,
+        address: profile.address as Record<string, unknown> | null,
+        family: profile.family as Record<string, unknown> | null,
+        siblings: profile.siblings.map((sibling) => ({
+          siblingId: sibling.siblingId,
+          name: sibling.siblingName,
+          age: sibling.siblingAge,
+          occupation: sibling.siblingOccupation,
+          order: sibling.siblingOrder,
+        })),
+        guardian: profile.guardian as Record<string, unknown> | null,
+        benefactor: profile.benefactor as Record<string, unknown> | null,
+        education: profile.education as Record<string, unknown> | null,
+        skills: profile.skills as Record<string, unknown> | null,
+        documents: profile.documents as Record<string, unknown> | null,
+        spes: profile.spes as Record<string, unknown> | null,
+        workflow: formattedWorkflow,
       },
     });
   } catch (error) {

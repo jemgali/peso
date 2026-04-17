@@ -11,6 +11,28 @@ import {
   type PSGCBarangay,
 } from "@/lib/psgc";
 
+function normalizeLocationName(value: string): string {
+  return value
+    .toLowerCase()
+    .replace(/\(.*?\)/g, "")
+    .replace(/^city of\s+/g, "")
+    .replace(/^municipality of\s+/g, "")
+    .replace(/[\s,.-]/g, "")
+    .trim();
+}
+
+function isLikelyNameMatch(source: string, target: string): boolean {
+  const normalizedSource = normalizeLocationName(source);
+  const normalizedTarget = normalizeLocationName(target);
+
+  if (!normalizedSource || !normalizedTarget) return false;
+  return (
+    normalizedSource === normalizedTarget ||
+    normalizedSource.includes(normalizedTarget) ||
+    normalizedTarget.includes(normalizedSource)
+  );
+}
+
 /**
  * Hook options for PSGC address selection
  */
@@ -192,6 +214,21 @@ export function usePsgcAddress<TFieldValues extends FieldValues>({
     };
   }, [selectedProvinceCode]);
 
+  // Hydrate initial province name to PSGC province code
+  useEffect(() => {
+    if (selectedProvinceCode || !selectedProvince || provinces.length === 0) {
+      return;
+    }
+
+    const provinceMatch = provinces.find((province) =>
+      isLikelyNameMatch(province.name, selectedProvince)
+    );
+
+    if (provinceMatch) {
+      setSelectedProvinceCode(provinceMatch.code);
+    }
+  }, [selectedProvinceCode, selectedProvince, provinces]);
+
   // Load barangays when city/municipality changes
   useEffect(() => {
     if (!selectedMunicipalityCode) {
@@ -227,6 +264,25 @@ export function usePsgcAddress<TFieldValues extends FieldValues>({
       mounted = false;
     };
   }, [selectedMunicipalityCode]);
+
+  // Hydrate initial municipality/city name to PSGC code
+  useEffect(() => {
+    if (
+      selectedMunicipalityCode ||
+      !selectedMunicipality ||
+      citiesMunicipalities.length === 0
+    ) {
+      return;
+    }
+
+    const municipalityMatch = citiesMunicipalities.find((city) =>
+      isLikelyNameMatch(city.name, selectedMunicipality)
+    );
+
+    if (municipalityMatch) {
+      setSelectedMunicipalityCode(municipalityMatch.code);
+    }
+  }, [selectedMunicipalityCode, selectedMunicipality, citiesMunicipalities]);
 
   // Handle province selection
   const handleProvinceChange = useCallback(

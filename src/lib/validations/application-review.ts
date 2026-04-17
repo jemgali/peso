@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { ExamResult, SpesWorkflowStage } from "@/lib/validations/spes-workflow";
 
 // Review decision values
 export const REVIEW_DECISIONS = ["approved", "needs_revision", "rejected"] as const;
@@ -119,6 +120,7 @@ export interface ApplicationDetailResponse {
     personal: Record<string, unknown> | null;
     address: Record<string, unknown> | null;
     family: Record<string, unknown> | null;
+    siblings?: Array<Record<string, unknown>>;
     guardian: Record<string, unknown> | null;
     benefactor: Record<string, unknown> | null;
     education: Record<string, unknown> | null;
@@ -140,6 +142,35 @@ export interface SubmitReviewResponse {
   error?: string;
 }
 
+export interface WorkflowScheduleSummary {
+  eventId: string;
+  title: string;
+  description: string | null;
+  startDate: string;
+  endDate: string | null;
+  allDay: boolean;
+}
+
+export interface ClientSpesWorkflowStatus {
+  workflowId: string;
+  stage: SpesWorkflowStage;
+  isGrantee: boolean;
+  examResult: ExamResult;
+  rankPosition: number | null;
+  isWaitlisted: boolean;
+  assignedOffice: string | null;
+  batch: {
+    batchId: string;
+    batchName: string;
+    officeName: string | null;
+  } | null;
+  schedules: {
+    interview: WorkflowScheduleSummary | null;
+    exam: WorkflowScheduleSummary | null;
+    orientation: WorkflowScheduleSummary | null;
+  };
+}
+
 export interface ClientApplicationStatusResponse {
   success: boolean;
   data?: {
@@ -153,6 +184,18 @@ export interface ClientApplicationStatusResponse {
     };
     latestReview?: ReviewHistoryItem;
     reviewHistory?: ReviewHistoryItem[];
+    profile?: Record<string, unknown> | null;
+    personal?: Record<string, unknown> | null;
+    address?: Record<string, unknown> | null;
+    family?: Record<string, unknown> | null;
+    siblings?: Array<Record<string, unknown>>;
+    guardian?: Record<string, unknown> | null;
+    benefactor?: Record<string, unknown> | null;
+    education?: Record<string, unknown> | null;
+    skills?: Record<string, unknown> | null;
+    documents?: Record<string, unknown> | null;
+    spes?: Record<string, unknown> | null;
+    workflow?: ClientSpesWorkflowStatus | null;
   };
   error?: string;
 }

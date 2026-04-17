@@ -37,7 +37,7 @@ const SkillsSection: React.FC<FormSectionWithFieldArrayProps> = ({
 
   // Filter skills by search, exclude already selected
   const filteredSkills = useMemo(() => {
-    const selectedValues = selectedSkills.map((s: { value: string }) => s.value);
+    const selectedValues = selectedSkills.map((s) => s.value ?? "");
     let filtered = skillsList.filter((s) => !selectedValues.includes(s) && s !== "Others");
     if (skillSearch) {
       const search = skillSearch.toLowerCase();
@@ -48,7 +48,7 @@ const SkillsSection: React.FC<FormSectionWithFieldArrayProps> = ({
 
   const handleAddSkill = (skillName: string) => {
     if (!skillName || !skillsFieldArray) return;
-    const exists = selectedSkills.some((s: { value: string }) => s.value === skillName);
+    const exists = selectedSkills.some((s) => s.value === skillName);
     if (!exists) {
       skillsFieldArray.append({ value: skillName });
     }
@@ -79,9 +79,9 @@ const SkillsSection: React.FC<FormSectionWithFieldArrayProps> = ({
           {/* Selected skills as badges */}
           {selectedSkills.length > 0 && (
             <div className="flex flex-wrap gap-2">
-              {selectedSkills.map((field: { id: string; value: string }, index: number) => (
+              {selectedSkills.map((field, index: number) => (
                 <Badge key={field.id} variant="secondary" className="gap-1 pr-1">
-                  {field.value}
+                  {field.value || "Unnamed skill"}
                   <Button
                     type="button"
                     variant="ghost"

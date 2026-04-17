@@ -52,6 +52,9 @@ export async function GET(
             personal: true,
             address: true,
             family: true,
+            siblings: {
+              orderBy: { siblingOrder: "asc" },
+            },
             guardian: true,
             benefactor: true,
             education: true,
@@ -121,6 +124,13 @@ export async function GET(
         personal: submission.profile.personal as Record<string, unknown> | null,
         address: submission.profile.address as Record<string, unknown> | null,
         family: submission.profile.family as Record<string, unknown> | null,
+        siblings: submission.profile.siblings.map((sibling) => ({
+          siblingId: sibling.siblingId,
+          name: sibling.siblingName,
+          age: sibling.siblingAge,
+          occupation: sibling.siblingOccupation,
+          order: sibling.siblingOrder,
+        })),
         guardian: submission.profile.guardian as Record<string, unknown> | null,
         benefactor: submission.profile.benefactor as Record<string, unknown> | null,
         education: submission.profile.education as Record<string, unknown> | null,

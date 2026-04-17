@@ -35,11 +35,7 @@ export const personalDetailsSchema = z.object({
     .min(1, "At least one language is required"),
   profileEmail: z.string().email("Valid email is required"),
   profileContact: z.string().min(1, "Contact number is required"),
-  profileFacebook: z
-    .string()
-    .url("Please enter a valid Facebook URL")
-    .optional()
-    .or(z.literal("")),
+  profileFacebook: z.string().url("Please enter a valid Facebook URL"),
   profileDisability: z.string().optional(),
   profilePwdId: z.string().optional(),
 });
@@ -57,7 +53,7 @@ export const siblingSchema = z.object({
   name: z.string().min(1, "Sibling name is required"),
   age: z.preprocess(
     (v) => (v === "" || v === undefined ? undefined : Number(v)),
-    z.number(),
+    z.number().min(1, "Sibling age is required"),
   ),
   occupation: z.string().optional(),
 });
@@ -76,17 +72,17 @@ export const familySchema = z.object({
   siblings: z.array(siblingSchema).optional(),
 });
 
-// ProfileGuardian - Guardian Information (name, relationship, contact required)
+// ProfileGuardian - Guardian Information (fully optional)
 export const guardianSchema = z.object({
-  guardianName: z.string().min(1, "Guardian name is required"),
-  guardianContact: z.string().min(1, "Guardian contact number is required"),
+  guardianName: z.string().optional(),
+  guardianContact: z.string().optional(),
   guardianAddress: z.string().optional(),
   guardianAge: z.preprocess(
     (v) => (v === "" || v === undefined ? undefined : Number(v)),
     z.number().optional(),
   ),
   guardianOccupation: z.string().optional(),
-  guardianRelationship: z.string().min(1, "Guardian relationship is required"),
+  guardianRelationship: z.string().optional(),
 });
 
 // ProfileBenefactor - Benefactor Information
@@ -177,7 +173,7 @@ export const sectionRequiredFields: Record<string, string[]> = {
     "profileReligion",
     "profileEmail",
     "profileContact",
-    // profileFacebook is now optional
+    "profileFacebook",
     "profileLanguageDialect",
   ],
   "personal-details": [], // Not used (merged into basic-info)
@@ -188,7 +184,7 @@ export const sectionRequiredFields: Record<string, string[]> = {
     "profileProvince",
   ],
   family: ["fatherName", "motherMaidenName"],
-  guardian: ["guardianName", "guardianRelationship", "guardianContact"],
+  guardian: [],
   benefactor: [], // All optional
   education: ["gradeYear", "schoolName", "trackCourse", "schoolYear"],
   skills: [], // All optional

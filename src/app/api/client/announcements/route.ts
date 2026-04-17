@@ -14,11 +14,11 @@ export async function GET() {
   try {
     const announcements = await prisma.scheduleEvent.findMany({
       where: {
-        type: "announcement",
+        type: { in: ["announcement", "schedule", "deadline"] },
         visibility: { in: ["all", "clients"] },
       },
       orderBy: { startDate: "desc" },
-      take: 10,
+      take: 30,
     })
 
     return NextResponse.json({ announcements })

@@ -217,7 +217,7 @@ const ApplicationViewer: React.FC<ApplicationViewerProps> = ({
   onFieldFeedbackChange,
   isReviewable = true,
 }) => {
-  const { profile, personal, address, family, guardian, benefactor, education, skills, spes } = data;
+  const { profile, personal, address, family, siblings, guardian, benefactor, education, skills, spes } = data;
 
   const rf = (label: string, fieldName: string, sectionId: string, value: string | number | boolean | null | undefined) => (
     <ReviewableField
@@ -271,15 +271,34 @@ const ApplicationViewer: React.FC<ApplicationViewerProps> = ({
 
       {/* Family Information */}
       {family && (
-        <Section title="Family Information">
-          {rf("Father's Name", "fatherName", "family", family.fatherName as string | null)}
-          {rf("Father's Occupation", "fatherOccupation", "family", family.fatherOccupation as string | null)}
-          {rf("Father's Contact", "fatherContact", "family", family.fatherContact as string | null)}
-          {rf("Mother's Maiden Name", "motherMaidenName", "family", family.motherMaidenName as string | null)}
-          {rf("Mother's Occupation", "motherOccupation", "family", family.motherOccupation as string | null)}
-          {rf("Mother's Contact", "motherContact", "family", family.motherContact as string | null)}
-          {rf("Number of Siblings", "numberOfSiblings", "family", family.numberOfSiblings as number | null)}
-        </Section>
+        <>
+          <Section title="Family Information">
+            {rf("Father's Name", "fatherName", "family", family.fatherName as string | null)}
+            {rf("Father's Occupation", "fatherOccupation", "family", family.fatherOccupation as string | null)}
+            {rf("Father's Contact", "fatherContact", "family", family.fatherContact as string | null)}
+            {rf("Mother's Maiden Name", "motherMaidenName", "family", family.motherMaidenName as string | null)}
+            {rf("Mother's Occupation", "motherOccupation", "family", family.motherOccupation as string | null)}
+            {rf("Mother's Contact", "motherContact", "family", family.motherContact as string | null)}
+            {rf("Number of Siblings", "numberOfSiblings", "family", family.numberOfSiblings as number | null)}
+          </Section>
+          {Array.isArray(siblings) && siblings.length > 0 && (
+            <Card className="p-4">
+              <h3 className="font-semibold mb-3 text-lg">Siblings</h3>
+              <div className="space-y-2">
+                {siblings.map((sibling, index) => (
+                  <div key={`${String(sibling.siblingId ?? index)}`} className="rounded-md border p-3">
+                    <p className="text-sm font-medium">
+                      {String(sibling.name ?? "Unnamed sibling")}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Age: {String(sibling.age ?? "—")} • Occupation: {String(sibling.occupation ?? "—")}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </Card>
+          )}
+        </>
       )}
 
       {/* Guardian Information */}

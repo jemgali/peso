@@ -12,7 +12,6 @@ import {
   ComboboxItem,
   ComboboxEmpty,
 } from "@/ui/combobox";
-import { usePsgcAddress } from "@/hooks/use-psgc-address";
 import { useAutoCapitalize } from "@/hooks/use-auto-capitalize";
 import type { FormSectionProps } from "./types";
 
@@ -24,15 +23,18 @@ const AddressSection: React.FC<FormSectionProps> = ({
   register,
   errors,
   isPending,
-  watch,
   setValue,
   formValues,
 }) => {
   // Auto-capitalize for house/street field
   const { handleBlur: autoCapitalizeBlur } = useAutoCapitalize(setValue);
-  
+
   const currentBarangay = formValues?.profileBarangay || "";
-  
+  const [barangays, setBarangays] = React.useState<string[]>([]);
+  const [selectedBarangay, setSelectedBarangay] = React.useState(currentBarangay);
+  const [isLoadingBarangays, setIsLoadingBarangays] = React.useState(true);
+  const [barangayLoadError, setBarangayLoadError] = React.useState<string | null>(null);
+
   // Auto-set province and city on mount
   React.useEffect(() => {
     if (setValue) {
@@ -40,34 +42,67 @@ const AddressSection: React.FC<FormSectionProps> = ({
       setValue("profileMunicipality", LOCKED_CITY, { shouldValidate: true });
     }
   }, [setValue]);
-  
-  // PSGC address hook — only for barangay selection within Baguio
-  const {
-    barangays,
-    selectedBarangay,
-    isLoadingBarangays,
-    handleBarangayChange,
-  } = usePsgcAddress({
-    setValue: setValue!,
-    fieldNames: {
-      province: "profileProvince",
-      municipality: "profileMunicipality",
-      barangay: "profileBarangay",
-    },
-    initialValues: {
-      province: LOCKED_PROVINCE,
-      municipality: LOCKED_CITY,
-      barangay: currentBarangay,
-    },
-  });
-  
+
+  React.useEffect(() => {
+    setSelectedBarangay(currentBarangay);
+  }, [currentBarangay]);
+
+  React.useEffect(() => {
+    let mounted = true;
+
+    const loadBarangays = async () => {
+      try {
+        setIsLoadingBarangays(true);
+        setBarangayLoadError(null);
+
+        const response = await fetch("/data/barangay-list.json");
+        if (!response.ok) {
+          throw new Error(`Failed to load barangay list: ${response.statusText}`);
+        }
+
+        const json: unknown = await response.json();
+        let names: string[] = [];
+
+        if (Array.isArray(json)) {
+          names = json.filter((value): value is string => typeof value === "string");
+        } else if (json && typeof json === "object") {
+          names = Object.keys(json as Record<string, unknown>);
+        }
+
+        const uniqueSortedNames = Array.from(
+          new Set(names.map((name) => name.trim()).filter(Boolean)),
+        ).sort((a, b) => a.localeCompare(b));
+
+        if (mounted) {
+          setBarangays(uniqueSortedNames);
+        }
+      } catch (error) {
+        if (mounted) {
+          setBarangays([]);
+          setBarangayLoadError("Failed to load barangays");
+        }
+        console.error("Error loading barangay list:", error);
+      } finally {
+        if (mounted) {
+          setIsLoadingBarangays(false);
+        }
+      }
+    };
+
+    loadBarangays();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
   // Filter barangays by search
   const [barangaySearch, setBarangaySearch] = React.useState("");
-  
+
   const filteredBarangays = React.useMemo(() => {
     if (!barangaySearch) return barangays;
     const search = barangaySearch.toLowerCase();
-    return barangays.filter((b) => b.name.toLowerCase().includes(search));
+    return barangays.filter((barangay) => barangay.toLowerCase().includes(search));
   }, [barangays, barangaySearch]);
 
   return (
@@ -75,7 +110,8 @@ const AddressSection: React.FC<FormSectionProps> = ({
       <div className="mb-4">
         <h2 className="text-lg font-semibold">Address Information</h2>
         <p className="text-sm text-muted-foreground">
-          Where do you currently reside? Province and City are locked to Baguio City, Benguet.
+          Where do you currently reside? Province and City are locked to Baguio
+          City, Benguet.
         </p>
       </div>
 
@@ -96,7 +132,9 @@ const AddressSection: React.FC<FormSectionProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {/* Province — Locked */}
             <div className="space-y-1.5">
-              <FieldLabel htmlFor="profileProvince" required>Province</FieldLabel>
+              <FieldLabel htmlFor="profileProvince" required>
+                Province
+              </FieldLabel>
               <Input
                 value={LOCKED_PROVINCE}
                 disabled
@@ -110,7 +148,9 @@ const AddressSection: React.FC<FormSectionProps> = ({
 
             {/* City/Municipality — Locked */}
             <div className="space-y-1.5">
-              <FieldLabel htmlFor="profileMunicipality" required>Municipality/City</FieldLabel>
+              <FieldLabel htmlFor="profileMunicipality" required>
+                Municipality/City
+              </FieldLabel>
               <Input
                 value={LOCKED_CITY}
                 disabled
@@ -124,24 +164,27 @@ const AddressSection: React.FC<FormSectionProps> = ({
 
             {/* Barangay Combobox — Only editable field */}
             <div className="space-y-1.5">
-              <FieldLabel htmlFor="profileBarangay" required>Barangay</FieldLabel>
+              <FieldLabel htmlFor="profileBarangay" required>
+                Barangay
+              </FieldLabel>
               <Combobox<string>
                 inputValue={barangaySearch}
                 onInputValueChange={(value) => setBarangaySearch(value ?? "")}
                 value={selectedBarangay}
                 onValueChange={(value) => {
-                  const barangay = barangays.find((b) => b.name === value);
-                  if (barangay) {
-                    handleBarangayChange(barangay.code, barangay.name);
-                    setBarangaySearch("");
+                  const nextBarangay = value ?? "";
+                  setSelectedBarangay(nextBarangay);
+                  if (setValue) {
+                    setValue("profileBarangay", nextBarangay, {
+                      shouldValidate: true,
+                    });
                   }
+                  setBarangaySearch("");
                 }}
               >
                 <ComboboxInput
                   placeholder={
-                    isLoadingBarangays 
-                      ? "Loading..." 
-                      : "Select barangay"
+                    isLoadingBarangays ? "Loading..." : "Select barangay"
                   }
                   disabled={isPending || isLoadingBarangays}
                   showTrigger
@@ -151,12 +194,16 @@ const AddressSection: React.FC<FormSectionProps> = ({
                   <ComboboxList>
                     {filteredBarangays.length === 0 && (
                       <ComboboxEmpty>
-                        {isLoadingBarangays ? "Loading barangays..." : "No barangay found"}
+                        {barangayLoadError
+                          ? barangayLoadError
+                          : isLoadingBarangays
+                            ? "Loading barangays..."
+                            : "No barangay found"}
                       </ComboboxEmpty>
                     )}
                     {filteredBarangays.map((barangay) => (
-                      <ComboboxItem key={barangay.code} value={barangay.name}>
-                        {barangay.name}
+                      <ComboboxItem key={barangay} value={barangay}>
+                        {barangay}
                       </ComboboxItem>
                     ))}
                   </ComboboxList>
@@ -164,6 +211,9 @@ const AddressSection: React.FC<FormSectionProps> = ({
               </Combobox>
               {errors.profileBarangay && (
                 <FieldError>{errors.profileBarangay.message}</FieldError>
+              )}
+              {!errors.profileBarangay && barangayLoadError && (
+                <FieldError>{barangayLoadError}</FieldError>
               )}
             </div>
           </div>

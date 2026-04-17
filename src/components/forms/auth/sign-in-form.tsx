@@ -55,7 +55,7 @@ const SignInForm = () => {
             onSuccess: () => {
                 toast.success("Successfully signed in.")
                 setIsPending(false)
-                window.location.href = "/"
+                window.location.href = "/protected"
             },
             onError: (ctx) => {
                 toast.error(ctx.error.message || "Invalid email or password.")
@@ -67,7 +67,7 @@ const SignInForm = () => {
     const handleGoogleSignIn = async () => {
         await authClient.signIn.social({
             provider: "google",
-            callbackURL: "/",
+            callbackURL: "/protected",
         }, {
             onRequest: () => {
                 setIsGooglePending(true)
