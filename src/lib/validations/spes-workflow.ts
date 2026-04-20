@@ -22,6 +22,21 @@ export type SpesWorkflowStage = (typeof SPES_WORKFLOW_STAGES)[number]
 export const EXAM_RESULTS = ["pending", "passed", "failed"] as const
 export type ExamResult = (typeof EXAM_RESULTS)[number]
 
+export const SPES_SELECTION_STATUSES = [
+  "pending",
+  "waitlisted",
+  "grantee",
+  "denied",
+] as const
+export type SpesSelectionStatus = (typeof SPES_SELECTION_STATUSES)[number]
+
+export const MUTABLE_SELECTION_STATUSES = [
+  "pending",
+  "waitlisted",
+  "grantee",
+] as const
+export type MutableSpesSelectionStatus = (typeof MUTABLE_SELECTION_STATUSES)[number]
+
 export const examSettingsSchema = z.object({
   totalScore: z.number().int().min(1, "Total score must be at least 1"),
   passingThresholdPercent: z
@@ -58,9 +73,7 @@ export const updateWorkflowSchema = z.object({
   stage: z.enum(SPES_WORKFLOW_STAGES).optional(),
   priority: z.enum(APPLICANT_PRIORITIES).nullable().optional(),
   examScore: z.coerce.number().min(0, "Exam score cannot be negative").nullable().optional(),
-  rankPosition: z.coerce.number().int().min(1, "Rank must start at 1").nullable().optional(),
-  isWaitlisted: z.boolean().optional(),
-  isGrantee: z.boolean().optional(),
+  selectionStatus: z.enum(MUTABLE_SELECTION_STATUSES).optional(),
   batchId: z.string().min(1).nullable().optional(),
   assignedOffice: z
     .string()
@@ -96,6 +109,25 @@ export const assignWorkflowSchema = z
   })
 
 export type AssignWorkflowInput = z.infer<typeof assignWorkflowSchema>
+
+export const listWorkflowsQuerySchema = z.object({
+  search: z.string().trim().max(120, "Search text is too long").optional(),
+  status: z.enum(SPES_SELECTION_STATUSES).optional(),
+})
+export type ListWorkflowsQueryInput = z.infer<typeof listWorkflowsQuerySchema>
+
+export const bulkNotifyWorkflowsSchema = z.object({
+  workflowIds: z.array(z.string().min(1, "Workflow ID is required")).min(1, "Select at least one applicant"),
+  note: z.string().trim().max(500, "Note is too long").optional(),
+})
+export type BulkNotifyWorkflowsInput = z.infer<typeof bulkNotifyWorkflowsSchema>
+
+export const bulkUpdateWorkflowStatusSchema = z.object({
+  workflowIds: z.array(z.string().min(1, "Workflow ID is required")).min(1, "Select at least one applicant"),
+  selectionStatus: z.enum(MUTABLE_SELECTION_STATUSES),
+  note: z.string().trim().max(500, "Note is too long").optional(),
+})
+export type BulkUpdateWorkflowStatusInput = z.infer<typeof bulkUpdateWorkflowStatusSchema>
 
 export const WORKFLOW_SCHEDULE_STAGE_TYPES = [
   "interview",
@@ -142,15 +174,13 @@ export interface CreateBatchResponse {
 export interface SpesWorkflowListItem {
   workflowId: string
   submissionId: string
-  submissionNumber: number
   applicantName: string
   stage: SpesWorkflowStage
   priority: ApplicantPriority | null
   examScore: number | null
   examResult: ExamResult
   rankPosition: number | null
-  isWaitlisted: boolean
-  isGrantee: boolean
+  selectionStatus: SpesSelectionStatus
   batchId: string | null
   batchName: string | null
   assignedOffice: string | null
@@ -215,6 +245,29 @@ export interface WorkflowScheduleResponse {
       link: string
     }
     wasUpdated: boolean
+  }
+  error?: string
+}
+
+export interface BulkNotifyWorkflowsResponse {
+  success: boolean
+  data?: {
+    requested: number
+    notified: number
+    emailSent: number
+    emailFailed: number
+    missingWorkflowIds: string[]
+  }
+  error?: string
+}
+
+export interface BulkUpdateWorkflowStatusResponse {
+  success: boolean
+  data?: {
+    requested: number
+    updated: number
+    autoDenied: number
+    missingWorkflowIds: string[]
   }
   error?: string
 }

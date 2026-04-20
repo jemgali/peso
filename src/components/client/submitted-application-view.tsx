@@ -2,14 +2,15 @@
 
 import React from "react"
 import Link from "next/link"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { Empty, EmptyHeader, EmptyMedia, EmptyTitle, EmptyDescription } from "@/components/ui/empty"
 import ApplicationStatusCard from "@/components/client/application-status-card"
 import type { ApplicationStatus } from "@/lib/validations/application-review"
+import { FileIcon } from "lucide-react"
 
 interface SubmissionSummary {
   status: ApplicationStatus
-  submissionNumber: number
   submittedAt: string
   updatedAt: string
 }
@@ -77,10 +78,9 @@ export default function SubmittedApplicationView({
   }>
 
   return (
-    <div className="space-y-6">
+    <div className="flex flex-col gap-6">
       <ApplicationStatusCard
         status={submission.status}
-        submissionNumber={submission.submissionNumber}
         submittedAt={submission.submittedAt}
         updatedAt={submission.updatedAt}
       />
@@ -88,6 +88,9 @@ export default function SubmittedApplicationView({
       <Card>
         <CardHeader>
           <CardTitle>Your Submitted Application Data</CardTitle>
+          <CardDescription>
+            This is a read-only snapshot of the data you submitted.
+          </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-3 md:grid-cols-2">
           {DISPLAY_FIELDS.map((field) => (
@@ -104,27 +107,39 @@ export default function SubmittedApplicationView({
       <Card>
         <CardHeader>
           <CardTitle>Uploaded Documents</CardTitle>
+          <CardDescription>
+            Files you attached to your application.
+          </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-2">
+        <CardContent>
           {uploadedDocs.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No uploaded documents found.</p>
+            <Empty>
+              <EmptyHeader>
+                <EmptyMedia variant="icon">
+                  <FileIcon />
+                </EmptyMedia>
+                <EmptyTitle>No uploaded documents</EmptyTitle>
+                <EmptyDescription>No documents were attached to this submission.</EmptyDescription>
+              </EmptyHeader>
+            </Empty>
           ) : (
-            uploadedDocs.map((doc, index) => (
-              <div key={`${doc.fileName}-${index}`} className="flex items-center justify-between rounded-md border p-2">
-                <p className="text-sm font-medium">{doc.fileName || "Uploaded file"}</p>
-                {doc.url && (
-                  <Button variant="outline" size="sm" asChild>
-                    <Link href={doc.url} target="_blank" rel="noopener noreferrer">
-                      View
-                    </Link>
-                  </Button>
-                )}
-              </div>
-            ))
+            <div className="flex flex-col gap-2">
+              {uploadedDocs.map((doc, index) => (
+                <div key={`${doc.fileName}-${index}`} className="flex items-center justify-between rounded-md border p-2">
+                  <p className="text-sm font-medium">{doc.fileName || "Uploaded file"}</p>
+                  {doc.url && (
+                    <Button variant="outline" size="sm" asChild>
+                      <Link href={doc.url} target="_blank" rel="noopener noreferrer">
+                        View
+                      </Link>
+                    </Button>
+                  )}
+                </div>
+              ))}
+            </div>
           )}
         </CardContent>
       </Card>
     </div>
   )
 }
-

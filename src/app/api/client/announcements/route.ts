@@ -3,6 +3,8 @@ import { headers } from "next/headers"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 
+const CLIENT_VISIBILITY: string[] = ["all", "clients"]
+
 export async function GET() {
   const headersList = await headers()
   const session = await auth.api.getSession({ headers: headersList })
@@ -12,10 +14,67 @@ export async function GET() {
   }
 
   try {
+    const userId = session.user.id
     const announcements = await prisma.scheduleEvent.findMany({
       where: {
-        type: { in: ["announcement", "schedule", "deadline"] },
-        visibility: { in: ["all", "clients"] },
+        OR: [
+          {
+            type: { in: ["announcement", "deadline"] },
+            visibility: { in: CLIENT_VISIBILITY },
+          },
+          {
+            type: "schedule",
+            visibility: "all",
+          },
+          {
+            type: "schedule",
+            visibility: "clients",
+            AND: [
+              { interviewWorkflows: { none: {} } },
+              { examWorkflows: { none: {} } },
+              { orientationWorkflows: { none: {} } },
+            ],
+          },
+          {
+            type: "schedule",
+            visibility: "clients",
+            OR: [
+              {
+                interviewWorkflows: {
+                  some: {
+                    submission: {
+                      profile: {
+                        userId,
+                      },
+                    },
+                  },
+                },
+              },
+              {
+                examWorkflows: {
+                  some: {
+                    submission: {
+                      profile: {
+                        userId,
+                      },
+                    },
+                  },
+                },
+              },
+              {
+                orientationWorkflows: {
+                  some: {
+                    submission: {
+                      profile: {
+                        userId,
+                      },
+                    },
+                  },
+                },
+              },
+            ],
+          },
+        ],
       },
       orderBy: { startDate: "desc" },
       take: 30,

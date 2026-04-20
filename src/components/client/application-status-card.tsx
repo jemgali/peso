@@ -2,7 +2,6 @@
 
 import React from "react";
 import { Card } from "@/ui/card";
-import { Badge } from "@/ui/badge";
 import { Button } from "@/ui/button";
 import Link from "next/link";
 import {
@@ -17,7 +16,6 @@ import type { ApplicationStatus } from "@/lib/validations/application-review";
 
 interface ApplicationStatusCardProps {
   status: ApplicationStatus;
-  submissionNumber: number;
   submittedAt: string;
   updatedAt: string;
 }
@@ -71,7 +69,6 @@ const STATUS_CONFIG: Record<
 
 const ApplicationStatusCard: React.FC<ApplicationStatusCardProps> = ({
   status,
-  submissionNumber,
   submittedAt,
   updatedAt,
 }) => {
@@ -88,7 +85,6 @@ const ApplicationStatusCard: React.FC<ApplicationStatusCardProps> = ({
             <h3 className={`text-lg font-semibold ${config.color}`}>
               {config.label}
             </h3>
-            <Badge variant="secondary">Submission #{submissionNumber}</Badge>
           </div>
           <p className="text-sm text-muted-foreground mb-3">{config.description}</p>
           <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">

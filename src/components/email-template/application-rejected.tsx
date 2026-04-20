@@ -2,13 +2,11 @@ import * as React from "react";
 
 interface ApplicationRejectedEmailProps {
   applicantName: string;
-  submissionNumber: number;
   reason?: string;
 }
 
 export function ApplicationRejectedEmail({
   applicantName,
-  submissionNumber,
   reason,
 }: ApplicationRejectedEmailProps) {
   return (
@@ -55,8 +53,8 @@ export function ApplicationRejectedEmail({
         </p>
 
         <p style={{ fontSize: "16px", color: "#1f2937", lineHeight: "1.6" }}>
-          We regret to inform you that your SPES application 
-          <strong> (Submission #{submissionNumber})</strong> has not been approved at this time.
+          We regret to inform you that your SPES application has not been approved
+          at this time.
         </p>
 
         {/* Reason box */}

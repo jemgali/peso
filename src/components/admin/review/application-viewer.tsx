@@ -24,11 +24,25 @@ interface ApplicationViewerProps {
 interface SectionProps {
   title: string;
   children: React.ReactNode;
+  onMarkAllAsValid?: () => void;
 }
 
-const Section: React.FC<SectionProps> = ({ title, children }) => (
+const Section: React.FC<SectionProps> = ({ title, children, onMarkAllAsValid }) => (
   <Card className="p-4">
-    <h3 className="font-semibold mb-3 text-lg">{title}</h3>
+    <div className="mb-3 flex items-center justify-between gap-2">
+      <h3 className="text-lg font-semibold">{title}</h3>
+      {onMarkAllAsValid && (
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={onMarkAllAsValid}
+        >
+          <CheckCircle2 className="h-4 w-4 mr-1" />
+          Mark All as Valid
+        </Button>
+      )}
+    </div>
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">{children}</div>
   </Card>
 );
@@ -37,6 +51,57 @@ const formatDate = (dateStr: string | null | undefined): string => {
   if (!dateStr) return "—";
   return new Date(dateStr).toLocaleDateString();
 };
+
+const SECTION_FIELD_NAMES = {
+  "basic-info": [
+    "profileLastName",
+    "profileFirstName",
+    "profileMiddleName",
+    "profileSuffix",
+    "profileEmail",
+  ],
+  "personal-details": [
+    "profileBirthdate",
+    "profileAge",
+    "profilePlaceOfBirth",
+    "profileSex",
+    "profileHeight",
+    "profileCivilStatus",
+    "profileReligion",
+    "profileContact",
+    "profileFacebook",
+    "profileDisability",
+    "profilePwdId",
+  ],
+  address: [
+    "profileHouseStreet",
+    "profileBarangay",
+    "profileMunicipality",
+    "profileProvince",
+  ],
+  family: [
+    "fatherName",
+    "fatherOccupation",
+    "fatherContact",
+    "motherMaidenName",
+    "motherOccupation",
+    "motherContact",
+    "numberOfSiblings",
+  ],
+  guardian: [
+    "guardianName",
+    "guardianContact",
+    "guardianAddress",
+    "guardianAge",
+    "guardianOccupation",
+    "guardianRelationship",
+  ],
+  benefactor: ["benefactorName", "benefactorRelationship"],
+  education: ["gradeYear", "schoolName", "trackCourse", "schoolYear"],
+  spes: ["isFourPsBeneficiary", "applicationYear", "motivation"],
+} as const;
+
+type ReviewableSectionId = keyof typeof SECTION_FIELD_NAMES;
 
 // Reviewable field — shows label with check/cross/comment controls, then value below
 interface ReviewableFieldProps {
@@ -219,6 +284,28 @@ const ApplicationViewer: React.FC<ApplicationViewerProps> = ({
 }) => {
   const { profile, personal, address, family, siblings, guardian, benefactor, education, skills, spes } = data;
 
+  const markSectionAsValid = (sectionId: ReviewableSectionId) => {
+    const feedbackMap = new Map<string, FieldFeedback>();
+
+    for (const feedback of fieldFeedback) {
+      feedbackMap.set(`${feedback.sectionId}:${feedback.fieldName}`, feedback);
+    }
+
+    for (const fieldName of SECTION_FIELD_NAMES[sectionId]) {
+      const key = `${sectionId}:${fieldName}`;
+      const existingFeedback = feedbackMap.get(key);
+
+      feedbackMap.set(key, {
+        sectionId,
+        fieldName,
+        status: "valid",
+        comment: existingFeedback?.comment,
+      });
+    }
+
+    onFieldFeedbackChange(Array.from(feedbackMap.values()));
+  };
+
   const rf = (label: string, fieldName: string, sectionId: string, value: string | number | boolean | null | undefined) => (
     <ReviewableField
       label={label}
@@ -234,7 +321,10 @@ const ApplicationViewer: React.FC<ApplicationViewerProps> = ({
   return (
     <div className="space-y-6">
       {/* Basic Information */}
-      <Section title="Basic Information">
+      <Section
+        title="Basic Information"
+        onMarkAllAsValid={isReviewable ? () => markSectionAsValid("basic-info") : undefined}
+      >
         {rf("Last Name", "profileLastName", "basic-info", profile.profileLastName)}
         {rf("First Name", "profileFirstName", "basic-info", profile.profileFirstName)}
         {rf("Middle Name", "profileMiddleName", "basic-info", profile.profileMiddleName)}
@@ -244,7 +334,10 @@ const ApplicationViewer: React.FC<ApplicationViewerProps> = ({
 
       {/* Personal Details */}
       {personal && (
-        <Section title="Personal Details">
+        <Section
+          title="Personal Details"
+          onMarkAllAsValid={isReviewable ? () => markSectionAsValid("personal-details") : undefined}
+        >
           {rf("Birthdate", "profileBirthdate", "personal-details", formatDate(personal.profileBirthdate as string | null))}
           {rf("Age", "profileAge", "personal-details", personal.profileAge as number | null)}
           {rf("Place of Birth", "profilePlaceOfBirth", "personal-details", personal.profilePlaceOfBirth as string | null)}
@@ -261,7 +354,10 @@ const ApplicationViewer: React.FC<ApplicationViewerProps> = ({
 
       {/* Address */}
       {address && (
-        <Section title="Address">
+        <Section
+          title="Address"
+          onMarkAllAsValid={isReviewable ? () => markSectionAsValid("address") : undefined}
+        >
           {rf("House/Street", "profileHouseStreet", "address", address.profileHouseStreet as string | null)}
           {rf("Barangay", "profileBarangay", "address", address.profileBarangay as string | null)}
           {rf("Municipality", "profileMunicipality", "address", address.profileMunicipality as string | null)}
@@ -272,7 +368,10 @@ const ApplicationViewer: React.FC<ApplicationViewerProps> = ({
       {/* Family Information */}
       {family && (
         <>
-          <Section title="Family Information">
+          <Section
+            title="Family Information"
+            onMarkAllAsValid={isReviewable ? () => markSectionAsValid("family") : undefined}
+          >
             {rf("Father's Name", "fatherName", "family", family.fatherName as string | null)}
             {rf("Father's Occupation", "fatherOccupation", "family", family.fatherOccupation as string | null)}
             {rf("Father's Contact", "fatherContact", "family", family.fatherContact as string | null)}
@@ -303,7 +402,10 @@ const ApplicationViewer: React.FC<ApplicationViewerProps> = ({
 
       {/* Guardian Information */}
       {guardian && (
-        <Section title="Guardian Information">
+        <Section
+          title="Guardian Information"
+          onMarkAllAsValid={isReviewable ? () => markSectionAsValid("guardian") : undefined}
+        >
           {rf("Guardian Name", "guardianName", "guardian", guardian.guardianName as string | null)}
           {rf("Guardian Contact", "guardianContact", "guardian", guardian.guardianContact as string | null)}
           {rf("Guardian Address", "guardianAddress", "guardian", guardian.guardianAddress as string | null)}
@@ -315,7 +417,10 @@ const ApplicationViewer: React.FC<ApplicationViewerProps> = ({
 
       {/* Benefactor Information */}
       {benefactor && (
-        <Section title="Benefactor Information">
+        <Section
+          title="Benefactor Information"
+          onMarkAllAsValid={isReviewable ? () => markSectionAsValid("benefactor") : undefined}
+        >
           {rf("Benefactor Name", "benefactorName", "benefactor", benefactor.benefactorName as string | null)}
           {rf("Relationship", "benefactorRelationship", "benefactor", benefactor.benefactorRelationship as string | null)}
         </Section>
@@ -323,7 +428,10 @@ const ApplicationViewer: React.FC<ApplicationViewerProps> = ({
 
       {/* Education */}
       {education && (
-        <Section title="Education">
+        <Section
+          title="Education"
+          onMarkAllAsValid={isReviewable ? () => markSectionAsValid("education") : undefined}
+        >
           {rf("Grade/Year Level", "gradeYear", "education", education.gradeYear as string | null)}
           {rf("School Name", "schoolName", "education", education.schoolName as string | null)}
           {rf("Track/Course", "trackCourse", "education", education.trackCourse as string | null)}
@@ -351,7 +459,10 @@ const ApplicationViewer: React.FC<ApplicationViewerProps> = ({
 
       {/* SPES Information */}
       {spes && (
-        <Section title="SPES Information">
+        <Section
+          title="SPES Information"
+          onMarkAllAsValid={isReviewable ? () => markSectionAsValid("spes") : undefined}
+        >
           {rf("4Ps Beneficiary", "isFourPsBeneficiary", "spes", spes.isFourPsBeneficiary as boolean | null)}
           {rf("Application Year", "applicationYear", "spes", spes.applicationYear as number | null)}
           <div className="col-span-2">

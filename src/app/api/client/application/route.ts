@@ -58,6 +58,9 @@ export async function POST(
     }
 
     const data = validationResult.data;
+    const applicantType = data.spesBabiesAvailmentYears && data.spesBabiesAvailmentYears > 0
+      ? "SPES_BABY"
+      : "NEW";
 
     // Transform object arrays to string arrays for storage
     const languageDialects = data.profileLanguageDialect
@@ -355,6 +358,7 @@ export async function POST(
           data: {
             isFourPsBeneficiary: data.isFourPsBeneficiary || false,
             applicationYear: data.applicationYear || null,
+            spesBabiesAvailmentYears: data.spesBabiesAvailmentYears || null,
             motivation: data.motivation || null,
           },
         });
@@ -365,6 +369,7 @@ export async function POST(
             profileId: profile.profileId,
             isFourPsBeneficiary: data.isFourPsBeneficiary || false,
             applicationYear: data.applicationYear || null,
+            spesBabiesAvailmentYears: data.spesBabiesAvailmentYears || null,
             motivation: data.motivation || null,
           },
         });
@@ -385,14 +390,17 @@ export async function POST(
               submissionId: randomUUID(),
               profileId: profile.profileId,
               status: "pending",
-              submissionNumber: submission.submissionNumber + 1,
+              applicantType,
             },
           });
         } else if (submission.status === "pending" || submission.status === "in_review") {
           // Update existing pending submission
           submission = await tx.applicationSubmission.update({
             where: { submissionId: submission.submissionId },
-            data: { submittedAt: new Date() },
+            data: {
+              submittedAt: new Date(),
+              applicantType,
+            },
           });
         } else {
           // If approved or rejected, don't allow new submission (or create new one based on business logic)
@@ -405,7 +413,7 @@ export async function POST(
             submissionId: randomUUID(),
             profileId: profile.profileId,
             status: "pending",
-            submissionNumber: 1,
+            applicantType,
           },
         });
       }

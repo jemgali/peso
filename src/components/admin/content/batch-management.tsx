@@ -7,6 +7,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Spinner } from "@/components/ui/spinner"
 import { Badge } from "@/components/ui/badge"
+import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select"
+import { Empty, EmptyHeader, EmptyMedia, EmptyTitle, EmptyDescription } from "@/components/ui/empty"
 import {
   Table,
   TableBody,
@@ -16,6 +18,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { toast } from "sonner"
+import { LayersIcon, UsersIcon } from "lucide-react"
 import { ROUTES } from "@/lib/constants/routes"
 import type {
   BatchListItem,
@@ -265,7 +268,7 @@ export default function BatchManagement() {
     () =>
       workflows.filter(
         (workflow) =>
-          workflow.isGrantee ||
+          workflow.selectionStatus === "grantee" ||
           workflow.examResult === "passed" ||
           workflow.batchId !== null ||
           workflow.assignedOffice !== null
@@ -274,7 +277,7 @@ export default function BatchManagement() {
   )
 
   return (
-    <div className="space-y-6">
+    <div className="flex flex-col gap-6">
       <div>
         <h1 className="text-3xl font-bold">Batch Management</h1>
         <p className="text-muted-foreground">
@@ -289,9 +292,9 @@ export default function BatchManagement() {
             Create SPES batches and maintain deployment capacity for grantees.
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <form onSubmit={submitBatch} className="mb-6 grid gap-4 md:grid-cols-[2fr_1fr_auto] md:items-end">
-            <div className="grid gap-2">
+        <CardContent className="flex flex-col gap-6">
+          <form onSubmit={submitBatch} className="grid gap-4 md:grid-cols-[2fr_1fr_auto] md:items-end">
+            <div className="flex flex-col gap-2">
               <Label htmlFor="batchName">Batch Name</Label>
               <Input
                 id="batchName"
@@ -301,7 +304,7 @@ export default function BatchManagement() {
                 required
               />
             </div>
-            <div className="grid gap-2">
+            <div className="flex flex-col gap-2">
               <Label htmlFor="batchStartDate">Start Date</Label>
               <Input
                 id="batchStartDate"
@@ -318,7 +321,7 @@ export default function BatchManagement() {
           </form>
 
           {loadingBatches ? (
-            <div className="flex items-center text-sm text-muted-foreground">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Spinner data-icon="inline-start" />
               Loading batches...
             </div>
@@ -346,7 +349,15 @@ export default function BatchManagement() {
               </TableBody>
             </Table>
           ) : (
-            <p className="text-sm text-muted-foreground">No batches yet. Create your first SPES batch.</p>
+            <Empty>
+              <EmptyHeader>
+                <EmptyMedia variant="icon">
+                  <LayersIcon />
+                </EmptyMedia>
+                <EmptyTitle>No batches yet</EmptyTitle>
+                <EmptyDescription>Create your first SPES batch above.</EmptyDescription>
+              </EmptyHeader>
+            </Empty>
           )}
         </CardContent>
       </Card>
@@ -360,16 +371,24 @@ export default function BatchManagement() {
         </CardHeader>
         <CardContent>
           {loadingWorkflows ? (
-            <div className="flex items-center text-sm text-muted-foreground">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Spinner data-icon="inline-start" />
               Loading workflows...
             </div>
           ) : workflowError ? (
             <p className="text-sm text-destructive">{workflowError}</p>
           ) : assignableWorkflows.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              No grantee or qualified workflows available for assignment yet.
-            </p>
+            <Empty>
+              <EmptyHeader>
+                <EmptyMedia variant="icon">
+                  <UsersIcon />
+                </EmptyMedia>
+                <EmptyTitle>No workflows to assign</EmptyTitle>
+                <EmptyDescription>
+                  Grantee or qualified workflows will appear here for batch assignment.
+                </EmptyDescription>
+              </EmptyHeader>
+            </Empty>
           ) : (
             <Table>
               <TableHeader>
@@ -391,9 +410,6 @@ export default function BatchManagement() {
                     <TableRow key={workflow.workflowId}>
                       <TableCell>
                         <div className="font-medium">{workflow.applicantName}</div>
-                        <p className="text-xs text-muted-foreground">
-                          Submission #{workflow.submissionNumber}
-                        </p>
                       </TableCell>
                       <TableCell>
                         <div className="flex flex-wrap gap-1.5">
@@ -411,13 +427,17 @@ export default function BatchManagement() {
                           >
                             {workflow.examResult.toUpperCase()}
                           </Badge>
-                          {workflow.isGrantee && <Badge>Grantee</Badge>}
-                          {workflow.isWaitlisted && <Badge variant="destructive">Waitlisted</Badge>}
+                          {workflow.selectionStatus === "grantee" && <Badge>Grantee</Badge>}
+                          {workflow.selectionStatus === "waitlisted" && (
+                            <Badge variant="destructive">Waitlisted</Badge>
+                          )}
+                          {workflow.selectionStatus === "denied" && (
+                            <Badge variant="destructive">Denied</Badge>
+                          )}
                         </div>
                       </TableCell>
                       <TableCell>
-                        <select
-                          className="h-9 min-w-44 rounded-md border border-input bg-background px-2 text-sm"
+                        <NativeSelect
                           value={draft.batchId}
                           onChange={(event) =>
                             updateAssignmentDraft(workflow.workflowId, (current) => ({
@@ -425,14 +445,15 @@ export default function BatchManagement() {
                               batchId: event.target.value,
                             }))
                           }
+                          className="min-w-44"
                         >
-                          <option value="">Unassigned</option>
+                          <NativeSelectOption value="">Unassigned</NativeSelectOption>
                           {batches.map((batch) => (
-                            <option key={batch.batchId} value={batch.batchId}>
+                            <NativeSelectOption key={batch.batchId} value={batch.batchId}>
                               {batch.batchName}
-                            </option>
+                            </NativeSelectOption>
                           ))}
-                        </select>
+                        </NativeSelect>
                       </TableCell>
                       <TableCell>
                         <Input
@@ -446,10 +467,11 @@ export default function BatchManagement() {
                           }
                         />
                       </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        Batch: {workflow.batchName || "Unassigned"}
-                        <br />
-                        Office: {workflow.assignedOffice || "Unassigned"}
+                      <TableCell>
+                        <div className="flex flex-col gap-0.5 text-sm text-muted-foreground">
+                          <span>Batch: {workflow.batchName || "Unassigned"}</span>
+                          <span>Office: {workflow.assignedOffice || "Unassigned"}</span>
+                        </div>
                       </TableCell>
                       <TableCell>
                         <Button

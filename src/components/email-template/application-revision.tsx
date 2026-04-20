@@ -13,7 +13,6 @@ interface DocumentFeedbackItem {
 
 interface ApplicationRevisionEmailProps {
   applicantName: string;
-  submissionNumber: number;
   overallComments?: string;
   fieldIssues?: FieldFeedbackItem[];
   documentIssues?: DocumentFeedbackItem[];
@@ -41,7 +40,6 @@ const DOCUMENT_LABELS: Record<string, string> = {
 
 export function ApplicationRevisionEmail({
   applicantName,
-  submissionNumber,
   overallComments,
   fieldIssues = [],
   documentIssues = [],
@@ -78,9 +76,8 @@ export function ApplicationRevisionEmail({
         </p>
 
         <p style={{ fontSize: "16px", color: "#374151" }}>
-          Thank you for your SPES application (Submission #{submissionNumber}). After
-          review, we found some issues that need your attention before we can
-          proceed.
+          Thank you for your SPES application. After review, we found some
+          issues that need your attention before we can proceed.
         </p>
 
         {/* Overall Comments */}
