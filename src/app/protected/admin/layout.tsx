@@ -1,6 +1,5 @@
 import React from 'react'
 import { cookies } from "next/headers"
-import { redirect } from "next/navigation"
 import Header from '@/components/protected/header'
 import Footer from '@/components/protected/footer'
 import Side from '@/components/admin/side'
@@ -11,11 +10,10 @@ import { ADMIN_SERVICE_COOKIE, isAdminService } from "@/lib/constants/admin-serv
 const Layout = async ({ children }: { children: React.ReactNode }) => {
   await requireAdmin()
   const cookieStore = await cookies()
-  const selectedService = cookieStore.get(ADMIN_SERVICE_COOKIE)?.value
-
-  if (!isAdminService(selectedService)) {
-    redirect("/protected/service-selection")
-  }
+  const selectedServiceValue = cookieStore.get(ADMIN_SERVICE_COOKIE)?.value
+  const selectedService = isAdminService(selectedServiceValue)
+    ? selectedServiceValue
+    : undefined
 
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-background">

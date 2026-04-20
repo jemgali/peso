@@ -18,6 +18,7 @@ import ApplicationViewer from "@/components/admin/review/application-viewer";
 import DocumentReview from "@/components/admin/review/document-review";
 import ReviewSubmit from "@/components/admin/review/review-submit";
 import type {
+  ApplicantType,
   ApplicationDetailResponse,
   ApplicationStatus,
   ReviewDecision,
@@ -42,6 +43,11 @@ const STATUS_LABELS: Record<ApplicationStatus, string> = {
   approved: "Approved",
   needs_revision: "Needs Revision",
   rejected: "Rejected",
+};
+
+const APPLICANT_TYPE_LABELS: Record<ApplicantType, string> = {
+  new: "New Applicant",
+  spes_baby: "SPES Baby",
 };
 
 interface PageProps {
@@ -78,6 +84,11 @@ export default function ApplicationReviewPage({ params }: PageProps) {
 
         if (result.success) {
           setData(result.data);
+          const latestReview = result.data?.reviews?.[0];
+          setDecision(latestReview?.decision || "");
+          setOverallComments(latestReview?.overallComments || "");
+          setFieldFeedback(latestReview?.fieldFeedback || []);
+          setDocumentFeedback(latestReview?.documentFeedback || []);
         } else {
           setError(result.error || "Failed to fetch application");
         }
@@ -149,9 +160,7 @@ export default function ApplicationReviewPage({ params }: PageProps) {
     );
   }
 
-  const isReviewable =
-    data.submission.status === "pending" ||
-    data.submission.status === "in_review";
+  const isReviewable = true;
 
   return (
     <div className="space-y-6">
@@ -180,7 +189,7 @@ export default function ApplicationReviewPage({ params }: PageProps) {
               {STATUS_LABELS[data.submission.status]}
             </Badge>
             <span className="text-sm text-muted-foreground">
-              Submission #{data.submission.submissionNumber}
+              {APPLICANT_TYPE_LABELS[data.submission.applicantType]}
             </span>
             <span className="text-sm text-muted-foreground">
               Submitted{" "}
@@ -190,125 +199,93 @@ export default function ApplicationReviewPage({ params }: PageProps) {
         </div>
       </div>
 
-      {/* 3-Tab Layout */}
-      {isReviewable ? (
-        <Tabs defaultValue="application" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger
-              value="application"
-              className="flex items-center gap-2"
-            >
-              <ClipboardCheck className="h-4 w-4" />
-              <span className="hidden sm:inline">Application Review</span>
-              <span className="sm:hidden">Review</span>
-            </TabsTrigger>
-            <TabsTrigger value="documents" className="flex items-center gap-2">
-              <FileText className="h-4 w-4" />
-              <span className="hidden sm:inline">Documents & Verification</span>
-              <span className="sm:hidden">Docs</span>
-            </TabsTrigger>
-            <TabsTrigger value="submit" className="flex items-center gap-2">
-              <Send className="h-4 w-4" />
-              <span className="hidden sm:inline">Submit Review</span>
-              <span className="sm:hidden">Submit</span>
-            </TabsTrigger>
-          </TabsList>
+      <Tabs defaultValue="application" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="application" className="flex items-center gap-2">
+            <ClipboardCheck className="h-4 w-4" />
+            <span className="hidden sm:inline">Application Review</span>
+            <span className="sm:hidden">Review</span>
+          </TabsTrigger>
+          <TabsTrigger value="documents" className="flex items-center gap-2">
+            <FileText className="h-4 w-4" />
+            <span className="hidden sm:inline">Documents & Verification</span>
+            <span className="sm:hidden">Docs</span>
+          </TabsTrigger>
+          <TabsTrigger value="submit" className="flex items-center gap-2">
+            <Send className="h-4 w-4" />
+            <span className="hidden sm:inline">Submit Review</span>
+            <span className="sm:hidden">Submit</span>
+          </TabsTrigger>
+        </TabsList>
 
-          {/* Tab 1: Application Review — merged viewer + inline review */}
-          <TabsContent value="application">
-            <ApplicationViewer
-              data={data}
-              fieldFeedback={fieldFeedback}
-              onFieldFeedbackChange={setFieldFeedback}
-              isReviewable={isReviewable}
-            />
-          </TabsContent>
-
-          {/* Tab 2: Documents & Verification — uploaded docs display + review controls */}
-          <TabsContent value="documents">
-            <DocumentReview
-              data={data}
-              documentFeedback={documentFeedback}
-              onDocumentFeedbackChange={setDocumentFeedback}
-            />
-          </TabsContent>
-
-          {/* Tab 3: Submit Review */}
-          <TabsContent value="submit">
-            <ReviewSubmit
-              decision={decision}
-              overallComments={overallComments}
-              fieldFeedback={fieldFeedback}
-              documentFeedback={documentFeedback}
-              isSubmitting={isSubmitting}
-              onDecisionChange={setDecision}
-              onOverallCommentsChange={setOverallComments}
-              onSubmit={handleSubmitReview}
-            />
-          </TabsContent>
-        </Tabs>
-      ) : (
-        <div className="space-y-6">
-          <Card className="p-4 bg-muted/50">
-            <p className="text-sm">
-              This application has already been{" "}
-              <span className="font-medium">
-                {data.submission.status === "approved"
-                  ? "approved"
-                  : data.submission.status === "rejected"
-                    ? "rejected"
-                    : "reviewed"}
-              </span>
-              . View the application details below.
-            </p>
-          </Card>
+        <TabsContent value="application">
           <ApplicationViewer
             data={data}
             fieldFeedback={fieldFeedback}
             onFieldFeedbackChange={setFieldFeedback}
-            isReviewable={false}
+            isReviewable={isReviewable}
           />
+        </TabsContent>
 
-          {/* Show review history if available */}
-          {data.reviews.length > 0 && (
-            <Card className="p-6">
-              <h3 className="font-semibold text-lg mb-4">Review History</h3>
-              <div className="space-y-4">
-                {data.reviews.map((review) => (
-                  <div key={review.reviewId} className="border-l-2 pl-4 py-2">
-                    <div className="flex items-center gap-2 mb-1">
-                      <Badge
-                        variant="secondary"
-                        className={
-                          review.decision === "approved"
-                            ? "bg-green-100 text-green-800"
-                            : review.decision === "rejected"
-                              ? "bg-red-100 text-red-800"
-                              : "bg-orange-100 text-orange-800"
-                        }
-                      >
-                        {review.decision === "approved"
-                          ? "Approved"
-                          : review.decision === "rejected"
-                            ? "Rejected"
-                            : "Needs Revision"}
-                      </Badge>
-                      <span className="text-sm text-muted-foreground">
-                        by {review.reviewer.name}
-                      </span>
-                      <span className="text-sm text-muted-foreground">
-                        on {new Date(review.reviewedAt).toLocaleString()}
-                      </span>
-                    </div>
-                    {review.overallComments && (
-                      <p className="text-sm mt-2">{review.overallComments}</p>
-                    )}
-                  </div>
-                ))}
+        <TabsContent value="documents">
+          <DocumentReview
+            data={data}
+            documentFeedback={documentFeedback}
+            onDocumentFeedbackChange={setDocumentFeedback}
+          />
+        </TabsContent>
+
+        <TabsContent value="submit">
+          <ReviewSubmit
+            decision={decision}
+            overallComments={overallComments}
+            fieldFeedback={fieldFeedback}
+            documentFeedback={documentFeedback}
+            isSubmitting={isSubmitting}
+            onDecisionChange={setDecision}
+            onOverallCommentsChange={setOverallComments}
+            onSubmit={handleSubmitReview}
+          />
+        </TabsContent>
+      </Tabs>
+
+      {data.reviews.length > 0 && (
+        <Card className="p-6">
+          <h3 className="mb-4 text-lg font-semibold">Review History</h3>
+          <div className="space-y-4">
+            {data.reviews.map((review) => (
+              <div key={review.reviewId} className="border-l-2 py-2 pl-4">
+                <div className="mb-1 flex items-center gap-2">
+                  <Badge
+                    variant="secondary"
+                    className={
+                      review.decision === "approved"
+                        ? "bg-green-100 text-green-800"
+                        : review.decision === "rejected"
+                          ? "bg-red-100 text-red-800"
+                          : "bg-orange-100 text-orange-800"
+                    }
+                  >
+                    {review.decision === "approved"
+                      ? "Approved"
+                      : review.decision === "rejected"
+                        ? "Rejected"
+                        : "Needs Revision"}
+                  </Badge>
+                  <span className="text-sm text-muted-foreground">
+                    by {review.reviewer.name}
+                  </span>
+                  <span className="text-sm text-muted-foreground">
+                    on {new Date(review.reviewedAt).toLocaleString()}
+                  </span>
+                </div>
+                {review.overallComments && (
+                  <p className="mt-2 text-sm">{review.overallComments}</p>
+                )}
               </div>
-            </Card>
-          )}
-        </div>
+            ))}
+          </div>
+        </Card>
       )}
     </div>
   );

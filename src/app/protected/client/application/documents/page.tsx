@@ -31,7 +31,7 @@ export default async function DocumentsPrintingPage() {
           status: true,
           spesWorkflow: {
             select: {
-              isGrantee: true,
+              selectionStatus: true,
             },
           },
         },
@@ -40,7 +40,7 @@ export default async function DocumentsPrintingPage() {
   })
 
   const latestSubmission = profile?.submissions[0]
-  const isEligible = latestSubmission?.spesWorkflow?.isGrantee === true
+  const isEligible = latestSubmission?.spesWorkflow?.selectionStatus === "GRANTEE"
 
   if (!isEligible) {
     return (

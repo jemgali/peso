@@ -1,22 +1,17 @@
-"use client"
+"use client";
 
-import React, { useEffect, useState } from "react"
-import Link from "next/link"
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Spinner } from "@/components/ui/spinner"
-import { FileText, LayoutGrid, Activity } from "lucide-react"
-import { PageHeader } from "@/components/shared"
-import DashboardStatusTracker from "@/components/client/dashboard-status-tracker"
-import DashboardNotifications from "@/components/client/dashboard-notifications"
-import DashboardCalendar from "@/components/client/dashboard-calendar"
-import type { ClientApplicationStatusResponse } from "@/lib/validations/application-review"
+import React, { useEffect, useState } from "react";
+import Link from "next/link";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Spinner } from "@/components/ui/spinner";
+import { FileText, LayoutGrid, Activity } from "lucide-react";
+import { PageHeader } from "@/components/shared";
+import DashboardStatusTracker from "@/components/client/dashboard-status-tracker";
+import DashboardNotifications from "@/components/client/dashboard-notifications";
+import DashboardCalendar from "@/components/client/dashboard-calendar";
+import type { ClientApplicationStatusResponse } from "@/lib/validations/application-review";
 
 function getStatusLabel(status: string) {
   const labels: Record<string, string> = {
@@ -25,49 +20,49 @@ function getStatusLabel(status: string) {
     approved: "Approved",
     needs_revision: "Needs Revision",
     rejected: "Rejected",
-  }
-  return labels[status] || status
+  };
+  return labels[status] || status;
 }
 
-function getStatusColor(status: string) {
-  const colors: Record<string, string> = {
-    pending: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400",
-    in_review: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
-    approved: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
-    needs_revision: "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400",
-    rejected: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
-  }
-  return colors[status] || ""
+function getStatusVariant(
+  status: string,
+): "default" | "secondary" | "destructive" | "outline" {
+  if (status === "approved") return "default";
+  if (status === "rejected") return "destructive";
+  if (status === "needs_revision") return "secondary";
+  return "outline";
 }
 
 const Page = () => {
-  const [loading, setLoading] = useState(true)
-  const [statusData, setStatusData] = useState<ClientApplicationStatusResponse["data"] | null>(null)
+  const [loading, setLoading] = useState(true);
+  const [statusData, setStatusData] = useState<
+    ClientApplicationStatusResponse["data"] | null
+  >(null);
 
   useEffect(() => {
     const fetchStatus = async () => {
       try {
-        const response = await fetch("/api/client/application/status")
-        const data = await response.json()
+        const response = await fetch("/api/client/application/status");
+        const data = await response.json();
         if (data.success) {
-          setStatusData(data.data)
+          setStatusData(data.data);
         }
       } catch (error) {
-        console.error("Error fetching status:", error)
+        console.error("Error fetching status:", error);
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
+    };
 
-    fetchStatus()
-  }, [])
+    fetchStatus();
+  }, []);
 
   if (loading) {
     return (
-      <div className="flex min-h-[300px] items-center justify-center">
+      <div className="flex min-h-75 items-center justify-center">
         <Spinner className="size-8 text-muted-foreground" />
       </div>
-    )
+    );
   }
 
   return (
@@ -99,7 +94,9 @@ const Page = () => {
                   <div className="flex flex-col gap-1.5">
                     <div className="flex items-center gap-2 text-sm">
                       <div className="size-2 rounded-full bg-primary" />
-                      <span className="text-muted-foreground">SPES Program</span>
+                      <span className="text-muted-foreground">
+                        SPES Program
+                      </span>
                     </div>
                   </div>
                 )}
@@ -114,9 +111,7 @@ const Page = () => {
             {/* Application Status Summary */}
             <Card>
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Status
-                </CardTitle>
+                <CardTitle className="text-sm font-medium">Status</CardTitle>
                 <Activity className="text-muted-foreground" />
               </CardHeader>
               <CardContent className="flex flex-col gap-3">
@@ -124,8 +119,7 @@ const Page = () => {
                   <>
                     <div className="flex items-center gap-2">
                       <Badge
-                        variant="secondary"
-                        className={getStatusColor(statusData.submission.status)}
+                        variant={getStatusVariant(statusData.submission.status)}
                       >
                         {getStatusLabel(statusData.submission.status)}
                       </Badge>
@@ -148,85 +142,53 @@ const Page = () => {
             </Card>
           </div>
 
-          {/* Notifications Bar — replaces Get Started */}
-          <DashboardNotifications />
-
-          {/* Quick Actions (has application, not approved) */}
-          {statusData?.hasApplication &&
-            statusData.submission?.status !== "approved" && (
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-base">Quick Actions</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex flex-wrap gap-3">
-                    <Button variant="outline" size="sm" asChild>
-                      <Link href="/protected/client/application/status">
-                        View Application Status
-                      </Link>
-                    </Button>
-                    {statusData.submission?.status === "needs_revision" && (
-                      <Button size="sm" asChild>
-                        <Link href="/protected/client/application">
-                          <FileText data-icon="inline-start" />
-                          Edit & Resubmit
-                        </Link>
-                      </Button>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
           {/* Calendar with Announcements — replaces DashboardAnnouncements */}
           <DashboardCalendar />
         </div>
 
         {/* Right sidebar — Status Tracker */}
         <div className="hidden lg:block">
-          {statusData?.hasApplication && statusData.submission ? (
-            <div className="sticky top-6">
+          <div className="sticky top-6 space-y-4">
+            <DashboardNotifications />
+            {statusData?.hasApplication && statusData.submission ? (
               <DashboardStatusTracker
                 status={statusData.submission.status}
-                submissionNumber={statusData.submission.submissionNumber}
                 submittedAt={statusData.submission.submittedAt}
                 updatedAt={statusData.submission.updatedAt}
-                latestReviewComments={
-                  statusData.latestReview?.overallComments
-                }
+                latestReviewComments={statusData.latestReview?.overallComments}
               />
-            </div>
-          ) : (
-            <Card className="h-fit">
-              <CardHeader>
-                <CardTitle className="text-base">Application Status</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground">
-                  Submit an application to track your progress here.
-                </p>
-              </CardContent>
-            </Card>
-          )}
+            ) : (
+              <Card className="h-fit">
+                <CardHeader>
+                  <CardTitle className="text-base">
+                    Application Status
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground">
+                    Submit an application to track your progress here.
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+          </div>
         </div>
 
-        {/* Mobile status tracker (shown below content on small screens) */}
-        <div className="lg:hidden">
+        {/* Mobile notifications + status tracker (shown below content on small screens) */}
+        <div className="space-y-4 lg:hidden">
+          <DashboardNotifications />
           {statusData?.hasApplication && statusData.submission && (
             <DashboardStatusTracker
               status={statusData.submission.status}
-              submissionNumber={statusData.submission.submissionNumber}
               submittedAt={statusData.submission.submittedAt}
               updatedAt={statusData.submission.updatedAt}
-              latestReviewComments={
-                statusData.latestReview?.overallComments
-              }
+              latestReviewComments={statusData.latestReview?.overallComments}
             />
           )}
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default Page
+export default Page;

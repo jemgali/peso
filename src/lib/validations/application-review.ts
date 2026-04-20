@@ -1,5 +1,9 @@
 import { z } from "zod";
-import type { ExamResult, SpesWorkflowStage } from "@/lib/validations/spes-workflow";
+import type {
+  ExamResult,
+  SpesSelectionStatus,
+  SpesWorkflowStage,
+} from "@/lib/validations/spes-workflow";
 
 // Review decision values
 export const REVIEW_DECISIONS = ["approved", "needs_revision", "rejected"] as const;
@@ -14,6 +18,9 @@ export const APPLICATION_STATUSES = [
   "rejected",
 ] as const;
 export type ApplicationStatus = (typeof APPLICATION_STATUSES)[number];
+
+export const APPLICANT_TYPES = ["new", "spes_baby"] as const;
+export type ApplicantType = (typeof APPLICANT_TYPES)[number];
 
 // Field feedback status values
 export const FIELD_FEEDBACK_STATUSES = ["valid", "invalid"] as const;
@@ -64,7 +71,8 @@ export interface ApplicationListItem {
   submissionId: string;
   profileId: string;
   status: ApplicationStatus;
-  submissionNumber: number;
+  applicantType: ApplicantType;
+  hasReview: boolean;
   submittedAt: string;
   updatedAt: string;
   applicant: {
@@ -78,6 +86,8 @@ export interface ApplicationListResponse {
   success: boolean;
   data?: {
     applications: ApplicationListItem[];
+    availableYears: number[];
+    selectedYear: number;
     total: number;
     page: number;
     pageSize: number;
@@ -105,7 +115,7 @@ export interface ApplicationDetailResponse {
       submissionId: string;
       profileId: string;
       status: ApplicationStatus;
-      submissionNumber: number;
+      applicantType: ApplicantType;
       submittedAt: string;
       updatedAt: string;
     };
@@ -154,6 +164,7 @@ export interface WorkflowScheduleSummary {
 export interface ClientSpesWorkflowStatus {
   workflowId: string;
   stage: SpesWorkflowStage;
+  selectionStatus: SpesSelectionStatus;
   isGrantee: boolean;
   examResult: ExamResult;
   rankPosition: number | null;
@@ -178,7 +189,6 @@ export interface ClientApplicationStatusResponse {
     submission?: {
       submissionId: string;
       status: ApplicationStatus;
-      submissionNumber: number;
       submittedAt: string;
       updatedAt: string;
     };

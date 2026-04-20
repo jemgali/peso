@@ -14,7 +14,6 @@ const FROM_EMAIL = "PESO <noreply@jemgali.tech>";
 interface SendApplicationEmailParams {
   to: string;
   applicantName: string;
-  submissionNumber: number;
   decision: "approved" | "needs_revision" | "rejected";
   overallComments?: string;
   fieldFeedback?: FieldFeedback[];
@@ -24,7 +23,6 @@ interface SendApplicationEmailParams {
 export async function sendApplicationReviewEmail({
   to,
   applicantName,
-  submissionNumber,
   decision,
   overallComments,
   fieldFeedback = [],
@@ -39,7 +37,6 @@ export async function sendApplicationReviewEmail({
         subject = "Your SPES Application Has Been Approved!";
         reactElement = createElement(ApplicationApprovedEmail, {
           applicantName,
-          submissionNumber,
         });
         break;
 
@@ -63,7 +60,6 @@ export async function sendApplicationReviewEmail({
 
         reactElement = createElement(ApplicationRevisionEmail, {
           applicantName,
-          submissionNumber,
           overallComments,
           fieldIssues,
           documentIssues,
@@ -74,7 +70,6 @@ export async function sendApplicationReviewEmail({
         subject = "Update on Your SPES Application";
         reactElement = createElement(ApplicationRejectedEmail, {
           applicantName,
-          submissionNumber,
           reason: overallComments,
         });
         break;
@@ -98,6 +93,41 @@ export async function sendApplicationReviewEmail({
     return { success: true };
   } catch (error) {
     console.error("Error sending application review email:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown error",
+    };
+  }
+}
+
+interface SendEvaluationBulkNotifyEmailParams {
+  to: string;
+  applicantName: string;
+  note?: string;
+}
+
+export async function sendEvaluationBulkNotifyEmail({
+  to,
+  applicantName,
+  note,
+}: SendEvaluationBulkNotifyEmailParams): Promise<{ success: boolean; error?: string }> {
+  try {
+    const noteText = note?.trim() ? `\n\nAdmin note: ${note.trim()}` : "";
+    const { error } = await resend.emails.send({
+      from: FROM_EMAIL,
+      to,
+      subject: "SPES Application Update from PESO",
+      text: `Hello ${applicantName},\n\nPESO sent an update regarding your SPES application evaluation. Please check your application status page for details and next steps.${noteText}\n\n- PESO Team`,
+    });
+
+    if (error) {
+      console.error("Failed to send evaluation notification email:", error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error sending evaluation notification email:", error);
     return {
       success: false,
       error: error instanceof Error ? error.message : "Unknown error",

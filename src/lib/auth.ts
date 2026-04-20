@@ -68,16 +68,26 @@ export const auth = betterAuth({
     user: {
       create: {
         before: async (user, ctx) => {
+          // Normalize auth defaults: app uses "client" instead of generic "user".
+          const normalizedRole =
+            !user.role || user.role === "user" ? "client" : user.role
+
           // For OAuth signups (callback path), set emailVerified to false
           if (ctx?.path?.startsWith("/callback")) {
             return {
               data: {
                 ...user,
+                role: normalizedRole,
                 emailVerified: false,
               },
             };
           }
-          return { data: user };
+          return {
+            data: {
+              ...user,
+              role: normalizedRole,
+            },
+          };
         },
         after: async (user) => {
           // Auto-create ProfileUser in public schema with email + role

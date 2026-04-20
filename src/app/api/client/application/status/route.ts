@@ -12,7 +12,11 @@ import type {
   DocumentFeedback,
   WorkflowScheduleSummary,
 } from "@/lib/validations/application-review";
-import type { ExamResult, SpesWorkflowStage } from "@/lib/validations/spes-workflow";
+import type {
+  ExamResult,
+  SpesSelectionStatus,
+  SpesWorkflowStage,
+} from "@/lib/validations/spes-workflow";
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -200,10 +204,11 @@ export async function GET(): Promise<NextResponse<ClientApplicationStatusRespons
         ? {
           workflowId: workflow.workflowId,
           stage: workflow.stage.toLowerCase() as SpesWorkflowStage,
-          isGrantee: workflow.isGrantee,
+          selectionStatus: workflow.selectionStatus.toLowerCase() as SpesSelectionStatus,
+          isGrantee: workflow.selectionStatus === "GRANTEE",
           examResult: workflow.examResult.toLowerCase() as ExamResult,
           rankPosition: workflow.rankPosition,
-          isWaitlisted: workflow.isWaitlisted,
+          isWaitlisted: workflow.selectionStatus === "WAITLISTED",
           assignedOffice: workflow.assignedOffice,
           batch: workflow.batch
             ? {
@@ -227,7 +232,6 @@ export async function GET(): Promise<NextResponse<ClientApplicationStatusRespons
         submission: {
           submissionId: submission.submissionId,
           status: submission.status as ApplicationStatus,
-          submissionNumber: submission.submissionNumber,
           submittedAt: submission.submittedAt.toISOString(),
           updatedAt: submission.updatedAt.toISOString(),
         },

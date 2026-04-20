@@ -5,6 +5,7 @@ import { PrismaClient } from "@/generated/prisma/client";
 import { Pool } from "pg";
 import { PrismaPg } from "@prisma/adapter-pg";
 import type {
+  ApplicantType,
   ApplicationDetailResponse,
   ApplicationStatus,
   ReviewDecision,
@@ -109,7 +110,10 @@ export async function GET(
           submissionId: submission.submissionId,
           profileId: submission.profileId,
           status: submission.status as ApplicationStatus,
-          submissionNumber: submission.submissionNumber,
+          applicantType:
+            submission.applicantType === "SPES_BABY"
+              ? ("spes_baby" as ApplicantType)
+              : ("new" as ApplicantType),
           submittedAt: submission.submittedAt.toISOString(),
           updatedAt: submission.updatedAt.toISOString(),
         },

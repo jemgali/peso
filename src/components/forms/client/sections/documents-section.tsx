@@ -1,17 +1,19 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useMemo } from "react";
 import { Card } from "@/ui/card";
 import { FieldGroup } from "@/ui/field";
 import { Button } from "@/ui/button";
-import { FileText, Upload, X, Loader2, CheckCircle2, ExternalLink, Image as ImageIcon, Eye } from "lucide-react";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/ui/dialog";
+  FileText,
+  Upload,
+  X,
+  Loader2,
+  CheckCircle2,
+  ExternalLink,
+  Image as ImageIcon,
+  Eye,
+} from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import type { FormSectionProps } from "./types";
@@ -29,42 +31,97 @@ interface DocumentsMap {
   [key: string]: UploadedDocument;
 }
 
-const REQUIRED_DOCUMENTS = [
+interface SampleImage {
+  src: string;
+  label: string;
+}
+
+interface DocumentRequirement {
+  id: string;
+  name: string;
+  description: string;
+  required: boolean;
+  sampleImages?: SampleImage[];
+}
+
+interface LocalPreview {
+  url: string;
+  fileType: string;
+  fileName: string;
+}
+
+type PreviewMode = "auto" | "sample" | "uploaded";
+
+const SAMPLE_BASE = "/assets/sample_forms/spes_req";
+
+const REQUIRED_DOCUMENTS: DocumentRequirement[] = [
   {
     id: "psaCertificate",
     name: "Original PSA Certificate",
     description: "Original or authenticated PSA birth certificate",
     required: true,
+    sampleImages: [
+      { src: `${SAMPLE_BASE}/psa-birth-cert.jpg`, label: "psa-birth-cert.jpg" },
+    ],
   },
   {
     id: "grades",
     name: "Grades",
     description: "Latest available report card or transcript of records",
     required: true,
+    sampleImages: [
+      {
+        src: `${SAMPLE_BASE}/report-card-front.jpg`,
+        label: "report-card-front.jpg",
+      },
+      {
+        src: `${SAMPLE_BASE}/report-card-back.jpg`,
+        label: "report-card-back.jpg",
+      },
+    ],
   },
   {
     id: "affidavitLowIncome",
     name: "Affidavit of Low Income (PAO)",
     description: "Affidavit of low income from the Public Attorney's Office",
     required: true,
+    sampleImages: [{ src: `${SAMPLE_BASE}/low-income.jpg`, label: "low-income.jpg" }],
   },
   {
     id: "barangayCertLowIncome",
     name: "Barangay Certificate of Low Income (Parents)",
     description: "Certificate of low income issued by the barangay for parents",
     required: true,
+    sampleImages: [
+      {
+        src: `${SAMPLE_BASE}/inc-tax-return-2.jpg`,
+        label: "inc-tax-return-2.jpg",
+      },
+    ],
   },
   {
     id: "barangayCertResidency",
     name: "Barangay Certificate of Residency (Applicant)",
     description: "Certificate of residency issued by the barangay for the applicant",
     required: true,
+    sampleImages: [
+      {
+        src: `${SAMPLE_BASE}/proof-of-residency.jpg`,
+        label: "proof-of-residency.jpg",
+      },
+    ],
   },
   {
     id: "incomeTaxReturn",
     name: "Income Tax Return",
     description: "Latest Income Tax Return (ITR) of parent/guardian",
     required: true,
+    sampleImages: [
+      {
+        src: `${SAMPLE_BASE}/inc-tax-return-1.jpg`,
+        label: "inc-tax-return-1.jpg",
+      },
+    ],
   },
   {
     id: "affidavitSoloParent",
@@ -86,96 +143,14 @@ const REQUIRED_DOCUMENTS = [
   },
 ];
 
-// Sample document descriptions for the "View Sample" dialog
-const DOCUMENT_SAMPLES: Record<string, { title: string; tips: string[] }> = {
-  psaCertificate: {
-    title: "PSA Birth Certificate",
-    tips: [
-      "Must be an original or authenticated copy from the Philippine Statistics Authority (PSA)",
-      "The document should be clear and readable with no blurred sections",
-      "All pages must be included if multi-page",
-      "Scan or photo must show the full document including the security paper",
-    ],
-  },
-  grades: {
-    title: "Report Card / Grades",
-    tips: [
-      "Latest available report card or transcript of records",
-      "Should show your full name and school name",
-      "Include all pages with grades visible",
-      "An official copy with school seal or stamp is preferred",
-    ],
-  },
-  affidavitLowIncome: {
-    title: "Affidavit of Low Income (PAO)",
-    tips: [
-      "Obtained from the Public Attorney's Office (PAO)",
-      "Must state your family's income status",
-      "Document must be notarized",
-      "Should be recent (within the current year)",
-    ],
-  },
-  barangayCertLowIncome: {
-    title: "Barangay Certificate of Low Income",
-    tips: [
-      "Issued by the barangay where your parents reside",
-      "Must state your parent's/guardian's income status",
-      "Should include the barangay official's signature and seal",
-      "Must be current and not expired",
-    ],
-  },
-  barangayCertResidency: {
-    title: "Barangay Certificate of Residency",
-    tips: [
-      "Issued by the barangay where you currently reside",
-      "Must state your name and address clearly",
-      "Should include the barangay official's signature and seal",
-      "Must be current and not expired",
-    ],
-  },
-  incomeTaxReturn: {
-    title: "Income Tax Return (ITR)",
-    tips: [
-      "Latest Income Tax Return of parent or guardian",
-      "BIR Form 2316 or any applicable ITR form",
-      "If parent is not employed, a Certificate of No Filing from BIR may be submitted",
-      "All pages of the document must be included",
-    ],
-  },
-  affidavitSoloParent: {
-    title: "Affidavit of Solo Parent",
-    tips: [
-      "Only required if you have a solo parent",
-      "Document must be notarized",
-      "Should state the circumstances of solo parenthood",
-    ],
-  },
-  affidavitDiscrepancy: {
-    title: "Affidavit of Discrepancy",
-    tips: [
-      "Only required if there are discrepancies in your documents (e.g., name spelling differences)",
-      "Document must be notarized",
-      "Should clearly state and explain the discrepancy",
-    ],
-  },
-  deathCertificate: {
-    title: "Death Certificate",
-    tips: [
-      "Only required if parent/s is/are deceased",
-      "Must be from PSA or local civil registry",
-      "Document should be clear and legible",
-    ],
-  },
-};
-
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
-const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/gif", "image/webp", "application/pdf"];
-
-function formatFileSize(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
+const ALLOWED_TYPES = [
+  "image/jpeg",
+  "image/png",
+  "image/gif",
+  "image/webp",
+  "application/pdf",
+];
 
 const DocumentsSection: React.FC<FormSectionProps> = ({
   isPending,
@@ -186,7 +161,15 @@ const DocumentsSection: React.FC<FormSectionProps> = ({
   const [uploadedDocs, setUploadedDocs] = useState<DocumentsMap>(formDocs || {});
   const [uploading, setUploading] = useState<Record<string, boolean>>({});
   const [deleting, setDeleting] = useState<Record<string, boolean>>({});
+  const [localPreviews, setLocalPreviews] = useState<Record<string, LocalPreview>>(
+    {},
+  );
+  const [selectedDocumentId, setSelectedDocumentId] = useState<string>(
+    REQUIRED_DOCUMENTS[0]?.id || "",
+  );
+  const [previewMode, setPreviewMode] = useState<PreviewMode>("auto");
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
+  const localPreviewUrlsRef = useRef<Record<string, string>>({});
 
   // Fetch existing documents on mount
   useEffect(() => {
@@ -211,6 +194,69 @@ const DocumentsSection: React.FC<FormSectionProps> = ({
     fetchDocuments();
   }, []);
 
+  useEffect(() => {
+    return () => {
+      Object.values(localPreviewUrlsRef.current).forEach((url) => {
+        URL.revokeObjectURL(url);
+      });
+    };
+  }, []);
+
+  const requiredDocs = useMemo(
+    () => REQUIRED_DOCUMENTS.filter((d) => d.required),
+    [],
+  );
+  const optionalDocs = useMemo(
+    () => REQUIRED_DOCUMENTS.filter((d) => !d.required),
+    [],
+  );
+
+  useEffect(() => {
+    if (!selectedDocumentId && requiredDocs.length > 0) {
+      setSelectedDocumentId(requiredDocs[0].id);
+    }
+  }, [requiredDocs, selectedDocumentId]);
+
+  const selectedRequirement = useMemo(
+    () =>
+      REQUIRED_DOCUMENTS.find((doc) => doc.id === selectedDocumentId) ||
+      requiredDocs[0],
+    [requiredDocs, selectedDocumentId],
+  );
+
+  useEffect(() => {
+    setPreviewMode("auto");
+  }, [selectedDocumentId]);
+
+  const clearLocalPreview = (documentId: string) => {
+    const existingUrl = localPreviewUrlsRef.current[documentId];
+    if (existingUrl) {
+      URL.revokeObjectURL(existingUrl);
+      delete localPreviewUrlsRef.current[documentId];
+    }
+
+    setLocalPreviews((prev) => {
+      if (!prev[documentId]) return prev;
+      const next = { ...prev };
+      delete next[documentId];
+      return next;
+    });
+  };
+
+  const setLocalPreview = (documentId: string, file: File) => {
+    clearLocalPreview(documentId);
+    const url = URL.createObjectURL(file);
+    localPreviewUrlsRef.current[documentId] = url;
+    setLocalPreviews((prev) => ({
+      ...prev,
+      [documentId]: {
+        url,
+        fileType: file.type,
+        fileName: file.name,
+      },
+    }));
+  };
+
   const handleFileSelect = async (documentId: string, file: File) => {
     // Validate file
     if (!ALLOWED_TYPES.includes(file.type)) {
@@ -223,6 +269,8 @@ const DocumentsSection: React.FC<FormSectionProps> = ({
       return;
     }
 
+    setSelectedDocumentId(documentId);
+    setLocalPreview(documentId, file);
     setUploading((prev) => ({ ...prev, [documentId]: true }));
 
     try {
@@ -255,11 +303,19 @@ const DocumentsSection: React.FC<FormSectionProps> = ({
           },
         };
         if (setValue) {
-          setTimeout(() => setValue("documents", newDocs, { shouldValidate: true, shouldTouch: true }), 0);
+          setTimeout(
+            () =>
+              setValue("documents", newDocs, {
+                shouldValidate: true,
+                shouldTouch: true,
+              }),
+            0,
+          );
         }
         return newDocs;
       });
 
+      clearLocalPreview(documentId);
       toast.success("Document uploaded successfully!");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to upload document");
@@ -295,6 +351,7 @@ const DocumentsSection: React.FC<FormSectionProps> = ({
         return newDocs;
       });
 
+      clearLocalPreview(documentId);
       toast.success("Document removed");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to delete document");
@@ -312,41 +369,36 @@ const DocumentsSection: React.FC<FormSectionProps> = ({
     e.target.value = "";
   };
 
-  // Separate required and optional documents for display
-  const requiredDocs = REQUIRED_DOCUMENTS.filter((d) => d.required);
-  const optionalDocs = REQUIRED_DOCUMENTS.filter((d) => !d.required);
-
-  const renderDocumentCard = (doc: (typeof REQUIRED_DOCUMENTS)[number]) => {
+  const renderDocumentListItem = (doc: DocumentRequirement) => {
     const uploaded = uploadedDocs[doc.id];
-    const isUploading = uploading[doc.id];
-    const isDeleting = deleting[doc.id];
-    const isImage = uploaded?.fileType?.startsWith("image/");
+    const isSelected = selectedRequirement?.id === doc.id;
 
     return (
-      <Card
+      <button
+        type="button"
         key={doc.id}
+        onClick={() => setSelectedDocumentId(doc.id)}
         className={cn(
-          "p-4 transition-colors",
+          "w-full rounded-lg border p-3 text-left transition-colors",
           isPending && "opacity-50",
-          uploaded && "border-green-200 dark:border-green-800 bg-green-50/50 dark:bg-green-950/20"
+          uploaded && "border-green-200 dark:border-green-800 bg-green-50/50 dark:bg-green-950/20",
+          isSelected && "ring-1 ring-primary bg-primary/5"
         )}
       >
-        <div className="flex items-start gap-3">
+        <div className="flex items-start gap-2.5">
           <div className={cn(
-            "p-2 rounded-lg shrink-0",
+            "p-1.5 rounded-md shrink-0",
             uploaded ? "bg-green-100 dark:bg-green-900/50" : "bg-muted"
           )}>
             {uploaded ? (
-              <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400" />
-            ) : isImage ? (
-              <ImageIcon className="h-5 w-5 text-muted-foreground" />
+              <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
             ) : (
-              <FileText className="h-5 w-5 text-muted-foreground" />
+              <FileText className="h-4 w-4 text-muted-foreground" />
             )}
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
-              <h4 className="text-sm font-medium">{doc.name}</h4>
+              <h4 className="text-sm font-medium leading-tight">{doc.name}</h4>
               {doc.required ? (
                 <span className="text-xs px-1.5 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded">
                   Required
@@ -357,154 +409,252 @@ const DocumentsSection: React.FC<FormSectionProps> = ({
                 </span>
               )}
             </div>
-            <p className="text-xs text-muted-foreground mt-0.5">
+            <p className="mt-0.5 text-xs text-muted-foreground line-clamp-2">
               {doc.description}
             </p>
-            {/* View Sample button */}
-            {DOCUMENT_SAMPLES[doc.id] && (
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button
-                    type="button"
-                    variant="link"
-                    size="sm"
-                    className="p-0 h-auto text-xs text-blue-600 dark:text-blue-400 mt-1"
-                  >
-                    <Eye className="h-3 w-3 mr-1" />
-                    View Requirements
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="max-w-md">
-                  <DialogHeader>
-                    <DialogTitle>{DOCUMENT_SAMPLES[doc.id].title}</DialogTitle>
-                  </DialogHeader>
-                  <div className="space-y-3">
-                    <p className="text-sm text-muted-foreground">Make sure your document meets these requirements:</p>
-                    <ul className="space-y-2">
-                      {DOCUMENT_SAMPLES[doc.id].tips.map((tip, i) => (
-                        <li key={i} className="flex gap-2 text-sm">
-                          <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0 mt-0.5" />
-                          <span>{tip}</span>
-                        </li>
-                      ))}
-                    </ul>
-                    <div className="p-3 bg-muted rounded-lg">
-                      <p className="text-xs text-muted-foreground">
-                        Accepted formats: JPEG, PNG, GIF, WebP, PDF (max 10MB)
-                      </p>
-                    </div>
-                  </div>
-                </DialogContent>
-              </Dialog>
-            )}
             {uploaded && (
-              <div className="mt-2 flex items-center gap-2 text-xs text-green-700 dark:text-green-400">
-                <span className="truncate max-w-[200px]">{uploaded.fileName}</span>
-                <span className="text-muted-foreground">({formatFileSize(uploaded.fileSize)})</span>
-                <a
-                  href={uploaded.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-1 hover:underline"
-                >
-                  View <ExternalLink className="h-3 w-3" />
-                </a>
+              <div className="mt-1 text-xs text-green-700 dark:text-green-400 truncate">
+                Uploaded: {uploaded.fileName}
               </div>
             )}
           </div>
-          <div className="shrink-0 flex items-center gap-2">
-            {uploaded && (
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                disabled={isDeleting || isPending}
-                onClick={() => handleDelete(doc.id)}
-                className="text-red-600 hover:text-red-700 hover:bg-red-100 dark:hover:bg-red-900/30"
-              >
-                {isDeleting ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <X className="h-4 w-4" />
-                )}
-              </Button>
-            )}
-            <input
-              type="file"
-              ref={(el) => { fileInputRefs.current[doc.id] = el; }}
-              onChange={(e) => handleInputChange(doc.id, e)}
-              accept={ALLOWED_TYPES.join(",")}
-              className="hidden"
-            />
-            <Button
-              type="button"
-              variant={uploaded ? "outline" : "default"}
-              size="sm"
-              disabled={isUploading || isPending}
-              onClick={() => fileInputRefs.current[doc.id]?.click()}
-            >
-              {isUploading ? (
-                <>
-                  <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
-                  Uploading...
-                </>
-              ) : uploaded ? (
-                <>
-                  <Upload className="h-3.5 w-3.5 mr-1.5" />
-                  Replace
-                </>
-              ) : (
-                <>
-                  <Upload className="h-3.5 w-3.5 mr-1.5" />
-                  Upload
-                </>
-              )}
-            </Button>
-          </div>
         </div>
-      </Card>
+        <input
+          type="file"
+          ref={(el) => { fileInputRefs.current[doc.id] = el; }}
+          onChange={(e) => handleInputChange(doc.id, e)}
+          accept={ALLOWED_TYPES.join(",")}
+          className="hidden"
+        />
+      </button>
     );
   };
+
+  const previewDocumentId = selectedRequirement?.id || "";
+  const selectedUploadedDoc = previewDocumentId
+    ? uploadedDocs[previewDocumentId]
+    : undefined;
+  const selectedLocalPreview = previewDocumentId
+    ? localPreviews[previewDocumentId]
+    : undefined;
+  const hasSelectedUpload = !!selectedUploadedDoc || !!selectedLocalPreview;
+  const shouldShowUploadedPreview =
+    previewMode === "uploaded"
+      ? hasSelectedUpload
+      : previewMode === "sample"
+        ? false
+        : hasSelectedUpload;
+  const showingUploadedPreview = shouldShowUploadedPreview && !!selectedUploadedDoc;
+  const showingLocalPreview = shouldShowUploadedPreview && !!selectedLocalPreview && !selectedUploadedDoc;
+  const uploadedFileType =
+    selectedUploadedDoc?.fileType || selectedLocalPreview?.fileType || "";
+  const isUploadedImage = uploadedFileType.startsWith("image/");
+  const isUploadedPdf = uploadedFileType === "application/pdf";
+  const selectedIsUploading = previewDocumentId ? !!uploading[previewDocumentId] : false;
+  const selectedIsDeleting = previewDocumentId ? !!deleting[previewDocumentId] : false;
+  const canShowSample = (selectedRequirement?.sampleImages?.length || 0) > 0;
 
   return (
     <div id="documents" className="scroll-mt-24">
       <div className="mb-4">
         <h2 className="text-lg font-semibold">Required Documents</h2>
         <p className="text-sm text-muted-foreground">
-          Upload the following documents. Accepted formats: JPEG, PNG, GIF, WebP, PDF (max 10MB each).
+          Upload the following documents. Accepted formats: JPEG, PNG, GIF,
+          WebP, PDF (max 10MB each).
         </p>
       </div>
 
       <FieldGroup>
-        <div className="space-y-3">
-          {requiredDocs.map(renderDocumentCard)}
-        </div>
-
-        {optionalDocs.length > 0 && (
-          <>
-            <div className="mt-6 mb-3">
-              <h3 className="text-base font-medium text-muted-foreground">
-                Additional Documents (If Applicable)
-              </h3>
+        <div className="grid gap-6 xl:grid-cols-[280px_minmax(0,1fr)] 2xl:grid-cols-[320px_minmax(0,1fr)]">
+          <div className="space-y-3">
+            <h3 className="text-sm font-semibold text-muted-foreground">
+              Documents to be submitted
+            </h3>
+            <div className="space-y-2">
+              {requiredDocs.map(renderDocumentListItem)}
             </div>
-            <div className="space-y-3">
-              {optionalDocs.map(renderDocumentCard)}
-            </div>
-          </>
-        )}
 
-        <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg">
-          <div className="flex gap-2">
-            <span className="text-blue-600 dark:text-blue-400">💡</span>
-            <div>
-              <p className="text-sm font-medium text-blue-800 dark:text-blue-300">
-                Upload Tips
-              </p>
-              <p className="text-xs text-blue-700 dark:text-blue-400 mt-1">
-                For best results, ensure documents are clear and readable. You can upload images (JPEG, PNG) or PDF files up to 10MB each.
-              </p>
+            {optionalDocs.length > 0 && (
+              <>
+                <div className="mt-6 mb-3">
+                  <h3 className="text-base font-medium text-muted-foreground">
+                    Additional Documents (If Applicable)
+                  </h3>
+                </div>
+                <div className="space-y-2">
+                  {optionalDocs.map(renderDocumentListItem)}
+                </div>
+              </>
+            )}
+
+            <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg">
+              <div className="flex gap-2">
+                <span className="text-blue-600 dark:text-blue-400">💡</span>
+                <div>
+                  <p className="text-sm font-medium text-blue-800 dark:text-blue-300">
+                    Upload Tips
+                  </p>
+                  <p className="text-xs text-blue-700 dark:text-blue-400 mt-1">
+                    For best results, ensure documents are clear and readable.
+                    You can upload images (JPEG, PNG) or PDF files up to 10MB
+                    each.
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
+
+          <Card className="h-fit p-4 xl:sticky xl:top-4">
+            <div className="mb-3">
+              <h3 className="text-sm font-semibold">Document Preview</h3>
+              <p className="text-xs text-muted-foreground mt-1">
+                {selectedRequirement
+                  ? selectedRequirement.name
+                  : "Select a requirement to preview"}
+              </p>
+            </div>
+            <div className="mb-4 flex flex-wrap gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={!canShowSample}
+                onClick={() => setPreviewMode("sample")}
+              >
+                <Eye className="h-3.5 w-3.5 mr-1.5" />
+                View Requirement Preview
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={!hasSelectedUpload}
+                onClick={() => setPreviewMode("uploaded")}
+              >
+                <ImageIcon className="h-3.5 w-3.5 mr-1.5" />
+                Select Uploaded Preview
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant={hasSelectedUpload ? "outline" : "default"}
+                disabled={isPending || selectedIsUploading || !previewDocumentId}
+                onClick={() => fileInputRefs.current[previewDocumentId]?.click()}
+              >
+                {selectedIsUploading ? (
+                  <>
+                    <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                    Uploading...
+                  </>
+                ) : hasSelectedUpload ? (
+                  <>
+                    <Upload className="h-3.5 w-3.5 mr-1.5" />
+                    Replace Upload
+                  </>
+                ) : (
+                  <>
+                    <Upload className="h-3.5 w-3.5 mr-1.5" />
+                    Upload
+                  </>
+                )}
+              </Button>
+              {selectedUploadedDoc && (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  disabled={isPending || selectedIsDeleting}
+                  className="text-red-600 hover:text-red-700 hover:bg-red-100 dark:hover:bg-red-900/30"
+                  onClick={() => handleDelete(previewDocumentId)}
+                >
+                  {selectedIsDeleting ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <>
+                      <X className="h-3.5 w-3.5 mr-1.5" />
+                      Remove Upload
+                    </>
+                  )}
+                </Button>
+              )}
+            </div>
+
+            {showingUploadedPreview && (
+              <p className="text-xs font-medium text-green-700 dark:text-green-400 mb-2">
+                Showing uploaded file
+              </p>
+            )}
+            {showingLocalPreview && (
+              <p className="text-xs font-medium text-amber-700 dark:text-amber-400 mb-2">
+                Showing selected file preview (uploading)
+              </p>
+            )}
+
+            {shouldShowUploadedPreview && isUploadedImage && (
+              <div className="space-y-2">
+                <img
+                  src={(selectedUploadedDoc?.url || selectedLocalPreview?.url) ?? ""}
+                  alt={selectedRequirement?.name || "Uploaded preview"}
+                  className="w-full rounded-md border object-contain bg-muted/20 max-h-[720px]"
+                />
+                <p className="text-xs text-muted-foreground truncate">
+                  {(selectedUploadedDoc?.fileName || selectedLocalPreview?.fileName) ??
+                    ""}
+                </p>
+              </div>
+            )}
+
+            {shouldShowUploadedPreview && isUploadedPdf && (
+              <div className="space-y-2">
+                <iframe
+                  src={(selectedUploadedDoc?.url || selectedLocalPreview?.url) ?? ""}
+                  title={selectedRequirement?.name || "Uploaded PDF preview"}
+                  className="h-[720px] w-full rounded-md border bg-muted/20"
+                />
+                <a
+                  href={(selectedUploadedDoc?.url || selectedLocalPreview?.url) ?? "#"}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline"
+                >
+                  Open PDF in new tab
+                  <ExternalLink className="h-3 w-3" />
+                </a>
+              </div>
+            )}
+
+            {!shouldShowUploadedPreview &&
+              (selectedRequirement?.sampleImages?.length || 0) > 0 && (
+                <div className="space-y-3">
+                  {selectedRequirement?.sampleImages?.map((sample) => (
+                    <div key={sample.src} className="space-y-1">
+                      <img
+                        src={sample.src}
+                        alt={`${selectedRequirement.name} sample`}
+                        className="w-full rounded-md border object-contain bg-muted/20 max-h-[720px]"
+                      />
+                      <p className="text-xs text-muted-foreground">{sample.label}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+            {!shouldShowUploadedPreview &&
+              !selectedRequirement?.sampleImages?.length && (
+                <div className="rounded-md border border-dashed p-6 text-center text-sm text-muted-foreground">
+                  No sample preview available for this document.
+                </div>
+              )}
+
+            {!selectedRequirement && (
+              <div className="rounded-md border border-dashed p-6 text-center text-sm text-muted-foreground">
+                Select a requirement from the left to view preview.
+              </div>
+            )}
+            <div className="mt-3 text-xs text-muted-foreground">
+              Click document name from left list to switch requirement preview.
+            </div>
+          </Card>
         </div>
       </FieldGroup>
     </div>

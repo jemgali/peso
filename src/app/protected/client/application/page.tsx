@@ -29,7 +29,6 @@ const Page = async () => {
   let latestSubmission:
       | {
         status: string;
-        submissionNumber: number;
         submittedAt: Date;
         updatedAt: Date;
         isGrantee: boolean;
@@ -153,7 +152,7 @@ const Page = async () => {
         include: {
           spesWorkflow: {
             select: {
-              isGrantee: true,
+              selectionStatus: true,
             },
           },
           reviews: {
@@ -167,10 +166,9 @@ const Page = async () => {
       latestSubmission = latest
         ? {
             status: latest.status,
-            submissionNumber: latest.submissionNumber,
             submittedAt: latest.submittedAt,
             updatedAt: latest.updatedAt,
-            isGrantee: latest.spesWorkflow?.isGrantee ?? false,
+            isGrantee: latest.spesWorkflow?.selectionStatus === "GRANTEE",
           }
         : undefined;
 
@@ -215,7 +213,6 @@ const Page = async () => {
               | "approved"
               | "needs_revision"
               | "rejected",
-            submissionNumber: latestSubmission.submissionNumber,
             submittedAt: latestSubmission.submittedAt.toISOString(),
             updatedAt: latestSubmission.updatedAt.toISOString(),
           }}

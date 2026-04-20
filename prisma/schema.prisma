@@ -41,6 +41,22 @@ enum SpesExamResult {
   @@schema("public")
 }
 
+enum SpesSelectionStatus {
+  PENDING
+  WAITLISTED
+  GRANTEE
+  DENIED
+
+  @@schema("public")
+}
+
+enum ApplicationApplicantType {
+  NEW
+  SPES_BABY
+
+  @@schema("public")
+}
+
 // ----- AUTH MODELS -----
 
 model User {
@@ -366,7 +382,7 @@ model ApplicationSubmission {
   submissionId    String              @id @map("submission_id")
   // Status fields
   status          String              @default("pending") @map("status") // pending, in_review, approved, needs_revision, rejected
-  submissionNumber Int                @default(1) @map("submission_number") // Track resubmission count
+  applicantType   ApplicationApplicantType @default(NEW) @map("applicant_type")
   // Timestamps
   submittedAt     DateTime            @default(now()) @map("submitted_at")
   updatedAt       DateTime            @updatedAt @map("updated_at")
@@ -376,6 +392,7 @@ model ApplicationSubmission {
 
   @@index([profileId])
   @@index([status])
+  @@index([applicantType])
   @@map("application_submission")
   @@schema("public")
 }
@@ -438,9 +455,8 @@ model SpesWorkflow {
   examScore                    Float?             @map("exam_score")
   examResult                   SpesExamResult     @default(PENDING) @map("exam_result")
   rankPosition                 Int?               @map("rank_position")
-  isWaitlisted                 Boolean            @default(false) @map("is_waitlisted")
-  // Grantee fields
-  isGrantee                    Boolean            @default(false) @map("is_grantee")
+  selectionStatus              SpesSelectionStatus @default(PENDING) @map("selection_status")
+  // Grantee audit fields
   selectedById                 String?            @map("selected_by_id")
   selectedBy                   User?              @relation("SpesSelectedBy", fields: [selectedById], references: [id], onDelete: SetNull)
   selectedAt                   DateTime?          @map("selected_at")
@@ -457,7 +473,7 @@ model SpesWorkflow {
   @@index([stage])
   @@index([priority])
   @@index([examResult])
-  @@index([isGrantee])
+  @@index([selectionStatus])
   @@map("spes_workflow")
   @@schema("public")
 }

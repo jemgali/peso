@@ -11,6 +11,8 @@ export interface UseDataListOptions<T> {
   initialSearch?: string
   /** Whether to fetch on mount (default: true) */
   fetchOnMount?: boolean
+  /** Query params appended to request URL (e.g., year/status filters) */
+  queryParams?: Record<string, string | number | boolean | null | undefined>
 }
 
 export interface UseDataListReturn<T> {
@@ -42,6 +44,17 @@ export interface UseDataListReturn<T> {
   refetch: () => Promise<void>
   /** Error state */
   error: string | null
+  /** Active query params used for server fetch */
+  queryParams: Record<string, string | number | boolean | null | undefined>
+  /** Set all query params */
+  setQueryParams: React.Dispatch<
+    React.SetStateAction<Record<string, string | number | boolean | null | undefined>>
+  >
+  /** Update a single query param */
+  setQueryParam: (
+    key: string,
+    value: string | number | boolean | null | undefined
+  ) => void
 }
 
 /**
@@ -66,6 +79,7 @@ export function useDataList<T>(
     searchKeys = [],
     initialSearch = "",
     fetchOnMount = true,
+    queryParams: initialQueryParams = {},
   } = options
 
   const [items, setItems] = useState<T[]>([])
@@ -73,13 +87,25 @@ export function useDataList<T>(
   const [error, setError] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState(initialSearch)
   const [currentPage, setCurrentPage] = useState(1)
+  const [queryParams, setQueryParams] = useState<
+    Record<string, string | number | boolean | null | undefined>
+  >(initialQueryParams)
 
   // Fetch data
   const fetchData = useCallback(async () => {
     setIsLoading(true)
     setError(null)
     try {
-      const response = await fetch(fetchUrl)
+      const requestUrl = new URL(fetchUrl, window.location.origin)
+      for (const [key, value] of Object.entries(queryParams)) {
+        if (value === undefined || value === null || value === "") {
+          requestUrl.searchParams.delete(key)
+        } else {
+          requestUrl.searchParams.set(key, String(value))
+        }
+      }
+
+      const response = await fetch(requestUrl.toString())
       if (!response.ok) {
         throw new Error(`Failed to fetch data: ${response.statusText}`)
       }
@@ -94,7 +120,7 @@ export function useDataList<T>(
     } finally {
       setIsLoading(false)
     }
-  }, [fetchUrl])
+  }, [fetchUrl, queryParams])
 
   // Fetch on mount
   useEffect(() => {
@@ -120,7 +146,17 @@ export function useDataList<T>(
   // Reset to first page when search changes
   useEffect(() => {
     setCurrentPage(1)
-  }, [searchQuery])
+  }, [searchQuery, queryParams])
+
+  const setQueryParam = (
+    key: string,
+    value: string | number | boolean | null | undefined
+  ) => {
+    setQueryParams((current) => ({
+      ...current,
+      [key]: value,
+    }))
+  }
 
   // Pagination calculations
   const totalPages = Math.max(1, Math.ceil(filteredItems.length / pageSize))
@@ -150,5 +186,8 @@ export function useDataList<T>(
     endIndex,
     refetch: fetchData,
     error,
+    queryParams,
+    setQueryParams,
+    setQueryParam,
   }
 }

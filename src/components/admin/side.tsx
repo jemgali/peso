@@ -5,7 +5,7 @@ import SideNav from "./side-nav"
 import type { AdminService } from "@/lib/constants/admin-service"
 
 interface SideProps {
-  service: AdminService
+  service?: AdminService
 }
 
 const Side = ({ service }: SideProps) => {

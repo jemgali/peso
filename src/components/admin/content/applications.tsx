@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Table,
@@ -21,10 +21,10 @@ import {
 } from "@/ui/select";
 import { Badge } from "@/ui/badge";
 import { Card } from "@/ui/card";
-import { Loader2, Search, Eye, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, Eye, ChevronLeft, ChevronRight } from "lucide-react";
 import { ApplicationsListSkeleton } from "@/ui/skeletons";
-import { toast } from "sonner";
 import type {
+  ApplicantType,
   ApplicationListItem,
   ApplicationStatus,
 } from "@/lib/validations/application-review";
@@ -45,6 +45,16 @@ const STATUS_LABELS: Record<ApplicationStatus, string> = {
   rejected: "Rejected",
 };
 
+const APPLICANT_TYPE_LABELS: Record<ApplicantType, string> = {
+  new: "New Applicant",
+  spes_baby: "SPES Baby",
+};
+
+const APPLICANT_TYPE_COLORS: Record<ApplicantType, string> = {
+  new: "bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300",
+  spes_baby: "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300",
+};
+
 const STATUS_OPTIONS: ApplicationStatus[] = [
   "pending",
   "in_review",
@@ -55,14 +65,16 @@ const STATUS_OPTIONS: ApplicationStatus[] = [
 
 const Applications = () => {
   const router = useRouter();
+  const currentYear = new Date().getFullYear();
   const [applications, setApplications] = useState<ApplicationListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [yearFilter, setYearFilter] = useState<string>(String(currentYear));
+  const [availableYears, setAvailableYears] = useState<number[]>([currentYear]);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
-  const [updatingStatusId, setUpdatingStatusId] = useState<string | null>(null);
   const pageSize = 20;
 
   useEffect(() => {
@@ -74,6 +86,7 @@ const Applications = () => {
         const params = new URLSearchParams({
           page: page.toString(),
           pageSize: pageSize.toString(),
+          year: yearFilter,
         });
 
         if (statusFilter !== "all") {
@@ -90,6 +103,11 @@ const Applications = () => {
         if (data.success) {
           setApplications(data.data.applications);
           setTotal(data.data.total);
+          setAvailableYears(
+            Array.isArray(data.data.availableYears) && data.data.availableYears.length > 0
+              ? data.data.availableYears
+              : [currentYear]
+          );
         } else {
           setError(data.error || "Failed to fetch applications");
         }
@@ -101,53 +119,18 @@ const Applications = () => {
     };
 
     fetchApplications();
-  }, [statusFilter, page, searchQuery]);
+  }, [statusFilter, page, searchQuery, yearFilter, currentYear]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     setPage(1);
   };
 
-  const handleStatusUpdate = async (
-    submissionId: string,
-    nextStatus: ApplicationStatus,
-    currentStatus: ApplicationStatus,
-  ) => {
-    if (nextStatus === currentStatus) return;
-
-    setUpdatingStatusId(submissionId);
-    try {
-      const response = await fetch(`/api/admin/applications/${submissionId}/status`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: nextStatus }),
-      });
-      const data = await response.json();
-
-      if (!response.ok || !data.success) {
-        throw new Error(data.error || "Failed to update status");
-      }
-
-      setApplications((prev) =>
-        prev.map((app) =>
-          app.submissionId === submissionId
-            ? {
-                ...app,
-                status: nextStatus,
-                updatedAt: data.data?.updatedAt ?? app.updatedAt,
-              }
-            : app,
-        ),
-      );
-      toast.success(`Status updated to ${STATUS_LABELS[nextStatus]}`);
-    } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Failed to update status",
-      );
-    } finally {
-      setUpdatingStatusId(null);
-    }
-  };
+  const yearOptions = useMemo(() => {
+    const uniqueYears = new Set(availableYears);
+    uniqueYears.add(currentYear);
+    return Array.from(uniqueYears).sort((a, b) => b - a);
+  }, [availableYears, currentYear]);
 
   const totalPages = Math.ceil(total / pageSize);
 
@@ -155,17 +138,14 @@ const Applications = () => {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold">Applications</h1>
-        <p className="text-muted-foreground">
-          Review and manage SPES applications
-        </p>
+        <p className="text-muted-foreground">Review and manage SPES applications</p>
       </div>
 
-      {/* Filters */}
       <Card className="p-4">
-        <div className="flex flex-col sm:flex-row gap-4">
+        <div className="flex flex-col gap-4 sm:flex-row">
           <form onSubmit={handleSearch} className="flex-1">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 placeholder="Search by name or email..."
                 value={searchQuery}
@@ -175,32 +155,54 @@ const Applications = () => {
             </div>
           </form>
 
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-full sm:w-[180px]">
-                <SelectValue placeholder="Filter by status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Statuses</SelectItem>
-                {STATUS_OPTIONS.map((status) => (
-                  <SelectItem key={status} value={status}>
-                    {STATUS_LABELS[status]}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <Select
+            value={yearFilter}
+            onValueChange={(value) => {
+              setYearFilter(value);
+              setPage(1);
+            }}
+          >
+            <SelectTrigger className="w-full sm:w-[180px]">
+              <SelectValue placeholder="Filter by year" />
+            </SelectTrigger>
+            <SelectContent>
+              {yearOptions.map((year) => (
+                <SelectItem key={year} value={String(year)}>
+                  {year === currentYear ? `This Year (${year})` : String(year)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select
+            value={statusFilter}
+            onValueChange={(value) => {
+              setStatusFilter(value);
+              setPage(1);
+            }}
+          >
+            <SelectTrigger className="w-full sm:w-[180px]">
+              <SelectValue placeholder="Filter by status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Statuses</SelectItem>
+              {STATUS_OPTIONS.map((status) => (
+                <SelectItem key={status} value={status}>
+                  {STATUS_LABELS[status]}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </Card>
 
-      {/* Applications Table */}
       <Card>
         {loading ? (
           <div className="p-6">
             <ApplicationsListSkeleton />
           </div>
         ) : error ? (
-          <div className="flex items-center justify-center py-12 text-red-500">
-            {error}
-          </div>
+          <div className="flex items-center justify-center py-12 text-red-500">{error}</div>
         ) : applications.length === 0 ? (
           <div className="flex items-center justify-center py-12 text-muted-foreground">
             No applications found
@@ -212,8 +214,8 @@ const Applications = () => {
                 <TableRow>
                   <TableHead>Applicant</TableHead>
                   <TableHead>Email</TableHead>
+                  <TableHead>Type</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead>Submission #</TableHead>
                   <TableHead>Submitted</TableHead>
                   <TableHead className="text-right">Action</TableHead>
                 </TableRow>
@@ -226,59 +228,26 @@ const Applications = () => {
                     </TableCell>
                     <TableCell>{app.applicant.email}</TableCell>
                     <TableCell>
-                      <div className="space-y-2">
-                        <Badge
-                          variant="secondary"
-                          className={STATUS_COLORS[app.status]}
-                        >
-                          {STATUS_LABELS[app.status]}
-                        </Badge>
-                        <Select
-                          value={app.status}
-                          onValueChange={(value) =>
-                            handleStatusUpdate(
-                              app.submissionId,
-                              value as ApplicationStatus,
-                              app.status,
-                            )
-                          }
-                          disabled={updatingStatusId === app.submissionId}
-                        >
-                          <SelectTrigger className="h-8 w-[160px]">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {STATUS_OPTIONS.map((status) => (
-                              <SelectItem key={status} value={status}>
-                                {STATUS_LABELS[status]}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        {updatingStatusId === app.submissionId && (
-                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                            <Loader2 className="h-3 w-3 animate-spin" />
-                            Updating...
-                          </div>
-                        )}
-                      </div>
+                      <Badge
+                        variant="secondary"
+                        className={APPLICANT_TYPE_COLORS[app.applicantType]}
+                      >
+                        {APPLICANT_TYPE_LABELS[app.applicantType]}
+                      </Badge>
                     </TableCell>
-                    <TableCell>{app.submissionNumber}</TableCell>
                     <TableCell>
-                      {new Date(app.submittedAt).toLocaleDateString()}
+                      <Badge variant="secondary" className={STATUS_COLORS[app.status]}>
+                        {STATUS_LABELS[app.status]}
+                      </Badge>
                     </TableCell>
+                    <TableCell>{new Date(app.submittedAt).toLocaleDateString()}</TableCell>
                     <TableCell className="text-right">
                       <Button
-                        variant="ghost"
                         size="sm"
-                        onClick={() =>
-                          router.push(
-                            `/protected/admin/applications/${app.submissionId}`
-                          )
-                        }
+                        onClick={() => router.push(`/protected/admin/applications/${app.submissionId}`)}
                       >
-                        <Eye className="h-4 w-4 mr-1" />
-                        Review
+                        <Eye className="mr-1 h-4 w-4" />
+                        {app.hasReview ? "Modify" : "Review"}
                       </Button>
                     </TableCell>
                   </TableRow>
@@ -286,12 +255,11 @@ const Applications = () => {
               </TableBody>
             </Table>
 
-            {/* Pagination */}
             {totalPages > 1 && (
-              <div className="flex items-center justify-between px-4 py-3 border-t">
+              <div className="flex items-center justify-between border-t px-4 py-3">
                 <p className="text-sm text-muted-foreground">
-                  Showing {(page - 1) * pageSize + 1} to{" "}
-                  {Math.min(page * pageSize, total)} of {total} applications
+                  Showing {(page - 1) * pageSize + 1} to {Math.min(page * pageSize, total)} of{" "}
+                  {total} applications
                 </p>
                 <div className="flex gap-2">
                   <Button

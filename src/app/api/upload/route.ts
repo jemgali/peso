@@ -6,6 +6,7 @@ import { Pool } from "pg";
 import { PrismaPg } from "@prisma/adapter-pg";
 import {
   saveFile,
+  deleteFile,
   generateFileKey,
   validateFile,
   DOCUMENT_TYPES,
@@ -94,12 +95,7 @@ export async function POST(
       );
     }
 
-    // Generate file key and save to local storage
-    const key = generateFileKey(userId, documentType as DocumentType, file.name);
-    const buffer = Buffer.from(await file.arrayBuffer());
-    const { url } = await saveFile(buffer, key, file.type);
-
-    // Get or create profile documents record
+    // Ensure user has a profile before writing file to disk
     const profile = await prisma.profileUser.findUnique({
       where: { userId },
       include: { documents: true },
@@ -116,6 +112,11 @@ export async function POST(
       );
     }
 
+    // Generate file key and save to local storage
+    const key = generateFileKey(userId, documentType as DocumentType, file.name);
+    const buffer = Buffer.from(await file.arrayBuffer());
+    const { url } = await saveFile(buffer, key, file.type);
+
     // Update documents JSON
     const existingDocuments = (profile.documents?.documents as Record<string, unknown>) || {};
     const updatedDocuments = {
@@ -130,19 +131,29 @@ export async function POST(
       },
     };
 
-    if (profile.documents) {
-      await prisma.profileDocuments.update({
-        where: { profileId: profile.profileId },
-        data: { documents: updatedDocuments as Prisma.InputJsonValue },
-      });
-    } else {
-      await prisma.profileDocuments.create({
-        data: {
-          documentId: randomUUID(),
-          profileId: profile.profileId,
-          documents: updatedDocuments as Prisma.InputJsonValue,
-        },
-      });
+    try {
+      if (profile.documents) {
+        await prisma.profileDocuments.update({
+          where: { profileId: profile.profileId },
+          data: { documents: updatedDocuments as Prisma.InputJsonValue },
+        });
+      } else {
+        await prisma.profileDocuments.create({
+          data: {
+            documentId: randomUUID(),
+            profileId: profile.profileId,
+            documents: updatedDocuments as Prisma.InputJsonValue,
+          },
+        });
+      }
+    } catch (error) {
+      try {
+        await deleteFile(key);
+      } catch (cleanupError) {
+        console.error("Failed to cleanup uploaded file after DB error:", cleanupError);
+      }
+
+      throw error;
     }
 
     return NextResponse.json({

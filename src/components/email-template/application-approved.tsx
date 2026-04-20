@@ -2,12 +2,10 @@ import * as React from "react";
 
 interface ApplicationApprovedEmailProps {
   applicantName: string;
-  submissionNumber: number;
 }
 
 export function ApplicationApprovedEmail({
   applicantName,
-  submissionNumber,
 }: ApplicationApprovedEmailProps) {
   return (
     <div
@@ -53,8 +51,8 @@ export function ApplicationApprovedEmail({
         </p>
 
         <p style={{ fontSize: "16px", color: "#1f2937", lineHeight: "1.6" }}>
-          Congratulations! We are pleased to inform you that your SPES application 
-          <strong> (Submission #{submissionNumber})</strong> has been approved.
+          Congratulations! We are pleased to inform you that your SPES application
+          has been approved.
         </p>
 
         {/* Success box */}

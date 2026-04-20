@@ -20,7 +20,6 @@ import type { ApplicationStatus } from "@/lib/validations/application-review"
 
 interface StatusTrackerProps {
   status: ApplicationStatus
-  submissionNumber: number
   submittedAt: string
   updatedAt: string
   latestReviewComments?: string | null
@@ -93,7 +92,6 @@ function getDecisionIcon(status: ApplicationStatus) {
 
 export default function DashboardStatusTracker({
   status,
-  submissionNumber,
   submittedAt,
   updatedAt,
   latestReviewComments,
@@ -107,9 +105,6 @@ export default function DashboardStatusTracker({
           <CardTitle className="text-base">SPES Application</CardTitle>
           {getStatusBadge(status)}
         </div>
-        <p className="text-xs text-muted-foreground">
-          Submission #{submissionNumber}
-        </p>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
         {/* Timeline */}

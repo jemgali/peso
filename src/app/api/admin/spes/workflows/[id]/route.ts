@@ -3,6 +3,7 @@ import { headers } from "next/headers"
 import type {
   Prisma,
   SpesExamResult as PrismaExamResult,
+  SpesSelectionStatus as PrismaSelectionStatus,
   SpesWorkflowStage as PrismaWorkflowStage,
 } from "@/generated/prisma/client"
 import { auth } from "@/lib/auth"
@@ -12,8 +13,10 @@ import {
   type UpdateWorkflowResponse,
 } from "@/lib/validations/spes-workflow"
 import {
+  computeWorkflowRankMap,
   getPassingScore,
   toDbPriority,
+  toDbSelectionStatus,
   toDbStage,
   toWorkflowListItem,
 } from "@/lib/utils/spes-workflow"
@@ -36,9 +39,30 @@ async function getAdminUserId(): Promise<string | null> {
   return session.user.id
 }
 
+function deriveSelectionStatus(
+  existingStatus: PrismaSelectionStatus,
+  nextExamResult: PrismaExamResult,
+  requestedStatus: ReturnType<typeof updateWorkflowSchema.parse>["selectionStatus"]
+): PrismaSelectionStatus {
+  if (nextExamResult === "FAILED") {
+    return "DENIED"
+  }
+
+  if (requestedStatus) {
+    return toDbSelectionStatus(requestedStatus)
+  }
+
+  if (existingStatus === "DENIED") {
+    return "PENDING"
+  }
+
+  return existingStatus
+}
+
 function getDerivedStage(
   currentStage: PrismaWorkflowStage,
-  payload: ReturnType<typeof updateWorkflowSchema.parse>
+  payload: ReturnType<typeof updateWorkflowSchema.parse>,
+  nextSelectionStatus: PrismaSelectionStatus
 ): PrismaWorkflowStage {
   if (payload.stage) {
     return toDbStage(payload.stage)
@@ -52,15 +76,15 @@ function getDerivedStage(
     return "BATCH_ASSIGNED"
   }
 
-  if (payload.isGrantee === true) {
+  if (nextSelectionStatus === "GRANTEE") {
     return "GRANTEE_SELECTED"
   }
 
-  if (payload.isWaitlisted === true) {
+  if (nextSelectionStatus === "WAITLISTED") {
     return "WAITLISTED"
   }
 
-  if (payload.examScore !== undefined && payload.examScore !== null) {
+  if (payload.examScore !== undefined) {
     return "EXAM_EVALUATED"
   }
 
@@ -69,6 +93,28 @@ function getDerivedStage(
   }
 
   return currentStage
+}
+
+async function recalculateRankPositions(tx: Prisma.TransactionClient): Promise<void> {
+  const workflows = await tx.spesWorkflow.findMany({
+    select: {
+      workflowId: true,
+      examScore: true,
+    },
+  })
+
+  const rankMap = computeWorkflowRankMap(workflows)
+
+  await Promise.all(
+    workflows.map((workflow) =>
+      tx.spesWorkflow.update({
+        where: { workflowId: workflow.workflowId },
+        data: {
+          rankPosition: rankMap.get(workflow.workflowId) ?? null,
+        },
+      })
+    )
+  )
 }
 
 export async function PATCH(
@@ -162,14 +208,6 @@ export async function PATCH(
     updateData.examResult = nextExamResult
   }
 
-  if (parsed.data.rankPosition !== undefined) {
-    updateData.rankPosition = parsed.data.rankPosition
-  }
-
-  if (parsed.data.isWaitlisted !== undefined) {
-    updateData.isWaitlisted = parsed.data.isWaitlisted
-  }
-
   if (parsed.data.batchId !== undefined) {
     updateData.batchId = parsed.data.batchId
   }
@@ -178,28 +216,38 @@ export async function PATCH(
     updateData.assignedOffice = parsed.data.assignedOffice?.trim() || null
   }
 
-  if (parsed.data.isGrantee !== undefined) {
-    if (parsed.data.isGrantee && nextExamResult === "FAILED") {
-      return NextResponse.json(
-        { success: false, error: "Failed examinees cannot be selected as grantees" },
-        { status: 400 }
-      )
-    }
+  const nextSelectionStatus = deriveSelectionStatus(
+    existingWorkflow.selectionStatus,
+    nextExamResult,
+    parsed.data.selectionStatus
+  )
+  updateData.selectionStatus = nextSelectionStatus
 
-    updateData.isGrantee = parsed.data.isGrantee
-    updateData.selectedById = parsed.data.isGrantee ? adminUserId : null
-    updateData.selectedAt = parsed.data.isGrantee ? new Date() : null
+  if (nextSelectionStatus === "GRANTEE") {
+    updateData.selectedById = adminUserId
+    updateData.selectedAt = existingWorkflow.selectedAt || new Date()
+  } else {
+    updateData.selectedById = null
+    updateData.selectedAt = null
   }
 
-  const derivedStage = getDerivedStage(existingWorkflow.stage, parsed.data)
+  const derivedStage = getDerivedStage(existingWorkflow.stage, parsed.data, nextSelectionStatus)
   if (derivedStage !== existingWorkflow.stage) {
     updateData.stage = derivedStage
   }
 
   const updatedWorkflow = await prisma.$transaction(async (tx) => {
-    const workflow = await tx.spesWorkflow.update({
+    await tx.spesWorkflow.update({
       where: { workflowId },
       data: updateData,
+    })
+
+    if (parsed.data.examScore !== undefined) {
+      await recalculateRankPositions(tx)
+    }
+
+    const workflow = await tx.spesWorkflow.findUnique({
+      where: { workflowId },
       include: {
         submission: {
           include: {
@@ -219,6 +267,10 @@ export async function PATCH(
         },
       },
     })
+
+    if (!workflow) {
+      throw new Error("Workflow not found after update")
+    }
 
     if (workflow.stage !== existingWorkflow.stage) {
       await tx.spesStageHistory.create({

@@ -2,12 +2,13 @@ import type {
   Prisma,
   SpesExamResult as PrismaExamResult,
   SpesPriorityLevel as PrismaPriorityLevel,
+  SpesSelectionStatus as PrismaSelectionStatus,
   SpesWorkflowStage as PrismaWorkflowStage,
 } from "@/generated/prisma/client"
-import { prisma } from "@/lib/prisma"
 import type {
   ApplicantPriority,
   ExamResult,
+  SpesSelectionStatus,
   SpesWorkflowListItem,
   SpesWorkflowStage,
 } from "@/lib/validations/spes-workflow"
@@ -31,6 +32,14 @@ export function toDbPriority(priority: ApplicantPriority): PrismaPriorityLevel {
 
 export function toApiExamResult(result: PrismaExamResult): ExamResult {
   return result.toLowerCase() as ExamResult
+}
+
+export function toApiSelectionStatus(status: PrismaSelectionStatus): SpesSelectionStatus {
+  return status.toLowerCase() as SpesSelectionStatus
+}
+
+export function toDbSelectionStatus(status: SpesSelectionStatus): PrismaSelectionStatus {
+  return status.toUpperCase() as PrismaSelectionStatus
 }
 
 export function getPassingScore(totalScore: number, thresholdPercent: number): number {
@@ -58,7 +67,39 @@ type WorkflowWithRelations = Prisma.SpesWorkflowGetPayload<{
   }
 }>
 
-export function toWorkflowListItem(workflow: WorkflowWithRelations): SpesWorkflowListItem {
+export function computeWorkflowRankMap(
+  workflows: Array<{ workflowId: string; examScore: number | null }>
+): Map<string, number | null> {
+  const rankedEntries = workflows
+    .filter((workflow): workflow is { workflowId: string; examScore: number } => workflow.examScore !== null)
+    .sort((a, b) => b.examScore - a.examScore)
+
+  const rankMap = new Map<string, number | null>()
+  let currentRank = 0
+  let previousScore: number | null = null
+
+  for (let index = 0; index < rankedEntries.length; index += 1) {
+    const item = rankedEntries[index]
+    if (previousScore === null || item.examScore !== previousScore) {
+      currentRank = index + 1
+      previousScore = item.examScore
+    }
+    rankMap.set(item.workflowId, currentRank)
+  }
+
+  for (const workflow of workflows) {
+    if (!rankMap.has(workflow.workflowId)) {
+      rankMap.set(workflow.workflowId, null)
+    }
+  }
+
+  return rankMap
+}
+
+export function toWorkflowListItem(
+  workflow: WorkflowWithRelations,
+  options?: { rankPosition?: number | null }
+): SpesWorkflowListItem {
   const firstName = workflow.submission.profile.profileFirstName?.trim() || ""
   const lastName = workflow.submission.profile.profileLastName?.trim() || ""
   const fullName = [firstName, lastName].filter(Boolean).join(" ").trim()
@@ -66,57 +107,16 @@ export function toWorkflowListItem(workflow: WorkflowWithRelations): SpesWorkflo
   return {
     workflowId: workflow.workflowId,
     submissionId: workflow.submissionId,
-    submissionNumber: workflow.submission.submissionNumber,
     applicantName: fullName || "Unnamed applicant",
     stage: toApiStage(workflow.stage),
     priority: toApiPriority(workflow.priority),
     examScore: workflow.examScore,
     examResult: toApiExamResult(workflow.examResult),
-    rankPosition: workflow.rankPosition,
-    isWaitlisted: workflow.isWaitlisted,
-    isGrantee: workflow.isGrantee,
+    rankPosition: options?.rankPosition ?? workflow.rankPosition,
+    selectionStatus: toApiSelectionStatus(workflow.selectionStatus),
     batchId: workflow.batch?.batchId || null,
     batchName: workflow.batch?.batchName || null,
     assignedOffice: workflow.assignedOffice,
     updatedAt: workflow.updatedAt.toISOString(),
   }
-}
-
-export async function ensureApprovedSpesWorkflows(): Promise<void> {
-  const approvedSubmissions = await prisma.applicationSubmission.findMany({
-    where: { status: "approved" },
-    select: { submissionId: true },
-  })
-
-  if (approvedSubmissions.length === 0) {
-    return
-  }
-
-  const approvedIds = approvedSubmissions.map((submission) => submission.submissionId)
-
-  const existingWorkflows = await prisma.spesWorkflow.findMany({
-    where: {
-      submissionId: {
-        in: approvedIds,
-      },
-    },
-    select: {
-      submissionId: true,
-    },
-  })
-
-  const existingIdSet = new Set(existingWorkflows.map((workflow) => workflow.submissionId))
-  const missingIds = approvedIds.filter((id) => !existingIdSet.has(id))
-
-  if (missingIds.length === 0) {
-    return
-  }
-
-  await prisma.spesWorkflow.createMany({
-    data: missingIds.map((submissionId) => ({
-      workflowId: crypto.randomUUID(),
-      submissionId,
-    })),
-    skipDuplicates: true,
-  })
 }

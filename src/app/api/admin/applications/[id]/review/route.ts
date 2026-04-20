@@ -96,15 +96,7 @@ export async function POST(
       );
     }
 
-    // Check if already in a final state
-    if (submission.status === "approved" || submission.status === "rejected") {
-      return NextResponse.json(
-        { success: false, error: "Application already has a final decision" },
-        { status: 400 }
-      );
-    }
-
-    // Create review and update status in a transaction
+    // Create/modify review and update status in a transaction
     const result = await prisma.$transaction(async (tx) => {
       // Create the review
       const reviewId = randomUUID();
@@ -152,6 +144,21 @@ export async function POST(
         data: { status: newStatus },
       });
 
+      if (newStatus === "approved") {
+        await tx.spesWorkflow.upsert({
+          where: { submissionId },
+          update: {},
+          create: {
+            workflowId: randomUUID(),
+            submissionId,
+          },
+        });
+      } else {
+        await tx.spesWorkflow.deleteMany({
+          where: { submissionId },
+        });
+      }
+
       // Create notification for the user
       const notificationTitle =
         decision === "approved"
@@ -196,7 +203,6 @@ export async function POST(
     sendApplicationReviewEmail({
       to: applicantEmail,
       applicantName,
-      submissionNumber: submission.submissionNumber,
       decision: decision as "approved" | "needs_revision" | "rejected",
       overallComments: overallComments || undefined,
       fieldFeedback: fieldFeedback || [],

@@ -19,7 +19,7 @@ export const ROUTES = {
     SCHEDULE: "/protected/admin/schedule",
     USERS: "/protected/admin/users",
     REPORTS: "/protected/admin/reports",
-    SERVICE_SELECTION: "/protected/service-selection",
+    SERVICE_SELECTION: "/protected/admin/programs",
   },
 
   // Client routes
@@ -50,6 +50,8 @@ export const ROUTES = {
         EVALUATION_SETTINGS: "/api/admin/spes/evaluation-settings",
         BATCHES: "/api/admin/spes/batches",
         WORKFLOWS: "/api/admin/spes/workflows",
+        WORKFLOWS_BULK_STATUS: "/api/admin/spes/workflows/bulk-status",
+        WORKFLOWS_NOTIFY: "/api/admin/spes/workflows/notify",
       },
     },
     CLIENT: {
