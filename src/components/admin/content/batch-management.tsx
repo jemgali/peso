@@ -1,14 +1,31 @@
-"use client"
+"use client";
 
-import { FormEvent, useCallback, useEffect, useMemo, useState } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Spinner } from "@/components/ui/spinner"
-import { Badge } from "@/components/ui/badge"
-import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select"
-import { Empty, EmptyHeader, EmptyMedia, EmptyTitle, EmptyDescription } from "@/components/ui/empty"
+import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Spinner } from "@/components/ui/spinner";
+import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  NativeSelect,
+  NativeSelectOption,
+} from "@/components/ui/native-select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Empty,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+  EmptyDescription,
+} from "@/components/ui/empty";
 import {
   Table,
   TableBody,
@@ -16,141 +33,198 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import { toast } from "sonner"
-import { LayersIcon, UsersIcon } from "lucide-react"
-import { ROUTES } from "@/lib/constants/routes"
+} from "@/components/ui/table";
+import { toast } from "sonner";
+import { Building2Icon, LayersIcon, UsersIcon } from "lucide-react";
+import { ROUTES } from "@/lib/constants/routes";
 import type {
   BatchListItem,
   BatchListResponse,
+  BulkAssignWorkflowsResponse,
   CreateBatchResponse,
   SpesWorkflowListItem,
   SpesWorkflowListResponse,
-  SpesWorkflowStage,
-  WorkflowAssignmentResponse,
-} from "@/lib/validations/spes-workflow"
+} from "@/lib/validations/spes-workflow";
 
-type AssignmentDraft = {
-  batchId: string
-  assignedOffice: string
+type LguOfficeSource = Record<string, string | string[]>;
+
+function isPasser(workflow: SpesWorkflowListItem): boolean {
+  return (
+    workflow.selectionStatus === "grantee" || workflow.examResult === "passed"
+  );
 }
 
-const WORKFLOW_STAGE_LABELS: Record<SpesWorkflowStage, string> = {
-  application_approved: "Application Approved",
-  interview_scheduled: "Interview Scheduled",
-  priority_assigned: "Priority Assigned",
-  exam_scheduled: "Exam Scheduled",
-  exam_evaluated: "Exam Evaluated",
-  qualified: "Qualified",
-  waitlisted: "Waitlisted",
-  grantee_selected: "Grantee Selected",
-  documents_released: "Documents Released",
-  orientation_scheduled: "Orientation Scheduled",
-  batch_assigned: "Batch Assigned",
-  office_assigned: "Office Assigned",
-}
-
-function toAssignmentDraft(workflow: SpesWorkflowListItem): AssignmentDraft {
-  return {
-    batchId: workflow.batchId || "",
-    assignedOffice: workflow.assignedOffice || "",
+function parseOfficeOptions(payload: unknown): string[] {
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+    return [];
   }
-}
 
-function normalizeOffice(value: string): string | null {
-  const trimmed = value.trim()
-  return trimmed.length > 0 ? trimmed : null
-}
+  const source = payload as LguOfficeSource;
+  const options = new Set<string>();
 
-function getStageBadgeVariant(stage: SpesWorkflowStage): "default" | "secondary" | "destructive" | "outline" {
-  if (stage === "waitlisted") return "destructive"
-  if (stage === "grantee_selected" || stage === "office_assigned") return "default"
-  if (stage === "interview_scheduled" || stage === "exam_scheduled" || stage === "orientation_scheduled") {
-    return "secondary"
+  for (const [office, divisionOrOffice] of Object.entries(source)) {
+    if (typeof divisionOrOffice === "string") {
+      const value = divisionOrOffice.trim();
+      if (value) options.add(value);
+      continue;
+    }
+
+    for (const division of divisionOrOffice) {
+      const trimmedDivision = division.trim();
+      if (!trimmedDivision) continue;
+      options.add(`${office} / ${trimmedDivision}`);
+    }
   }
-  return "outline"
+
+  return Array.from(options).sort((a, b) => a.localeCompare(b));
 }
 
 export default function BatchManagement() {
-  const [batches, setBatches] = useState<BatchListItem[]>([])
-  const [workflows, setWorkflows] = useState<SpesWorkflowListItem[]>([])
-  const [assignmentDrafts, setAssignmentDrafts] = useState<Record<string, AssignmentDraft>>({})
+  const [batches, setBatches] = useState<BatchListItem[]>([]);
+  const [workflows, setWorkflows] = useState<SpesWorkflowListItem[]>([]);
+  const [officeOptions, setOfficeOptions] = useState<string[]>([]);
 
-  const [loadingBatches, setLoadingBatches] = useState(true)
-  const [loadingWorkflows, setLoadingWorkflows] = useState(true)
-  const [savingBatch, setSavingBatch] = useState(false)
-  const [savingAssignmentWorkflowId, setSavingAssignmentWorkflowId] = useState<string | null>(null)
+  const [loadingBatches, setLoadingBatches] = useState(true);
+  const [loadingWorkflows, setLoadingWorkflows] = useState(true);
+  const [loadingOfficeOptions, setLoadingOfficeOptions] = useState(true);
+  const [savingBatch, setSavingBatch] = useState(false);
+  const [addingToBatch, setAddingToBatch] = useState(false);
+  const [removingFromBatch, setRemovingFromBatch] = useState(false);
+  const [assigningOffice, setAssigningOffice] = useState(false);
 
-  const [batchError, setBatchError] = useState<string | null>(null)
-  const [workflowError, setWorkflowError] = useState<string | null>(null)
+  const [batchError, setBatchError] = useState<string | null>(null);
+  const [workflowError, setWorkflowError] = useState<string | null>(null);
+  const [officeError, setOfficeError] = useState<string | null>(null);
 
-  const [batchName, setBatchName] = useState("")
-  const [startDate, setStartDate] = useState("")
+  const [batchName, setBatchName] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [selectedBatchId, setSelectedBatchId] = useState("");
+  const [selectedGranteeIds, setSelectedGranteeIds] = useState<Set<string>>(
+    new Set(),
+  );
+  const [selectedBatchWorkflowIds, setSelectedBatchWorkflowIds] = useState<
+    Set<string>
+  >(new Set());
+  const [selectedOffice, setSelectedOffice] = useState("");
+  const [granteeSearch, setGranteeSearch] = useState("");
 
   const loadBatches = useCallback(async () => {
-    setLoadingBatches(true)
-    setBatchError(null)
+    setLoadingBatches(true);
+    setBatchError(null);
 
     try {
       const response = await fetch(ROUTES.API.ADMIN.SPES.BATCHES, {
         cache: "no-store",
-      })
-      const payload = (await response.json()) as BatchListResponse
-      const fetchedBatches = payload.data?.batches
+      });
+      const payload = (await response.json()) as BatchListResponse;
+      const fetchedBatches = payload.data?.batches;
 
       if (!response.ok || !payload.success || !fetchedBatches) {
-        throw new Error(payload.error || "Failed to load batches")
+        throw new Error(payload.error || "Failed to load batches");
       }
 
-      setBatches(fetchedBatches)
+      setBatches(fetchedBatches);
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Failed to load batches"
-      setBatchError(message)
-      toast.error(message)
+      const message =
+        error instanceof Error ? error.message : "Failed to load batches";
+      setBatchError(message);
+      toast.error(message);
     } finally {
-      setLoadingBatches(false)
+      setLoadingBatches(false);
     }
-  }, [])
+  }, []);
 
   const loadWorkflows = useCallback(async () => {
-    setLoadingWorkflows(true)
-    setWorkflowError(null)
+    setLoadingWorkflows(true);
+    setWorkflowError(null);
 
     try {
       const response = await fetch(ROUTES.API.ADMIN.SPES.WORKFLOWS, {
         cache: "no-store",
-      })
-      const payload = (await response.json()) as SpesWorkflowListResponse
-      const fetchedWorkflows = payload.data?.workflows
+      });
+      const payload = (await response.json()) as SpesWorkflowListResponse;
+      const fetchedWorkflows = payload.data?.workflows;
 
       if (!response.ok || !payload.success || !fetchedWorkflows) {
-        throw new Error(payload.error || "Failed to load workflows")
+        throw new Error(payload.error || "Failed to load workflows");
       }
 
-      setWorkflows(fetchedWorkflows)
-      setAssignmentDrafts(
-        fetchedWorkflows.reduce<Record<string, AssignmentDraft>>((acc, workflow) => {
-          acc[workflow.workflowId] = toAssignmentDraft(workflow)
-          return acc
-        }, {})
-      )
+      setWorkflows(fetchedWorkflows);
+      setSelectedGranteeIds((current) => {
+        const valid = new Set(
+          fetchedWorkflows.map((workflow) => workflow.workflowId),
+        );
+        return new Set(Array.from(current).filter((id) => valid.has(id)));
+      });
+      setSelectedBatchWorkflowIds((current) => {
+        const valid = new Set(
+          fetchedWorkflows.map((workflow) => workflow.workflowId),
+        );
+        return new Set(Array.from(current).filter((id) => valid.has(id)));
+      });
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Failed to load workflows"
-      setWorkflowError(message)
-      toast.error(message)
+      const message =
+        error instanceof Error ? error.message : "Failed to load workflows";
+      setWorkflowError(message);
+      toast.error(message);
     } finally {
-      setLoadingWorkflows(false)
+      setLoadingWorkflows(false);
     }
-  }, [])
+  }, []);
+
+  const loadOfficeOptions = useCallback(async () => {
+    setLoadingOfficeOptions(true);
+    setOfficeError(null);
+
+    try {
+      const response = await fetch("/data/lgu-list.json", {
+        cache: "force-cache",
+      });
+      const payload = await response.json();
+      if (!response.ok) {
+        throw new Error("Failed to load office list");
+      }
+
+      const options = parseOfficeOptions(payload);
+      setOfficeOptions(options);
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Failed to load office list";
+      setOfficeError(message);
+      toast.error(message);
+    } finally {
+      setLoadingOfficeOptions(false);
+    }
+  }, []);
 
   useEffect(() => {
-    void loadBatches()
-    void loadWorkflows()
-  }, [loadBatches, loadWorkflows])
+    void loadBatches();
+    void loadWorkflows();
+    void loadOfficeOptions();
+  }, [loadBatches, loadWorkflows, loadOfficeOptions]);
+
+  useEffect(() => {
+    if (batches.length === 0) {
+      setSelectedBatchId("");
+      return;
+    }
+
+    const hasSelectedBatch = batches.some(
+      (batch) => batch.batchId === selectedBatchId,
+    );
+    if (!hasSelectedBatch) {
+      setSelectedBatchId(batches[0]?.batchId || "");
+    }
+  }, [batches, selectedBatchId]);
+
+  useEffect(() => {
+    setSelectedGranteeIds(new Set());
+    setSelectedBatchWorkflowIds(new Set());
+  }, [selectedBatchId]);
 
   const submitBatch = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    setSavingBatch(true)
+    event.preventDefault();
+    setSavingBatch(true);
 
     try {
       const response = await fetch(ROUTES.API.ADMIN.SPES.BATCHES, {
@@ -160,343 +234,701 @@ export default function BatchManagement() {
           batchName,
           startDate,
         }),
-      })
-      const payload = (await response.json()) as CreateBatchResponse
-      const createdBatch = payload.data?.batch
+      });
+      const payload = (await response.json()) as CreateBatchResponse;
+      const createdBatch = payload.data?.batch;
 
       if (!response.ok || !payload.success || !createdBatch) {
-        throw new Error(payload.error || "Failed to create batch")
+        throw new Error(payload.error || "Failed to create batch");
       }
 
-      setBatches((current) => [createdBatch, ...current])
-      setBatchName("")
-      setStartDate("")
-      toast.success("Batch created")
+      setBatches((current) => [createdBatch, ...current]);
+      setSelectedBatchId(createdBatch.batchId);
+      setBatchName("");
+      setStartDate("");
+      toast.success("Batch created");
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to create batch")
+      toast.error(
+        error instanceof Error ? error.message : "Failed to create batch",
+      );
     } finally {
-      setSavingBatch(false)
+      setSavingBatch(false);
     }
-  }
+  };
 
-  const updateAssignmentDraft = (
-    workflowId: string,
-    updater: (current: AssignmentDraft) => AssignmentDraft
-  ) => {
-    setAssignmentDrafts((current) => {
-      const existing = current[workflowId]
-      if (!existing) return current
-
-      return {
-        ...current,
-        [workflowId]: updater(existing),
-      }
-    })
-  }
-
-  const hasAssignmentChanges = (workflow: SpesWorkflowListItem): boolean => {
-    const draft = assignmentDrafts[workflow.workflowId]
-    if (!draft) return false
-
-    const nextBatchId = draft.batchId || null
-    const nextOffice = normalizeOffice(draft.assignedOffice)
-
-    return nextBatchId !== workflow.batchId || nextOffice !== workflow.assignedOffice
-  }
-
-  const saveAssignment = async (workflowId: string) => {
-    const workflow = workflows.find((entry) => entry.workflowId === workflowId)
-    const draft = assignmentDrafts[workflowId]
-
-    if (!workflow || !draft) return
-
-    const nextBatchId = draft.batchId || null
-    const nextOffice = normalizeOffice(draft.assignedOffice)
-
-    const assignmentPayload: {
-      batchId?: string | null
-      assignedOffice?: string | null
-    } = {}
-
-    if (nextBatchId !== workflow.batchId) {
-      assignmentPayload.batchId = nextBatchId
+  const addSelectedGranteesToBatch = async () => {
+    const workflowIds = Array.from(selectedGranteeIds);
+    if (!selectedBatchId) {
+      toast.error("Select a target batch first");
+      return;
+    }
+    if (workflowIds.length === 0) {
+      toast.error("Select at least one grantee from the Grantees tab");
+      return;
     }
 
-    if (nextOffice !== workflow.assignedOffice) {
-      assignmentPayload.assignedOffice = nextOffice
-    }
-
-    if (Object.keys(assignmentPayload).length === 0) {
-      toast.info("No assignment changes to save")
-      return
-    }
-
-    setSavingAssignmentWorkflowId(workflowId)
-
+    setAddingToBatch(true);
     try {
-      const response = await fetch(`${ROUTES.API.ADMIN.SPES.WORKFLOWS}/${workflowId}/assignment`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(assignmentPayload),
-      })
+      const response = await fetch(
+        ROUTES.API.ADMIN.SPES.WORKFLOWS_BULK_ASSIGNMENT,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            workflowIds,
+            batchId: selectedBatchId,
+          }),
+        },
+      );
+      const payload = (await response.json()) as BulkAssignWorkflowsResponse;
+      const result = payload.data;
 
-      const payload = (await response.json()) as WorkflowAssignmentResponse
-      const updatedWorkflow = payload.data?.workflow
-
-      if (!response.ok || !payload.success || !updatedWorkflow) {
-        throw new Error(payload.error || "Failed to update assignment")
+      if (!response.ok || !payload.success || !result) {
+        throw new Error(
+          payload.error || "Failed to add selected grantees to batch",
+        );
       }
 
-      setWorkflows((current) =>
-        current.map((entry) => (entry.workflowId === workflowId ? updatedWorkflow : entry))
-      )
-      setAssignmentDrafts((current) => ({
-        ...current,
-        [workflowId]: toAssignmentDraft(updatedWorkflow),
-      }))
+      toast.success(
+        `Added ${result.updated} grantee${result.updated === 1 ? "" : "s"} to selected batch.`,
+      );
+      if (result.missingWorkflowIds.length > 0) {
+        toast.info(
+          `${result.missingWorkflowIds.length} selected record${
+            result.missingWorkflowIds.length === 1 ? " was" : "s were"
+          } skipped because they were unavailable.`,
+        );
+      }
 
-      toast.success("Assignment updated")
-      await loadBatches()
+      setSelectedGranteeIds(new Set());
+      await Promise.all([loadWorkflows(), loadBatches()]);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to update assignment")
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Failed to add selected grantees to batch",
+      );
     } finally {
-      setSavingAssignmentWorkflowId(null)
+      setAddingToBatch(false);
     }
-  }
+  };
 
-  const assignableWorkflows = useMemo(
+  const removeSelectedGranteesFromBatch = async () => {
+    const workflowIds = Array.from(selectedBatchWorkflowIds);
+    if (!selectedBatchId) {
+      toast.error("Select current batch first");
+      return;
+    }
+    if (workflowIds.length === 0) {
+      toast.error("Select at least one grantee from the current batch");
+      return;
+    }
+
+    setRemovingFromBatch(true);
+    try {
+      const response = await fetch(
+        ROUTES.API.ADMIN.SPES.WORKFLOWS_BULK_ASSIGNMENT,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            workflowIds,
+            batchId: null,
+          }),
+        },
+      );
+      const payload = (await response.json()) as BulkAssignWorkflowsResponse;
+      const result = payload.data;
+
+      if (!response.ok || !payload.success || !result) {
+        throw new Error(
+          payload.error || "Failed to remove selected grantees from batch",
+        );
+      }
+
+      toast.success(
+        `Removed ${result.updated} grantee${result.updated === 1 ? "" : "s"} from current batch.`,
+      );
+      if (result.updated > 0) {
+        toast.info("Office assignment cleared for removed grantees.");
+      }
+      if (result.missingWorkflowIds.length > 0) {
+        toast.info(
+          `${result.missingWorkflowIds.length} selected record${
+            result.missingWorkflowIds.length === 1 ? " was" : "s were"
+          } skipped because they were unavailable.`,
+        );
+      }
+
+      setSelectedBatchWorkflowIds(new Set());
+      await Promise.all([loadWorkflows(), loadBatches()]);
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Failed to remove selected grantees from batch",
+      );
+    } finally {
+      setRemovingFromBatch(false);
+    }
+  };
+
+  const assignOfficeToSelected = async () => {
+    const workflowIds = Array.from(selectedBatchWorkflowIds);
+    if (!selectedBatchId) {
+      toast.error("Select a batch first");
+      return;
+    }
+    if (workflowIds.length === 0) {
+      toast.error("Select at least one grantee from the batch list");
+      return;
+    }
+    if (!selectedOffice) {
+      toast.error("Select an office assignment");
+      return;
+    }
+
+    setAssigningOffice(true);
+    try {
+      const response = await fetch(
+        ROUTES.API.ADMIN.SPES.WORKFLOWS_BULK_ASSIGNMENT,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            workflowIds,
+            assignedOffice: selectedOffice,
+          }),
+        },
+      );
+      const payload = (await response.json()) as BulkAssignWorkflowsResponse;
+      const result = payload.data;
+
+      if (!response.ok || !payload.success || !result) {
+        throw new Error(
+          payload.error || "Failed to assign office to selected grantees",
+        );
+      }
+
+      toast.success(
+        `Assigned office to ${result.updated} grantee${result.updated === 1 ? "" : "s"}.`,
+      );
+      if (result.missingWorkflowIds.length > 0) {
+        toast.info(
+          `${result.missingWorkflowIds.length} selected record${
+            result.missingWorkflowIds.length === 1 ? " was" : "s were"
+          } skipped because they were unavailable.`,
+        );
+      }
+
+      setSelectedBatchWorkflowIds(new Set());
+      await loadWorkflows();
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to assign office",
+      );
+    } finally {
+      setAssigningOffice(false);
+    }
+  };
+
+  const selectedBatch = useMemo(
+    () => batches.find((batch) => batch.batchId === selectedBatchId) || null,
+    [batches, selectedBatchId],
+  );
+
+  const batchMembers = useMemo(
     () =>
       workflows.filter(
         (workflow) =>
-          workflow.selectionStatus === "grantee" ||
-          workflow.examResult === "passed" ||
-          workflow.batchId !== null ||
-          workflow.assignedOffice !== null
+          workflow.batchId === selectedBatchId && isPasser(workflow),
       ),
-    [workflows]
-  )
+    [workflows, selectedBatchId],
+  );
+
+  const filteredGrantees = useMemo(() => {
+    const search = granteeSearch.trim().toLowerCase();
+    return workflows.filter((workflow) => {
+      if (!isPasser(workflow)) return false;
+      if (selectedBatchId && workflow.batchId === selectedBatchId) return false;
+      if (!search) return true;
+      return workflow.applicantName.toLowerCase().includes(search);
+    });
+  }, [workflows, granteeSearch, selectedBatchId]);
+
+  const allGranteesSelected =
+    filteredGrantees.length > 0 &&
+    filteredGrantees.every((workflow) =>
+      selectedGranteeIds.has(workflow.workflowId),
+    );
+
+  const allBatchMembersSelected =
+    batchMembers.length > 0 &&
+    batchMembers.every((workflow) =>
+      selectedBatchWorkflowIds.has(workflow.workflowId),
+    );
+
+  const toggleGranteeSelection = (workflowId: string, checked: boolean) => {
+    setSelectedGranteeIds((current) => {
+      const next = new Set(current);
+      if (checked) {
+        next.add(workflowId);
+      } else {
+        next.delete(workflowId);
+      }
+      return next;
+    });
+  };
+
+  const toggleAllGranteeSelections = (checked: boolean) => {
+    setSelectedGranteeIds((current) => {
+      if (!checked) {
+        const next = new Set(current);
+        for (const workflow of filteredGrantees) {
+          next.delete(workflow.workflowId);
+        }
+        return next;
+      }
+
+      const next = new Set(current);
+      for (const workflow of filteredGrantees) {
+        next.add(workflow.workflowId);
+      }
+      return next;
+    });
+  };
+
+  const toggleBatchWorkflowSelection = (
+    workflowId: string,
+    checked: boolean,
+  ) => {
+    setSelectedBatchWorkflowIds((current) => {
+      const next = new Set(current);
+      if (checked) {
+        next.add(workflowId);
+      } else {
+        next.delete(workflowId);
+      }
+      return next;
+    });
+  };
+
+  const toggleAllBatchWorkflowSelections = (checked: boolean) => {
+    setSelectedBatchWorkflowIds((current) => {
+      if (!checked) {
+        const next = new Set(current);
+        for (const workflow of batchMembers) {
+          next.delete(workflow.workflowId);
+        }
+        return next;
+      }
+
+      const next = new Set(current);
+      for (const workflow of batchMembers) {
+        next.add(workflow.workflowId);
+      }
+      return next;
+    });
+  };
 
   return (
     <div className="flex flex-col gap-6">
       <div>
         <h1 className="text-3xl font-bold">Batch Management</h1>
         <p className="text-muted-foreground">
-          Create batches for SPES grantees and assign deployment offices.
+          Manage SPES batches, assign grantees to batches, and apply office
+          assignments.
         </p>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Batch Builder</CardTitle>
-          <CardDescription>
-            Create SPES batches and maintain deployment capacity for grantees.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-6">
-          <form onSubmit={submitBatch} className="grid gap-4 md:grid-cols-[2fr_1fr_auto] md:items-end">
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="batchName">Batch Name</Label>
-              <Input
-                id="batchName"
-                placeholder="e.g., SPES 2026 Batch A"
-                value={batchName}
-                onChange={(event) => setBatchName(event.target.value)}
-                required
-              />
-            </div>
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="batchStartDate">Start Date</Label>
-              <Input
-                id="batchStartDate"
-                type="date"
-                value={startDate}
-                onChange={(event) => setStartDate(event.target.value)}
-                required
-              />
-            </div>
-            <Button type="submit" disabled={savingBatch}>
-              {savingBatch && <Spinner data-icon="inline-start" />}
-              Create Batch
-            </Button>
-          </form>
+      <div className="grid gap-6 lg:grid-cols-3">
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <CardTitle>Batch Grantee Records</CardTitle>
+            <CardDescription>
+              Select a batch, review grantees assigned to it, and use right-side
+              tabs for creation and controls.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+              <div className="flex w-full max-w-70 flex-col gap-2">
+                <Label htmlFor="batchSelect">Batch</Label>
+                <NativeSelect
+                  id="batchSelect"
+                  value={selectedBatchId}
+                  onChange={(event) => setSelectedBatchId(event.target.value)}
+                  disabled={loadingBatches || batches.length === 0}
+                >
+                  {batches.length === 0 ? (
+                    <NativeSelectOption value="">
+                      No batches available
+                    </NativeSelectOption>
+                  ) : (
+                    batches.map((batch) => (
+                      <NativeSelectOption
+                        key={batch.batchId}
+                        value={batch.batchId}
+                      >
+                        {batch.batchName}
+                      </NativeSelectOption>
+                    ))
+                  )}
+                </NativeSelect>
+              </div>
 
-          {loadingBatches ? (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Spinner data-icon="inline-start" />
-              Loading batches...
+              <div className="flex flex-wrap items-center gap-2">
+                <Button
+                  type="button"
+                  onClick={addSelectedGranteesToBatch}
+                  disabled={
+                    addingToBatch ||
+                    !selectedBatchId ||
+                    selectedGranteeIds.size === 0
+                  }
+                >
+                  {addingToBatch && <Spinner data-icon="inline-start" />}
+                  Add Selected
+                </Button>
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={removeSelectedGranteesFromBatch}
+                  disabled={
+                    removingFromBatch || selectedBatchWorkflowIds.size === 0
+                  }
+                >
+                  {removingFromBatch && <Spinner data-icon="inline-start" />}
+                  Remove Selected
+                </Button>
+              </div>
             </div>
-          ) : batchError ? (
-            <p className="text-sm text-destructive">{batchError}</p>
-          ) : batches.length > 0 ? (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Batch</TableHead>
-                  <TableHead>Start Date</TableHead>
-                  <TableHead>Office</TableHead>
-                  <TableHead>Grantees</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {batches.map((batch) => (
-                  <TableRow key={batch.batchId}>
-                    <TableCell>{batch.batchName}</TableCell>
-                    <TableCell>{batch.startDate}</TableCell>
-                    <TableCell>{batch.officeName || "Unassigned"}</TableCell>
-                    <TableCell>{batch.granteeCount}</TableCell>
+
+            <div className="mb-4 flex flex-wrap gap-2">
+              <Badge variant="outline">
+                Selected grantees: {selectedBatchWorkflowIds.size}
+              </Badge>
+              {selectedBatch && (
+                <Badge variant="secondary">
+                  Current batch: {selectedBatch.batchName}
+                </Badge>
+              )}
+            </div>
+
+            {loadingBatches || loadingWorkflows ? (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Spinner data-icon="inline-start" />
+                Loading batch records...
+              </div>
+            ) : batchError || workflowError ? (
+              <p className="text-sm text-destructive">
+                {batchError || workflowError}
+              </p>
+            ) : !selectedBatchId ? (
+              <Empty>
+                <EmptyHeader>
+                  <EmptyMedia variant="icon">
+                    <LayersIcon />
+                  </EmptyMedia>
+                  <EmptyTitle>No batch selected</EmptyTitle>
+                  <EmptyDescription>
+                    Create or select a batch to view assigned grantees.
+                  </EmptyDescription>
+                </EmptyHeader>
+              </Empty>
+            ) : batchMembers.length === 0 ? (
+              <Empty>
+                <EmptyHeader>
+                  <EmptyMedia variant="icon">
+                    <UsersIcon />
+                  </EmptyMedia>
+                  <EmptyTitle>No grantees in this batch</EmptyTitle>
+                  <EmptyDescription>
+                    Select grantees from the Grantees tab, then use the button
+                    above to add them to this batch.
+                  </EmptyDescription>
+                </EmptyHeader>
+              </Empty>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-10">
+                      <Checkbox
+                        checked={allBatchMembersSelected}
+                        onCheckedChange={(checked) =>
+                          toggleAllBatchWorkflowSelections(checked === true)
+                        }
+                      />
+                    </TableHead>
+                    <TableHead>Applicant</TableHead>
+                    <TableHead>Office Assignment</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          ) : (
-            <Empty>
-              <EmptyHeader>
-                <EmptyMedia variant="icon">
-                  <LayersIcon />
-                </EmptyMedia>
-                <EmptyTitle>No batches yet</EmptyTitle>
-                <EmptyDescription>Create your first SPES batch above.</EmptyDescription>
-              </EmptyHeader>
-            </Empty>
-          )}
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Workflow Assignment</CardTitle>
-          <CardDescription>
-            Assign grantees and qualified workflows to batches and offices. Save per row to trigger notifications.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {loadingWorkflows ? (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Spinner data-icon="inline-start" />
-              Loading workflows...
-            </div>
-          ) : workflowError ? (
-            <p className="text-sm text-destructive">{workflowError}</p>
-          ) : assignableWorkflows.length === 0 ? (
-            <Empty>
-              <EmptyHeader>
-                <EmptyMedia variant="icon">
-                  <UsersIcon />
-                </EmptyMedia>
-                <EmptyTitle>No workflows to assign</EmptyTitle>
-                <EmptyDescription>
-                  Grantee or qualified workflows will appear here for batch assignment.
-                </EmptyDescription>
-              </EmptyHeader>
-            </Empty>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Applicant</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Batch</TableHead>
-                  <TableHead>Assigned Office</TableHead>
-                  <TableHead>Current Assignment</TableHead>
-                  <TableHead>Action</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {assignableWorkflows.map((workflow) => {
-                  const draft = assignmentDrafts[workflow.workflowId]
-                  if (!draft) return null
-
-                  return (
+                </TableHeader>
+                <TableBody>
+                  {batchMembers.map((workflow) => (
                     <TableRow key={workflow.workflowId}>
                       <TableCell>
-                        <div className="font-medium">{workflow.applicantName}</div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex flex-wrap gap-1.5">
-                          <Badge variant={getStageBadgeVariant(workflow.stage)}>
-                            {WORKFLOW_STAGE_LABELS[workflow.stage]}
-                          </Badge>
-                          <Badge
-                            variant={
-                              workflow.examResult === "passed"
-                                ? "secondary"
-                                : workflow.examResult === "failed"
-                                  ? "destructive"
-                                  : "outline"
-                            }
-                          >
-                            {workflow.examResult.toUpperCase()}
-                          </Badge>
-                          {workflow.selectionStatus === "grantee" && <Badge>Grantee</Badge>}
-                          {workflow.selectionStatus === "waitlisted" && (
-                            <Badge variant="destructive">Waitlisted</Badge>
+                        <Checkbox
+                          checked={selectedBatchWorkflowIds.has(
+                            workflow.workflowId,
                           )}
-                          {workflow.selectionStatus === "denied" && (
-                            <Badge variant="destructive">Denied</Badge>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <NativeSelect
-                          value={draft.batchId}
-                          onChange={(event) =>
-                            updateAssignmentDraft(workflow.workflowId, (current) => ({
-                              ...current,
-                              batchId: event.target.value,
-                            }))
-                          }
-                          className="min-w-44"
-                        >
-                          <NativeSelectOption value="">Unassigned</NativeSelectOption>
-                          {batches.map((batch) => (
-                            <NativeSelectOption key={batch.batchId} value={batch.batchId}>
-                              {batch.batchName}
-                            </NativeSelectOption>
-                          ))}
-                        </NativeSelect>
-                      </TableCell>
-                      <TableCell>
-                        <Input
-                          value={draft.assignedOffice}
-                          placeholder="e.g., PESO Main Office"
-                          onChange={(event) =>
-                            updateAssignmentDraft(workflow.workflowId, (current) => ({
-                              ...current,
-                              assignedOffice: event.target.value,
-                            }))
+                          onCheckedChange={(checked) =>
+                            toggleBatchWorkflowSelection(
+                              workflow.workflowId,
+                              checked === true,
+                            )
                           }
                         />
                       </TableCell>
                       <TableCell>
-                        <div className="flex flex-col gap-0.5 text-sm text-muted-foreground">
-                          <span>Batch: {workflow.batchName || "Unassigned"}</span>
-                          <span>Office: {workflow.assignedOffice || "Unassigned"}</span>
+                        <div className="font-medium">
+                          {workflow.applicantName}
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Button
-                          type="button"
-                          size="sm"
-                          onClick={() => void saveAssignment(workflow.workflowId)}
-                          disabled={
-                            savingAssignmentWorkflowId === workflow.workflowId ||
-                            !hasAssignmentChanges(workflow)
-                          }
-                        >
-                          {savingAssignmentWorkflowId === workflow.workflowId && (
-                            <Spinner data-icon="inline-start" />
-                          )}
-                          Save Assignment
-                        </Button>
+                        <Badge variant="outline">
+                          {workflow.assignedOffice || "Unassigned"}
+                        </Badge>
                       </TableCell>
                     </TableRow>
-                  )
-                })}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </CardContent>
+        </Card>
+
+        <Tabs defaultValue="batch-creation" className="space-y-4">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="batch-creation">Batch Creation</TabsTrigger>
+            <TabsTrigger value="grantees">Grantees</TabsTrigger>
+            <TabsTrigger value="office-assignment">
+              Office Assignment
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="batch-creation" className="mt-0">
+            <Card>
+              <CardHeader>
+                <CardTitle>Create Batch</CardTitle>
+                <CardDescription>
+                  Create new SPES batches and set start dates.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="flex flex-col gap-4">
+                <form onSubmit={submitBatch} className="flex flex-col gap-4">
+                  <div className="flex flex-col gap-2">
+                    <Label htmlFor="batchName">Batch Name</Label>
+                    <Input
+                      id="batchName"
+                      placeholder="e.g., SPES 2026 Batch A"
+                      value={batchName}
+                      onChange={(event) => setBatchName(event.target.value)}
+                      required
+                    />
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <Label htmlFor="batchStartDate">Start Date</Label>
+                    <Input
+                      id="batchStartDate"
+                      type="date"
+                      value={startDate}
+                      onChange={(event) => setStartDate(event.target.value)}
+                      required
+                    />
+                  </div>
+                  <Button type="submit" disabled={savingBatch}>
+                    {savingBatch && <Spinner data-icon="inline-start" />}
+                    Create Batch
+                  </Button>
+                </form>
+
+                {loadingBatches ? (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Spinner data-icon="inline-start" />
+                    Loading existing batches...
+                  </div>
+                ) : batchError ? (
+                  <p className="text-sm text-destructive">{batchError}</p>
+                ) : batches.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    No batches yet.
+                  </p>
+                ) : (
+                  <div className="rounded-lg border p-3 text-sm text-muted-foreground">
+                    Total batches:{" "}
+                    <span className="font-medium text-foreground">
+                      {batches.length}
+                    </span>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="grantees" className="mt-0">
+            <Card>
+              <CardHeader>
+                <CardTitle>Grantees</CardTitle>
+                <CardDescription>
+                  Select grantees here. Then use left-side button to add
+                  selected grantees to chosen batch.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="flex flex-col gap-4">
+                <Input
+                  placeholder="Search grantee name..."
+                  value={granteeSearch}
+                  onChange={(event) => setGranteeSearch(event.target.value)}
+                />
+                <div className="rounded-lg bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
+                  Selected grantees:{" "}
+                  <span className="font-medium text-foreground">
+                    {selectedGranteeIds.size}
+                  </span>
+                </div>
+
+                {loadingWorkflows ? (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Spinner data-icon="inline-start" />
+                    Loading grantees...
+                  </div>
+                ) : workflowError ? (
+                  <p className="text-sm text-destructive">{workflowError}</p>
+                ) : filteredGrantees.length === 0 ? (
+                  <Empty>
+                    <EmptyHeader>
+                      <EmptyMedia variant="icon">
+                        <UsersIcon />
+                      </EmptyMedia>
+                      <EmptyTitle>No grantees found</EmptyTitle>
+                      <EmptyDescription>
+                        Adjust search or wait for more qualified records.
+                      </EmptyDescription>
+                    </EmptyHeader>
+                  </Empty>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-10">
+                          <Checkbox
+                            checked={allGranteesSelected}
+                            onCheckedChange={(checked) =>
+                              toggleAllGranteeSelections(checked === true)
+                            }
+                          />
+                        </TableHead>
+                        <TableHead>Applicant</TableHead>
+                        <TableHead>Current Batch</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredGrantees.map((workflow) => (
+                        <TableRow key={workflow.workflowId}>
+                          <TableCell>
+                            <Checkbox
+                              checked={selectedGranteeIds.has(
+                                workflow.workflowId,
+                              )}
+                              onCheckedChange={(checked) =>
+                                toggleGranteeSelection(
+                                  workflow.workflowId,
+                                  checked === true,
+                                )
+                              }
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <div className="font-medium">
+                              {workflow.applicantName}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            {workflow.batchName || "Unassigned"}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="office-assignment" className="mt-0">
+            <Card>
+              <CardHeader>
+                <CardTitle>Office Assignment</CardTitle>
+                <CardDescription>
+                  Select grantees from left table, then assign office in one
+                  action using LGU office list.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="flex flex-col gap-4">
+                <div className="rounded-lg border p-3 text-sm text-muted-foreground">
+                  Batch:{" "}
+                  <span className="font-medium text-foreground">
+                    {selectedBatch?.batchName || "None"}
+                  </span>
+                  <br />
+                  Selected grantees:{" "}
+                  <span className="font-medium text-foreground">
+                    {selectedBatchWorkflowIds.size}
+                  </span>
+                </div>
+
+                {loadingOfficeOptions ? (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Spinner data-icon="inline-start" />
+                    Loading office options...
+                  </div>
+                ) : officeError ? (
+                  <p className="text-sm text-destructive">{officeError}</p>
+                ) : (
+                  <>
+                    <div className="flex flex-col gap-2">
+                      <Label htmlFor="officeOption">Office Assignment</Label>
+                      <NativeSelect
+                        id="officeOption"
+                        value={selectedOffice}
+                        onChange={(event) =>
+                          setSelectedOffice(event.target.value)
+                        }
+                      >
+                        <NativeSelectOption value="">
+                          Select office
+                        </NativeSelectOption>
+                        {officeOptions.map((office) => (
+                          <NativeSelectOption key={office} value={office}>
+                            {office}
+                          </NativeSelectOption>
+                        ))}
+                      </NativeSelect>
+                    </div>
+
+                    <Button
+                      type="button"
+                      onClick={assignOfficeToSelected}
+                      disabled={
+                        assigningOffice ||
+                        selectedBatchWorkflowIds.size === 0 ||
+                        !selectedOffice
+                      }
+                    >
+                      {assigningOffice && <Spinner data-icon="inline-start" />}
+                      <Building2Icon />
+                      Assign Office to Selected Grantees
+                    </Button>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </div>
     </div>
-  )
+  );
 }

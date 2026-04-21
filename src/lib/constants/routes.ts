@@ -51,6 +51,7 @@ export const ROUTES = {
         BATCHES: "/api/admin/spes/batches",
         WORKFLOWS: "/api/admin/spes/workflows",
         WORKFLOWS_BULK_STATUS: "/api/admin/spes/workflows/bulk-status",
+        WORKFLOWS_BULK_ASSIGNMENT: "/api/admin/spes/workflows/bulk-assignment",
         WORKFLOWS_NOTIFY: "/api/admin/spes/workflows/notify",
       },
     },
