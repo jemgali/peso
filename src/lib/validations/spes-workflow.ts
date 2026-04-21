@@ -129,6 +129,29 @@ export const bulkUpdateWorkflowStatusSchema = z.object({
 })
 export type BulkUpdateWorkflowStatusInput = z.infer<typeof bulkUpdateWorkflowStatusSchema>
 
+export const bulkAssignWorkflowsSchema = z
+  .object({
+    workflowIds: z.array(z.string().min(1, "Workflow ID is required")).min(1, "Select at least one applicant"),
+    batchId: z.string().trim().min(1, "Batch ID is required").nullable().optional(),
+    assignedOffice: z
+      .string()
+      .trim()
+      .min(1, "Assigned office is required")
+      .max(160, "Assigned office is too long")
+      .optional(),
+    note: z.string().trim().max(500, "Note is too long").optional(),
+  })
+  .superRefine((value, ctx) => {
+    if (value.batchId === undefined && value.assignedOffice === undefined) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: [],
+        message: "Provide batchId and/or assignedOffice for bulk assignment updates",
+      })
+    }
+  })
+export type BulkAssignWorkflowsInput = z.infer<typeof bulkAssignWorkflowsSchema>
+
 export const WORKFLOW_SCHEDULE_STAGE_TYPES = [
   "interview",
   "exam",
@@ -267,6 +290,16 @@ export interface BulkUpdateWorkflowStatusResponse {
     requested: number
     updated: number
     autoDenied: number
+    missingWorkflowIds: string[]
+  }
+  error?: string
+}
+
+export interface BulkAssignWorkflowsResponse {
+  success: boolean
+  data?: {
+    requested: number
+    updated: number
     missingWorkflowIds: string[]
   }
   error?: string

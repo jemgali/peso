@@ -1,0 +1,155 @@
+{
+  "Geneder and Development": "Geneder and Development",
+  "City Mayor's Office": [
+    "Library Office",
+    "People's Law Enforcement Board",
+    "Management Information and Technology Office",
+    "Permits and Licensing Division",
+    "Persons With Disabilities Affairs",
+    "Primarily Confidential Staff",
+    "Public Employment Service Office",
+    "Public Information Office",
+    "Public Order & Safety Division",
+    "Special Services Division"
+  ],
+  "Sangguniang Panlungsod ng Baguio": [
+    "Administrative Division",
+    "Agenda and Information Management Division",
+    "Coterminous and Primarily Confidential",
+    "Research Division",
+    "Stenographic-Clerical Services Division"
+  ],
+  "City Administrator's Office": [
+    "Administrative Division",
+    "Sports and Recreation Division",
+    "Tourism and Special Events Division"
+  ],
+  "City Human Resource Management Office": [
+    "General Administrative Support Services Division",
+    "Learning and Development Division",
+    "Personnel Inspection and Audit Division",
+    "Recruitment, Selection and Placement Division"
+  ],
+  "City General Services Office": [
+    "Administrative Division",
+    "Asset and Property Management Division",
+    "Records and Archives Management Division",
+    "Solid Waste Management Division",
+    "Supply and Procurement Division"
+  ],
+  "City Building and Architecture Office": [
+    "Administrative Division",
+    "Building Management Division",
+    "Investigation and Demolition Division",
+    "Operation and Maintenance Division",
+    "Planning, Design, and Construction Division"
+  ],
+  "City Planning, Development, and Sustainability Office": [
+    "Administrative Division",
+    "Advance Planning",
+    "Data Analytics",
+    "Land Use and Zoning Implementation and Subdivision Enforment",
+    "Quality Assurance and Monitoring"
+  ],
+  "City Accounting Office": [
+    "Administrative Division",
+    "Pre-Audit Division",
+    "Barangay Accounting Division",
+    "General Accounting Division"
+  ],
+  "City Assessor's Office": [
+    "Administrative and Correspondence Division",
+    "Appraisal Division",
+    "Records and Statistics Division",
+    "Tax Mapping Division"
+  ],
+  "City Budget Office": [
+    "Budget Operations-Technical Division",
+    "Economic and Investment Unit",
+    "Administrative Division"
+  ],
+  "City Treasurer's Office": [
+    "Administrative Division",
+    "Business Taxes and Fees Division",
+    "Campaign and Investigation Division",
+    "Cash Division",
+    "City Market Division",
+    "Real Property Tax Division",
+    "Treasury Operations Review Unit"
+  ],
+  "City Civil Registry Office": [
+    "Administrative Services",
+    "Civil Registration Services",
+    "Quasi-Judicial Services"
+  ],
+  "City Legal Office": "City Legal Office",
+  "City Disaster Risk Reduction and Management Office": [
+    "Administrative Division",
+    "City Disaster Risk Reduction Management Operations Center Division"
+  ],
+  "City Veterinary and Agriculture Office": [
+    "Administrative Division",
+    "Abattoir & Animal Products Quality Assurance Services",
+    "Urban Agriculture Services",
+    "Animal Health Services"
+  ],
+  "City Social Welfare and Development Office": [
+    "Administrative Support Services Division",
+    "Institution-Based Welfare Programs Division",
+    "Community-Based Welfare Programs Division"
+  ],
+  "City Health Services Office": [
+    "Administrative Division",
+    "City Epidemiology and Surveillance Unit",
+    "City Hall Clinic / Emergency Management Services",
+    "Dental Division",
+    "Dispensary and Animal Bite Center",
+    "Environmental Sanitation Division",
+    "Field Health Services",
+    "Health Integrated Program Management Division",
+    "Laboratory Division",
+    "Nutrition Division",
+    "Population Division",
+    "Reproductive Health and Wellness Center"
+  ],
+  "City Environment and Parks Management Office": [
+    "Administrative Division",
+    "Burnham Park Office",
+    "Environmental Management Division",
+    "Parks Division",
+    "Urban Forestry Management Division",
+    "Waste Water and Hazardous Waste Management Division"
+  ],
+  "City Engineering Office": [
+    "Administrative Division",
+    "Electrical Division",
+    "Maintenance Division",
+    "Materials Testing and Quality Control Division",
+    "Mechanical Division",
+    "Planning, Programming, and Construction Division",
+    "Survey and Inspection Division",
+    "Traffic and Transportation Management Division"
+  ],
+  "Baguio City Police Office": "Baguio City Police Office",
+  "Bureau of Fire Protection": "Bureau of Fire Protection",
+  "Bureau of Jail Management and Penology (Female)": "Bureau of Jail Management and Penology (Female)",
+  "Bureau of Jail Management and Penology (Male)": "Bureau of Jail Management and Penology (Male)",
+  "Commission on Audit": "Commission on Audit",
+  "Department of Education": "Department of Education",
+  "Municipal Trial Court": [
+    "Municipal Trial Court in Cities - Branch 1",
+    "Municipal Trial Court in Cities - Branch 2",
+    "Municipal Trial Court in Cities - Branch 3",
+    "Municipal Trial Court in Cities - Branch 4",
+    "Municipal Trial Court in Cities - Branch 5",
+    "Municipal Trial Court in Cities - Branch 6"
+  ],
+  "Parole": "Parole",
+  "Prosecutor's Office": "Prosecutor's Office",
+  "Public Attorney's Office": "Public Attorney's Office",
+  "Regional Trial Court": "Regional Trial Court",
+  "DILG - Baguio City Field Office": [
+    "Technical Operations Services Section",
+    "Finance and Administrative Section"
+  ]
+}
