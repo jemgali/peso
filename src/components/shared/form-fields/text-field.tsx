@@ -28,6 +28,10 @@ export interface TextFieldProps<TFieldValues extends FieldValues> {
   registerOptions?: Parameters<UseFormRegister<TFieldValues>>[1]
   /** Custom onBlur handler (runs after register's onBlur) */
   onBlur?: (e: React.FocusEvent<HTMLInputElement>) => void
+  /** Custom onChange handler (runs before register's onChange) */
+  onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void
+  /** Input max length */
+  maxLength?: number
 }
 
 export function TextField<TFieldValues extends FieldValues>({
@@ -43,14 +47,22 @@ export function TextField<TFieldValues extends FieldValues>({
   className,
   registerOptions,
   onBlur,
+  onChange,
+  maxLength,
 }: TextFieldProps<TFieldValues>) {
-  const { onBlur: registerOnBlur, ...restRegister } = register(name, registerOptions)
+  const { onBlur: registerOnBlur, onChange: registerOnChange, ...restRegister } = register(name, registerOptions)
   
   const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
     // Call register's onBlur first
     registerOnBlur(e)
     // Then call custom onBlur if provided
     onBlur?.(e)
+  }
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Allow custom formatting/masking before RHF reads the value
+    onChange?.(e)
+    registerOnChange(e)
   }
   
   return (
@@ -62,12 +74,14 @@ export function TextField<TFieldValues extends FieldValues>({
       <Input
         {...restRegister}
         onBlur={handleBlur}
+        onChange={handleChange}
         type={type}
         id={name}
         disabled={disabled}
         placeholder={placeholder}
         autoCapitalize={autoCapitalize}
         className={className}
+        maxLength={maxLength}
         aria-invalid={!!error}
       />
       {error && <FieldError>{error}</FieldError>}

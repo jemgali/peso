@@ -236,9 +236,19 @@ const Applications = () => {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <Badge variant="secondary" className={STATUS_COLORS[app.status]}>
-                        {STATUS_LABELS[app.status]}
-                      </Badge>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Badge variant="secondary" className={STATUS_COLORS[app.status]}>
+                          {STATUS_LABELS[app.status]}
+                        </Badge>
+                        {app.resubmittedAfterRevision && (
+                          <Badge
+                            variant="outline"
+                            className="border-emerald-500 text-emerald-700 dark:text-emerald-300"
+                          >
+                            Resubmitted
+                          </Badge>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell>{new Date(app.submittedAt).toLocaleDateString()}</TableCell>
                     <TableCell className="text-right">

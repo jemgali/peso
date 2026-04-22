@@ -146,7 +146,7 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({ userEmail }) => {
   // === STEP 1: Form ===
   if (step === "form") {
     return (
-      <div className="mx-auto max-w-3xl">
+      <div className="mx-auto w-full max-w-5xl">
         <div className="mb-6">
           <div className="flex items-center gap-3 mb-2">
             <div className="flex size-10 items-center justify-center rounded-full bg-primary text-primary-foreground">
@@ -180,7 +180,7 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({ userEmail }) => {
           </div>
         </div>
 
-        <Card className="p-4 sm:p-6">
+        <Card className="p-5 sm:p-7">
           {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
           <BasicInfoSection
             register={register as any}
@@ -211,7 +211,7 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({ userEmail }) => {
   // === STEP 2: Review ===
   if (step === "review") {
     return (
-      <div className="mx-auto max-w-3xl">
+      <div className="mx-auto w-full max-w-5xl">
         <div className="mb-6">
           <div className="flex items-center gap-3 mb-2">
             <div className="flex size-10 items-center justify-center rounded-full bg-primary text-primary-foreground">
@@ -245,11 +245,11 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({ userEmail }) => {
           </div>
         </div>
 
-        <div className="space-y-4">
+        <div className="space-y-5">
           {/* Name */}
-          <Card className="p-4 bg-muted/30">
+          <Card className="bg-muted/30 p-5">
             <h3 className="text-sm font-semibold mb-3">Name</h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+            <div className="grid grid-cols-1 gap-4 text-sm sm:grid-cols-2 xl:grid-cols-4">
               <div>
                 <p className="text-muted-foreground">Last Name</p>
                 <p className="font-medium">{formValues.profileLastName || "—"}</p>
@@ -270,9 +270,9 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({ userEmail }) => {
           </Card>
 
           {/* Personal Details */}
-          <Card className="p-4 bg-muted/30">
+          <Card className="bg-muted/30 p-5">
             <h3 className="text-sm font-semibold mb-3">Personal Details</h3>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
+            <div className="grid grid-cols-1 gap-4 text-sm sm:grid-cols-2 xl:grid-cols-3">
               <div>
                 <p className="text-muted-foreground">Birthdate</p>
                 <p className="font-medium">{formValues.profileBirthdate || "—"}</p>
@@ -309,9 +309,9 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({ userEmail }) => {
           </Card>
 
           {/* Contact Information */}
-          <Card className="p-4 bg-muted/30">
+          <Card className="bg-muted/30 p-5">
             <h3 className="text-sm font-semibold mb-3">Contact Information</h3>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
+            <div className="grid grid-cols-1 gap-4 text-sm sm:grid-cols-2 xl:grid-cols-3">
               <div>
                 <p className="text-muted-foreground">Email</p>
                 <p className="font-medium">{formValues.profileEmail || "—"}</p>
@@ -329,9 +329,9 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({ userEmail }) => {
 
           {/* Disability */}
           {(formValues.profileDisability || formValues.profilePwdId) && (
-            <Card className="p-4 bg-muted/30">
+            <Card className="bg-muted/30 p-5">
               <h3 className="text-sm font-semibold mb-3">Disability Information</h3>
-              <div className="grid grid-cols-2 gap-3 text-sm">
+              <div className="grid grid-cols-1 gap-4 text-sm sm:grid-cols-2">
                 <div>
                   <p className="text-muted-foreground">Disability</p>
                   <p className="font-medium">{formValues.profileDisability || "—"}</p>

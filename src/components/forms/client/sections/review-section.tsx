@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Button } from "@/ui/button";
 import { Card } from "@/ui/card";
 import { Spinner } from "@/ui/spinner";
+import { ExternalLink } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -13,6 +14,25 @@ import {
   AlertDialogTitle,
 } from "@/ui/alert-dialog";
 import type { ReviewSectionProps } from "./types";
+
+interface UploadedDocument {
+  key?: string;
+  url?: string;
+  fileName?: string;
+  fileType?: string;
+}
+
+const DOCUMENT_LABELS: Record<string, string> = {
+  psaCertificate: "Original PSA Certificate",
+  grades: "Grades",
+  affidavitLowIncome: "Affidavit of Low Income (PAO)",
+  barangayCertLowIncome: "Barangay Certificate of Low Income (Parents)",
+  barangayCertResidency: "Barangay Certificate of Residency (Applicant)",
+  incomeTaxReturn: "Income Tax Return",
+  affidavitSoloParent: "Affidavit of Solo Parent",
+  affidavitDiscrepancy: "Affidavit of Discrepancy",
+  deathCertificate: "Death Certificate",
+};
 
 const ReviewSection: React.FC<ReviewSectionProps> = ({
   formValues,
@@ -80,6 +100,11 @@ const ReviewSection: React.FC<ReviewSectionProps> = ({
       .filter(Boolean)
       .join(", ") || "Not provided";
   };
+
+  const uploadedDocuments = (formValues.documents || {}) as Record<
+    string,
+    UploadedDocument
+  >;
 
   return (
     <div id="review" className="scroll-mt-24">
@@ -308,15 +333,48 @@ const ReviewSection: React.FC<ReviewSectionProps> = ({
         <Card className="p-4 bg-muted/30">
           <h3 className="text-sm font-semibold mb-3">Documents</h3>
           <div className="space-y-2">
-            {formValues.documents && Object.keys(formValues.documents).length > 0 ? (
-              Object.entries(formValues.documents).map(([docId, doc]: [string, any]) => (
-                <div key={docId} className="flex justify-between items-center text-sm border-b border-muted/50 pb-2 last:border-0 last:pb-0">
-                  <span className="font-medium text-muted-foreground">
-                    {doc.fileName || docId}
-                  </span>
-                  <a href={doc.url} target="_blank" rel="noreferrer" className="text-blue-500 hover:underline">
-                    View
-                  </a>
+            {Object.keys(uploadedDocuments).length > 0 ? (
+              Object.entries(uploadedDocuments).map(([docId, doc]) => (
+                <div
+                  key={docId}
+                  className="space-y-3 rounded-md border border-muted/60 bg-background/60 p-3"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-semibold">
+                        {DOCUMENT_LABELS[docId] || docId}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {doc.fileName || "Uploaded document"}
+                      </p>
+                    </div>
+                    {doc.url && (
+                      <a
+                        href={doc.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline"
+                      >
+                        Open
+                        <ExternalLink className="h-3 w-3" />
+                      </a>
+                    )}
+                  </div>
+
+                  {doc.url && doc.fileType === "application/pdf" && (
+                    <iframe
+                      src={doc.url}
+                      title={doc.fileName || docId}
+                      className="h-[360px] w-full rounded border bg-muted/20"
+                    />
+                  )}
+                  {doc.url && doc.fileType?.startsWith("image/") && (
+                    <img
+                      src={doc.url}
+                      alt={doc.fileName || docId}
+                      className="max-h-[360px] w-full rounded border bg-muted/20 object-contain"
+                    />
+                  )}
                 </div>
               ))
             ) : (

@@ -67,6 +67,7 @@ export async function POST(request: Request): Promise<NextResponse<BulkNotifyWor
 
   const workflowIds = [...new Set(parsed.data.workflowIds.map((id) => id.trim()).filter(Boolean))]
   const note = parsed.data.note?.trim() || null
+  const scheduleInput = parsed.data.schedule
 
   const workflows = await prisma.spesWorkflow.findMany({
     where: {
@@ -102,12 +103,54 @@ export async function POST(request: Request): Promise<NextResponse<BulkNotifyWor
 
   const foundIds = new Set(workflows.map((workflow) => workflow.workflowId))
   const missingWorkflowIds = workflowIds.filter((workflowId) => !foundIds.has(workflowId))
+  const recipientUserIds = [...new Set(workflows.map((workflow) => workflow.submission.profile.userId))]
   const notificationTitle = "SPES Evaluation Update"
   const notificationMessage = note
     ? `PESO sent an update regarding your SPES application evaluation. Please check your application status page for details and next steps. Admin note: ${note}`
     : "PESO sent an update regarding your SPES application evaluation. Please check your application status page for details and next steps."
 
+  let scheduledEvent:
+    | {
+        id: string
+        title: string
+        startDate: string
+        endDate: string | null
+        allDay: boolean
+        recipientCount: number
+      }
+    | null = null
+
   await prisma.$transaction(async (tx) => {
+    if (scheduleInput && recipientUserIds.length > 0) {
+      const scheduleEvent = await tx.scheduleEvent.create({
+        data: {
+          title: scheduleInput.title.trim(),
+          description: scheduleInput.description?.trim() || null,
+          type: "schedule",
+          visibility: "clients",
+          startDate: scheduleInput.startDate,
+          endDate: scheduleInput.endDate || null,
+          allDay: scheduleInput.allDay,
+        },
+      })
+
+      await tx.scheduleEventRecipient.createMany({
+        data: recipientUserIds.map((userId) => ({
+          eventId: scheduleEvent.id,
+          userId,
+        })),
+      })
+
+      scheduledEvent = {
+        id: scheduleEvent.id,
+        title: scheduleEvent.title,
+        startDate: scheduleEvent.startDate.toISOString(),
+        endDate: scheduleEvent.endDate?.toISOString() || null,
+        allDay: scheduleEvent.allDay,
+        recipientCount: recipientUserIds.length,
+      }
+    }
+
     await tx.notification.createMany({
       data: workflows.map((workflow) => ({
         notificationId: crypto.randomUUID(),
@@ -148,6 +191,7 @@ export async function POST(request: Request): Promise<NextResponse<BulkNotifyWor
       emailSent,
       emailFailed: workflows.length - emailSent,
       missingWorkflowIds,
+      scheduledEvent,
     },
   })
 }

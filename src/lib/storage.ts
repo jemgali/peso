@@ -6,10 +6,6 @@ const UPLOAD_DIR = process.env.UPLOAD_DIR || path.join(process.cwd(), "uploads")
 
 // Allowed file types for documents
 export const ALLOWED_FILE_TYPES = [
-  "image/jpeg",
-  "image/png",
-  "image/gif",
-  "image/webp",
   "application/pdf",
 ] as const;
 

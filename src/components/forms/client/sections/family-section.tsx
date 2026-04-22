@@ -7,6 +7,11 @@ import { Field, FieldSet, FieldGroup, FieldLabel, FieldError } from "@/ui/field"
 import { Plus, X } from "lucide-react";
 import { TextField } from "@/components/shared";
 import { useAutoCapitalize } from "@/hooks/use-auto-capitalize";
+import {
+  formatPhilippineMobileInput,
+  PHILIPPINE_MOBILE_MAX_LENGTH,
+  PHILIPPINE_MOBILE_PLACEHOLDER,
+} from "@/lib/phone";
 import type { FormSectionWithFieldArrayProps } from "./types";
 
 const FamilySection: React.FC<FormSectionWithFieldArrayProps> = ({
@@ -42,6 +47,10 @@ const FamilySection: React.FC<FormSectionWithFieldArrayProps> = ({
       const capitalizedValue = toTitleCase(value);
       setValue(`siblings.${index}.name` as const, capitalizedValue);
     }
+  };
+
+  const handlePhoneInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    event.target.value = formatPhilippineMobileInput(event.target.value);
   };
   
   return (
@@ -89,7 +98,9 @@ const FamilySection: React.FC<FormSectionWithFieldArrayProps> = ({
                 error={errors.fatherContact?.message}
                 disabled={isPending}
                 type="tel"
-                placeholder="+63 9XX-XXX-XXXX"
+                placeholder={PHILIPPINE_MOBILE_PLACEHOLDER}
+                maxLength={PHILIPPINE_MOBILE_MAX_LENGTH}
+                onChange={handlePhoneInputChange}
               />
             </div>
           </div>
@@ -128,7 +139,9 @@ const FamilySection: React.FC<FormSectionWithFieldArrayProps> = ({
                 error={errors.motherContact?.message}
                 disabled={isPending}
                 type="tel"
-                placeholder="+63 9XX-XXX-XXXX"
+                placeholder={PHILIPPINE_MOBILE_PLACEHOLDER}
+                maxLength={PHILIPPINE_MOBILE_MAX_LENGTH}
+                onChange={handlePhoneInputChange}
               />
             </div>
           </div>
@@ -168,11 +181,17 @@ const FamilySection: React.FC<FormSectionWithFieldArrayProps> = ({
                 >
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-2 flex-1">
                     <div className="space-y-1">
+                      <FieldLabel htmlFor={`siblings.${index}.name`} required>
+                        Sibling Name
+                      </FieldLabel>
                       <Input
                         {...register(`siblings.${index}.name` as const)}
                         type="text"
+                        id={`siblings.${index}.name`}
                         disabled={isPending}
-                        placeholder="Full Name *"
+                        placeholder="Full Name"
+                        required
+                        aria-invalid={!!errors.siblings?.[index]?.name}
                         onBlur={handleSiblingNameBlur(index)}
                       />
                       {errors.siblings?.[index]?.name && (
@@ -181,27 +200,41 @@ const FamilySection: React.FC<FormSectionWithFieldArrayProps> = ({
                         </FieldError>
                       )}
                     </div>
-                    <Input
-                      {...register(`siblings.${index}.age` as const, { 
-                        valueAsNumber: true,
-                        setValueAs: (v) => v === "" ? undefined : Number(v)
-                      })}
-                      type="number"
-                      disabled={isPending}
-                      placeholder="Age *"
-                      min={1}
-                    />
-                    {errors.siblings?.[index]?.age && (
-                      <FieldError className="text-xs">
-                        {errors.siblings[index].age?.message}
-                      </FieldError>
-                    )}
-                    <Input
-                      {...register(`siblings.${index}.occupation` as const)}
-                      type="text"
-                      disabled={isPending}
-                      placeholder="Occupation (Optional)"
-                    />
+                    <div className="space-y-1">
+                      <FieldLabel htmlFor={`siblings.${index}.age`} required>
+                        Age
+                      </FieldLabel>
+                      <Input
+                        {...register(`siblings.${index}.age` as const, {
+                          valueAsNumber: true,
+                          setValueAs: (v) => (v === "" ? undefined : Number(v)),
+                        })}
+                        type="number"
+                        id={`siblings.${index}.age`}
+                        disabled={isPending}
+                        placeholder="Age"
+                        min={1}
+                        required
+                        aria-invalid={!!errors.siblings?.[index]?.age}
+                      />
+                      {errors.siblings?.[index]?.age && (
+                        <FieldError className="text-xs">
+                          {errors.siblings[index].age?.message}
+                        </FieldError>
+                      )}
+                    </div>
+                    <div className="space-y-1">
+                      <FieldLabel htmlFor={`siblings.${index}.occupation`}>
+                        Occupation (Optional)
+                      </FieldLabel>
+                      <Input
+                        {...register(`siblings.${index}.occupation` as const)}
+                        type="text"
+                        id={`siblings.${index}.occupation`}
+                        disabled={isPending}
+                        placeholder="Occupation"
+                      />
+                    </div>
                   </div>
                   <Button
                     type="button"

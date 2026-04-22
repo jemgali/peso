@@ -149,12 +149,39 @@ export async function PATCH(
 
   const existingWorkflow = await prisma.spesWorkflow.findUnique({
     where: { workflowId },
+    include: {
+      submission: {
+        select: {
+          applicantType: true,
+        },
+      },
+    },
   })
 
   if (!existingWorkflow) {
     return NextResponse.json(
       { success: false, error: "Workflow not found" },
       { status: 404 }
+    )
+  }
+
+  const isSpesBaby = existingWorkflow.submission.applicantType === "SPES_BABY"
+  const hasInterviewExamRelatedUpdates =
+    parsed.data.priority !== undefined ||
+    parsed.data.examScore !== undefined ||
+    parsed.data.stage === "interview_scheduled" ||
+    parsed.data.stage === "priority_assigned" ||
+    parsed.data.stage === "exam_scheduled" ||
+    parsed.data.stage === "exam_evaluated"
+
+  if (isSpesBaby && hasInterviewExamRelatedUpdates) {
+    return NextResponse.json(
+      {
+        success: false,
+        error:
+          "Interview/exam/priority fields are not applicable to SPES Baby applicants",
+      },
+      { status: 400 }
     )
   }
 

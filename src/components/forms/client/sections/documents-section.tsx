@@ -144,13 +144,7 @@ const REQUIRED_DOCUMENTS: DocumentRequirement[] = [
 ];
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
-const ALLOWED_TYPES = [
-  "image/jpeg",
-  "image/png",
-  "image/gif",
-  "image/webp",
-  "application/pdf",
-];
+const ALLOWED_TYPES = ["application/pdf"];
 
 const DocumentsSection: React.FC<FormSectionProps> = ({
   isPending,
@@ -260,7 +254,7 @@ const DocumentsSection: React.FC<FormSectionProps> = ({
   const handleFileSelect = async (documentId: string, file: File) => {
     // Validate file
     if (!ALLOWED_TYPES.includes(file.type)) {
-      toast.error("Invalid file type. Please upload an image (JPEG, PNG, GIF, WebP) or PDF.");
+      toast.error("Invalid file type. Please upload a PDF document only.");
       return;
     }
 
@@ -459,8 +453,7 @@ const DocumentsSection: React.FC<FormSectionProps> = ({
       <div className="mb-4">
         <h2 className="text-lg font-semibold">Required Documents</h2>
         <p className="text-sm text-muted-foreground">
-          Upload the following documents. Accepted formats: JPEG, PNG, GIF,
-          WebP, PDF (max 10MB each).
+          Upload the following documents as PDF files only (max 10MB each).
         </p>
       </div>
 
@@ -496,8 +489,7 @@ const DocumentsSection: React.FC<FormSectionProps> = ({
                   </p>
                   <p className="text-xs text-blue-700 dark:text-blue-400 mt-1">
                     For best results, ensure documents are clear and readable.
-                    You can upload images (JPEG, PNG) or PDF files up to 10MB
-                    each.
+                    Only PDF files are accepted, up to 10MB each.
                   </p>
                 </div>
               </div>

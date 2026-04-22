@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { ScheduleEventData } from "@/lib/validations/schedule-event";
+import { formatDateKeyInManila, MANILA_TIME_ZONE } from "@/lib/manila-datetime";
 
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -101,14 +102,14 @@ const DashboardCalendar: React.FC = () => {
   const eventsByDate = useMemo(() => {
     const map = new Map<string, ScheduleEventData[]>();
     announcements.forEach((event) => {
-      const key = event.startDate.toISOString().split("T")[0];
+      const key = formatDateKeyInManila(event.startDate);
       map.set(key, [...(map.get(key) || []), event]);
     });
     return map;
   }, [announcements]);
 
   const selectedEvents = useMemo(() => {
-    const key = selectedDate.toISOString().split("T")[0];
+    const key = formatDateKeyInManila(selectedDate);
     return eventsByDate.get(key) || [];
   }, [selectedDate, eventsByDate]);
 
@@ -147,7 +148,11 @@ const DashboardCalendar: React.FC = () => {
                 </Button>
               </div>
               <p className="text-sm font-semibold">
-                {currentDate.toLocaleDateString("en-US", { month: "long", year: "numeric" })}
+                {currentDate.toLocaleDateString("en-US", {
+                  month: "long",
+                  year: "numeric",
+                  timeZone: MANILA_TIME_ZONE,
+                })}
               </p>
             </div>
 
@@ -161,7 +166,7 @@ const DashboardCalendar: React.FC = () => {
               </div>
               <div className="grid grid-cols-7">
                 {monthGrid.map(({ date, currentMonth }, idx) => {
-                  const key = date.toISOString().split("T")[0];
+                  const key = formatDateKeyInManila(date);
                   const dayEvents = eventsByDate.get(key) || [];
                   const isSelected = isSameDay(date, selectedDate);
                   const today = isSameDay(date, new Date());
@@ -213,6 +218,7 @@ const DashboardCalendar: React.FC = () => {
                   month: "long",
                   day: "numeric",
                   year: "numeric",
+                  timeZone: MANILA_TIME_ZONE,
                 })}
               </p>
               {selectedEvents.length === 0 ? (
@@ -262,6 +268,7 @@ const DashboardCalendar: React.FC = () => {
                   year: "numeric",
                   month: "long",
                   day: "numeric",
+                  timeZone: MANILA_TIME_ZONE,
                 })}
               </p>
               <p className="text-sm whitespace-pre-wrap">

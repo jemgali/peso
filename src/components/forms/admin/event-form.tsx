@@ -19,28 +19,18 @@ import { Checkbox } from "@/ui/checkbox"
 import { Button } from "@/ui/button"
 import { Spinner } from "@/ui/spinner"
 import { TextField, TextareaField, SelectField } from "@/components/shared"
+import {
+  formatDateInputInManila,
+  formatDateTimeInputInManila,
+  parseManilaDateInput,
+  parseManilaDateTimeInput,
+} from "@/lib/manila-datetime"
 
 interface EventFormProps {
   defaultValues?: Partial<CreateScheduleEventFormValues>
   onSubmit: (data: CreateScheduleEventFormValues) => Promise<void>
   isPending: boolean
   submitLabel?: string
-}
-
-function formatDateTimeLocal(date: Date): string {
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, "0")
-  const day = String(date.getDate()).padStart(2, "0")
-  const hours = String(date.getHours()).padStart(2, "0")
-  const minutes = String(date.getMinutes()).padStart(2, "0")
-  return `${year}-${month}-${day}T${hours}:${minutes}`
-}
-
-function formatDateLocal(date: Date): string {
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, "0")
-  const day = String(date.getDate()).padStart(2, "0")
-  return `${year}-${month}-${day}`
 }
 
 export function EventForm({
@@ -156,14 +146,19 @@ export function EventForm({
                 defaultValue={
                   startDate
                     ? allDay
-                      ? formatDateLocal(new Date(startDate))
-                      : formatDateTimeLocal(new Date(startDate))
+                      ? formatDateInputInManila(new Date(startDate))
+                      : formatDateTimeInputInManila(new Date(startDate))
                     : ""
                 }
                 onChange={(e) => {
                   const value = e.target.value
                   if (value) {
-                    setValue("startDate", new Date(value))
+                    const parsedDate = allDay
+                      ? parseManilaDateInput(value)
+                      : parseManilaDateTimeInput(value)
+                    if (parsedDate) {
+                      setValue("startDate", parsedDate)
+                    }
                   }
                 }}
                 disabled={isPending}
@@ -182,13 +177,21 @@ export function EventForm({
                 defaultValue={
                   defaultValues?.endDate
                     ? allDay
-                      ? formatDateLocal(new Date(defaultValues.endDate))
-                      : formatDateTimeLocal(new Date(defaultValues.endDate))
+                      ? formatDateInputInManila(new Date(defaultValues.endDate))
+                      : formatDateTimeInputInManila(new Date(defaultValues.endDate))
                     : ""
                 }
                 onChange={(e) => {
                   const value = e.target.value
-                  setValue("endDate", value ? new Date(value) : null)
+                  if (!value) {
+                    setValue("endDate", null)
+                    return
+                  }
+
+                  const parsedDate = allDay
+                    ? parseManilaDateInput(value)
+                    : parseManilaDateTimeInput(value)
+                  setValue("endDate", parsedDate)
                 }}
                 disabled={isPending}
                 aria-invalid={!!errors.endDate}

@@ -188,6 +188,14 @@ export default function ApplicationReviewPage({ params }: PageProps) {
             >
               {STATUS_LABELS[data.submission.status]}
             </Badge>
+            {data.submission.resubmittedAfterRevision && (
+              <Badge
+                variant="outline"
+                className="border-emerald-500 text-emerald-700 dark:text-emerald-300"
+              >
+                Resubmitted after revision
+              </Badge>
+            )}
             <span className="text-sm text-muted-foreground">
               {APPLICANT_TYPE_LABELS[data.submission.applicantType]}
             </span>

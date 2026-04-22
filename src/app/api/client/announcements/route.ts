@@ -33,7 +33,17 @@ export async function GET() {
               { interviewWorkflows: { none: {} } },
               { examWorkflows: { none: {} } },
               { orientationWorkflows: { none: {} } },
+              { recipients: { none: {} } },
             ],
+          },
+          {
+            type: "schedule",
+            visibility: "clients",
+            recipients: {
+              some: {
+                userId,
+              },
+            },
           },
           {
             type: "schedule",
