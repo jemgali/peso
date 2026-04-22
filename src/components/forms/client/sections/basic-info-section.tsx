@@ -23,6 +23,11 @@ import {
 } from "@/ui/combobox";
 import { TextField } from "@/components/shared";
 import { useAutoCapitalize } from "@/hooks/use-auto-capitalize";
+import {
+  formatPhilippineMobileInput,
+  PHILIPPINE_MOBILE_MAX_LENGTH,
+  PHILIPPINE_MOBILE_PLACEHOLDER,
+} from "@/lib/phone";
 import type { FormSectionWithFieldArrayProps } from "./types";
 
 import { Controller, useWatch } from "react-hook-form";
@@ -352,6 +357,10 @@ const BasicInfoSection: React.FC<FormSectionWithFieldArrayProps & { disableEmail
     }
   };
 
+  const handlePhoneInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    event.target.value = formatPhilippineMobileInput(event.target.value);
+  };
+
   // (Language functions extracted to LanguageGroup)
 
   return (
@@ -657,8 +666,10 @@ const BasicInfoSection: React.FC<FormSectionWithFieldArrayProps & { disableEmail
               error={errors.profileContact?.message}
               disabled={isPending}
               type="tel"
-              placeholder="+63 9XX-XXX-XXXX"
+              placeholder={PHILIPPINE_MOBILE_PLACEHOLDER}
               required
+              maxLength={PHILIPPINE_MOBILE_MAX_LENGTH}
+              onChange={handlePhoneInputChange}
             />
 
             <TextField

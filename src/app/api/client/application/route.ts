@@ -58,9 +58,28 @@ export async function POST(
     }
 
     const data = validationResult.data;
-    const applicantType = data.spesBabiesAvailmentYears && data.spesBabiesAvailmentYears > 0
-      ? "SPES_BABY"
-      : "NEW";
+    const normalizedSpesAvailments = (data.spesAvailments || [])
+      .map((availment, index) => ({
+        yearOfAvailment: Number(availment.yearOfAvailment),
+        assignedOffice: availment.assignedOffice.trim(),
+        availmentOrder: index,
+      }))
+      .filter(
+        (availment) =>
+          Number.isFinite(availment.yearOfAvailment) &&
+          availment.yearOfAvailment >= 1900 &&
+          availment.assignedOffice.length > 0
+      );
+
+    const applicantType =
+      data.applicationType === "spes-baby"
+        ? "SPES_BABY"
+        : data.applicationType === "new"
+        ? "NEW"
+        : normalizedSpesAvailments.length > 0 ||
+            (data.spesBabiesAvailmentYears && data.spesBabiesAvailmentYears > 0)
+          ? "SPES_BABY"
+          : "NEW";
 
     // Transform object arrays to string arrays for storage
     const languageDialects = data.profileLanguageDialect
@@ -347,6 +366,13 @@ export async function POST(
         });
       }
 
+      const spesBabiesAvailmentYears =
+        applicantType === "SPES_BABY"
+          ? normalizedSpesAvailments.length > 0
+            ? normalizedSpesAvailments.length
+            : data.spesBabiesAvailmentYears || null
+          : null;
+
       // Handle SPES info
       let spes = await tx.profileSPES.findUnique({
         where: { profileId: profile.profileId },
@@ -358,7 +384,7 @@ export async function POST(
           data: {
             isFourPsBeneficiary: data.isFourPsBeneficiary || false,
             applicationYear: data.applicationYear || null,
-            spesBabiesAvailmentYears: data.spesBabiesAvailmentYears || null,
+            spesBabiesAvailmentYears,
             motivation: data.motivation || null,
           },
         });
@@ -369,9 +395,25 @@ export async function POST(
             profileId: profile.profileId,
             isFourPsBeneficiary: data.isFourPsBeneficiary || false,
             applicationYear: data.applicationYear || null,
-            spesBabiesAvailmentYears: data.spesBabiesAvailmentYears || null,
+            spesBabiesAvailmentYears,
             motivation: data.motivation || null,
           },
+        });
+      }
+
+      await tx.profileSPESAvailment.deleteMany({
+        where: { profileId: profile.profileId },
+      });
+
+      if (applicantType === "SPES_BABY" && normalizedSpesAvailments.length > 0) {
+        await tx.profileSPESAvailment.createMany({
+          data: normalizedSpesAvailments.map((availment) => ({
+            availmentId: randomUUID(),
+            profileId: profile.profileId,
+            yearOfAvailment: availment.yearOfAvailment,
+            assignedOffice: availment.assignedOffice,
+            availmentOrder: availment.availmentOrder,
+          })),
         });
       }
 
@@ -384,12 +426,12 @@ export async function POST(
       if (submission) {
         // Check if resubmission is allowed (only if status is needs_revision)
         if (submission.status === "needs_revision") {
-          // Create new submission for resubmission
-          submission = await tx.applicationSubmission.create({
+          // Keep same submission record when applicant complies with revision.
+          submission = await tx.applicationSubmission.update({
+            where: { submissionId: submission.submissionId },
             data: {
-              submissionId: randomUUID(),
-              profileId: profile.profileId,
               status: "pending",
+              submittedAt: new Date(),
               applicantType,
             },
           });

@@ -79,6 +79,7 @@ model User {
   profile       ProfileUser?
   reviews       ApplicationReview[]
   notifications Notification[]
+  scheduleEventRecipients ScheduleEventRecipient[]
   examSettingsUpdates SpesExamSettings[] @relation("SpesExamSettingsUpdatedBy")
   createdSpesBatches SpesBatch[] @relation("SpesBatchCreatedBy")
   selectedSpesWorkflows SpesWorkflow[] @relation("SpesSelectedBy")
@@ -173,6 +174,7 @@ model ProfileUser {
   address           ProfileAddress?
   family            ProfileFamily?
   siblings          ProfileSibling[]
+  spesAvailments    ProfileSPESAvailment[]
   guardian          ProfileGuardian?
   benefactor        ProfileBenefactor?
   education         ProfileEducation?
@@ -368,6 +370,22 @@ model ProfileSPES {
   remarks             String?     @map("remarks")
 
   @@map("profile_spes")
+  @@schema("public")
+}
+
+model ProfileSPESAvailment {
+  // Foreign Key
+  profileId         String      @map("profile_id")
+  profile           ProfileUser @relation(fields: [profileId], references: [profileId], onDelete: Cascade)
+  // Primary Key
+  availmentId       String      @id @map("availment_id")
+  // Availment fields
+  yearOfAvailment   Int         @map("year_of_availment")
+  assignedOffice    String      @map("assigned_office")
+  availmentOrder    Int         @default(0) @map("availment_order")
+
+  @@index([profileId])
+  @@map("profile_spes_availment")
   @@schema("public")
 }
 
@@ -625,9 +643,25 @@ model ScheduleEvent {
   interviewWorkflows   SpesWorkflow[] @relation("SpesInterviewEvent")
   examWorkflows        SpesWorkflow[] @relation("SpesExamEvent")
   orientationWorkflows SpesWorkflow[] @relation("SpesOrientationEvent")
+  recipients           ScheduleEventRecipient[]
 
   @@index([startDate])
   @@index([type])
   @@map("schedule_event")
+  @@schema("public")
+}
+
+model ScheduleEventRecipient {
+  // Foreign Key
+  eventId     String        @map("event_id")
+  event       ScheduleEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  userId      String        @map("user_id")
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // Audit fields
+  createdAt   DateTime      @default(now()) @map("created_at")
+
+  @@id([eventId, userId])
+  @@index([userId])
+  @@map("schedule_event_recipient")
   @@schema("public")
 }

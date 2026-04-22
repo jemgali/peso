@@ -30,6 +30,9 @@ export const SPES_SELECTION_STATUSES = [
 ] as const
 export type SpesSelectionStatus = (typeof SPES_SELECTION_STATUSES)[number]
 
+export const SPES_APPLICANT_CATEGORIES = ["new", "spes_baby"] as const
+export type SpesApplicantCategory = (typeof SPES_APPLICANT_CATEGORIES)[number]
+
 export const MUTABLE_SELECTION_STATUSES = [
   "pending",
   "waitlisted",
@@ -116,9 +119,41 @@ export const listWorkflowsQuerySchema = z.object({
 })
 export type ListWorkflowsQueryInput = z.infer<typeof listWorkflowsQuerySchema>
 
+export const notifyScheduleSchema = z
+  .object({
+    title: z
+      .string()
+      .trim()
+      .min(1, "Schedule title is required")
+      .max(160, "Schedule title is too long"),
+    description: z
+      .string()
+      .trim()
+      .max(2000, "Schedule description is too long")
+      .optional(),
+    startDate: z.coerce.date({
+      error: "Invalid schedule start date",
+    }),
+    endDate: z.coerce
+      .date({
+        error: "Invalid schedule end date",
+      })
+      .nullable()
+      .optional(),
+    allDay: z.boolean().optional().default(false),
+  })
+  .refine(
+    (value) => !value.endDate || value.endDate.getTime() >= value.startDate.getTime(),
+    {
+      message: "Schedule end date must be after or equal to start date",
+      path: ["endDate"],
+    }
+  )
+
 export const bulkNotifyWorkflowsSchema = z.object({
   workflowIds: z.array(z.string().min(1, "Workflow ID is required")).min(1, "Select at least one applicant"),
   note: z.string().trim().max(500, "Note is too long").optional(),
+  schedule: notifyScheduleSchema.optional(),
 })
 export type BulkNotifyWorkflowsInput = z.infer<typeof bulkNotifyWorkflowsSchema>
 
@@ -198,6 +233,7 @@ export interface SpesWorkflowListItem {
   workflowId: string
   submissionId: string
   applicantName: string
+  applicantCategory: SpesApplicantCategory
   stage: SpesWorkflowStage
   priority: ApplicantPriority | null
   examScore: number | null
@@ -280,6 +316,14 @@ export interface BulkNotifyWorkflowsResponse {
     emailSent: number
     emailFailed: number
     missingWorkflowIds: string[]
+    scheduledEvent?: {
+      id: string
+      title: string
+      startDate: string
+      endDate: string | null
+      allDay: boolean
+      recipientCount: number
+    } | null
   }
   error?: string
 }

@@ -32,10 +32,18 @@ interface ApplicationFormProps {
   userEmail?: string;
   defaultValues?: Record<string, unknown>;
   revisionFeedback?: Record<string, any>;
+  initialApplicationType?: ApplicationType;
 }
 
-const ApplicationForm: React.FC<ApplicationFormProps> = ({ userEmail, defaultValues, revisionFeedback }) => {
-  const [applicationType, setApplicationType] = useState<ApplicationType | null>(null);
+const ApplicationForm: React.FC<ApplicationFormProps> = ({
+  userEmail,
+  defaultValues,
+  revisionFeedback,
+  initialApplicationType,
+}) => {
+  const [applicationType, setApplicationType] = useState<ApplicationType | null>(
+    initialApplicationType || null
+  );
   const [currentStep, setCurrentStep] = useState(0);
   const [stepStatuses, setStepStatuses] =
     useState<Record<string, StepStatus>>(initialStepStatuses);

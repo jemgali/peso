@@ -15,14 +15,37 @@ const GRADE_YEAR_OPTIONS = [
   { group: "Graduate Studies", options: ["Masters", "Doctorate"] },
 ];
 
+const SENIOR_HIGH_GRADES = new Set(["Grade 11", "Grade 12"]);
+const SENIOR_HIGH_STRANDS = [
+  "STEM",
+  "ABM",
+  "HUMSS",
+  "GAS",
+  "Arts and Design",
+  "Sports",
+  "TVL - Information and Communications Technology (ICT)",
+  "TVL - Home Economics",
+  "TVL - Industrial Arts",
+  "TVL - Agri-Fishery Arts",
+  "TVL - Caregiving",
+  "TVL - Cookery",
+  "TVL - Electrical Installation and Maintenance",
+  "TVL - Automotive Servicing",
+  "TVL - Shielded Metal Arc Welding (SMAW)",
+  "TVL - Dressmaking",
+];
+
 const EducationSection: React.FC<FormSectionProps> = ({
   register,
   errors,
   isPending,
   setValue,
+  watch,
 }) => {
   // Auto-capitalize hook for name fields
   const { handleBlur: autoCapitalizeBlur } = useAutoCapitalize(setValue);
+  const selectedGradeYear = watch?.("gradeYear") || "";
+  const useStrandDropdown = SENIOR_HIGH_GRADES.has(selectedGradeYear);
   
   return (
     <div id="education" className="scroll-mt-24">
@@ -72,16 +95,41 @@ const EducationSection: React.FC<FormSectionProps> = ({
               onBlur={autoCapitalizeBlur("schoolName")}
             />
 
-            <TextField
-              name="trackCourse"
-              label="Track/Strand/Course"
-              register={register}
-              error={errors.trackCourse?.message}
-              disabled={isPending}
-              placeholder="e.g., STEM, ABM, BS Computer Science"
-              required
-              onBlur={autoCapitalizeBlur("trackCourse")}
-            />
+            {useStrandDropdown ? (
+              <Field data-invalid={!!errors.trackCourse}>
+                <FieldLabel htmlFor="trackCourse" required>
+                  Track / Strand
+                </FieldLabel>
+                <select
+                  {...register("trackCourse")}
+                  id="trackCourse"
+                  disabled={isPending}
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  aria-invalid={!!errors.trackCourse}
+                >
+                  <option value="">Select strand...</option>
+                  {SENIOR_HIGH_STRANDS.map((strand) => (
+                    <option key={strand} value={strand}>
+                      {strand}
+                    </option>
+                  ))}
+                </select>
+                {errors.trackCourse && (
+                  <FieldError>{errors.trackCourse.message}</FieldError>
+                )}
+              </Field>
+            ) : (
+              <TextField
+                name="trackCourse"
+                label="Track / Course"
+                register={register}
+                error={errors.trackCourse?.message}
+                disabled={isPending}
+                placeholder="e.g., BS Computer Science, Automotive NC II"
+                required
+                onBlur={autoCapitalizeBlur("trackCourse")}
+              />
+            )}
 
             <TextField
               name="schoolYear"

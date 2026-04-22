@@ -231,6 +231,7 @@ export async function POST(
       orientationScheduleEventId: true,
       submission: {
         select: {
+          applicantType: true,
           profile: {
             select: {
               userId: true,
@@ -251,6 +252,19 @@ export async function POST(
   }
 
   const { stageType, startDate, endDate, allDay } = parsed.data
+  if (
+    workflow.submission.applicantType === "SPES_BABY" &&
+    (stageType === "interview" || stageType === "exam")
+  ) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: "Interview and exam scheduling are not applicable to SPES Baby applicants",
+      },
+      { status: 400 }
+    )
+  }
+
   const stageConfig = STAGE_CONFIG[stageType]
   const fullName = [
     workflow.submission.profile.profileFirstName?.trim() || "",

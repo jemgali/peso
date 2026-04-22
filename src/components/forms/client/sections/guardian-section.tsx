@@ -4,6 +4,11 @@ import React from "react";
 import { FieldSet, FieldGroup, Field, FieldLabel, FieldError } from "@/ui/field";
 import { TextField, TextareaField } from "@/components/shared";
 import { useAutoCapitalize } from "@/hooks/use-auto-capitalize";
+import {
+  formatPhilippineMobileInput,
+  PHILIPPINE_MOBILE_MAX_LENGTH,
+  PHILIPPINE_MOBILE_PLACEHOLDER,
+} from "@/lib/phone";
 import type { FormSectionProps } from "./types";
 
 const GUARDIAN_RELATIONSHIP_OPTIONS = [
@@ -25,6 +30,10 @@ const GuardianSection: React.FC<FormSectionProps> = ({
 }) => {
   // Auto-capitalize hook for name fields
   const { handleBlur: autoCapitalizeBlur } = useAutoCapitalize(setValue);
+
+  const handlePhoneInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    event.target.value = formatPhilippineMobileInput(event.target.value);
+  };
   
   return (
     <div id="guardian" className="scroll-mt-24">
@@ -97,7 +106,9 @@ const GuardianSection: React.FC<FormSectionProps> = ({
                 error={errors.guardianContact?.message}
                 disabled={isPending}
                 type="tel"
-                placeholder="+63 9XX-XXX-XXXX"
+                placeholder={PHILIPPINE_MOBILE_PLACEHOLDER}
+                maxLength={PHILIPPINE_MOBILE_MAX_LENGTH}
+                onChange={handlePhoneInputChange}
               />
           </div>
 

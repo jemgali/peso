@@ -37,6 +37,7 @@ export interface FormSectionWithFieldArrayProps extends FormSectionWithControlPr
   siblingsFieldArray?: UseFieldArrayReturn<SPESApplicationFormValues, "siblings">;
   skillsFieldArray?: UseFieldArrayReturn<SPESApplicationFormValues, "skills">;
   languageFieldArray?: UseFieldArrayReturn<SPESApplicationFormValues, "profileLanguageDialect">;
+  spesAvailmentsFieldArray?: UseFieldArrayReturn<SPESApplicationFormValues, "spesAvailments">;
 }
 
 // Props for the review section which needs form values

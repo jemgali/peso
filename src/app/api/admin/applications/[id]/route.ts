@@ -103,6 +103,15 @@ export async function GET(
         comment: f.comment ?? undefined,
       }));
 
+    const latestNeedsRevisionReview =
+      submission.reviews.find((review) => review.decision === "needs_revision") || null;
+    const hadNeedsRevision = Boolean(latestNeedsRevisionReview);
+    const resubmittedAfterRevision = Boolean(
+      latestNeedsRevisionReview &&
+        submission.submittedAt.getTime() > latestNeedsRevisionReview.reviewedAt.getTime() &&
+        (submission.status === "pending" || submission.status === "in_review")
+    );
+
     return NextResponse.json({
       success: true,
       data: {
@@ -114,6 +123,11 @@ export async function GET(
             submission.applicantType === "SPES_BABY"
               ? ("spes_baby" as ApplicantType)
               : ("new" as ApplicantType),
+          hadNeedsRevision,
+          resubmittedAfterRevision,
+          latestNeedsRevisionReviewedAt: latestNeedsRevisionReview
+            ? latestNeedsRevisionReview.reviewedAt.toISOString()
+            : null,
           submittedAt: submission.submittedAt.toISOString(),
           updatedAt: submission.updatedAt.toISOString(),
         },

@@ -29,12 +29,18 @@ import type {
   BulkUpdateWorkflowStatusResponse,
   ExamSettingsResponse,
   MutableSpesSelectionStatus,
+  SpesApplicantCategory,
   SpesSelectionStatus,
   SpesWorkflowListItem,
   SpesWorkflowListResponse,
   SpesWorkflowStage,
   UpdateWorkflowResponse,
 } from "@/lib/validations/spes-workflow"
+import {
+  formatDateTimeInputInManila,
+  parseManilaDateInput,
+  parseManilaDateTimeInput,
+} from "@/lib/manila-datetime"
 
 type WorkflowDraft = {
   priority: ApplicantPriority | ""
@@ -64,6 +70,11 @@ const BULK_MUTABLE_STATUS_OPTIONS: Array<{
   { value: "waitlisted", label: "Waitlisted" },
   { value: "grantee", label: "Grantee" },
 ]
+
+const APPLICANT_CATEGORY_LABELS: Record<SpesApplicantCategory, string> = {
+  new: "New",
+  spes_baby: "SPES Baby",
+}
 
 function toSelectionStatusLabel(status: SpesSelectionStatus): string {
   if (status === "waitlisted") return "Waitlisted"
@@ -125,6 +136,14 @@ export default function Evaluation() {
   const [drafts, setDrafts] = useState<Record<string, WorkflowDraft>>({})
   const [selectedWorkflowIds, setSelectedWorkflowIds] = useState<Set<string>>(new Set())
   const [notificationNote, setNotificationNote] = useState("")
+  const [attachSchedule, setAttachSchedule] = useState(false)
+  const [scheduleTitle, setScheduleTitle] = useState("")
+  const [scheduleDescription, setScheduleDescription] = useState("")
+  const [scheduleAllDay, setScheduleAllDay] = useState(false)
+  const [scheduleStartDate, setScheduleStartDate] = useState(
+    formatDateTimeInputInManila(new Date())
+  )
+  const [scheduleEndDate, setScheduleEndDate] = useState("")
   const [search, setSearch] = useState("")
   const [bulkStatus, setBulkStatus] = useState<MutableSpesSelectionStatus>("pending")
   const [bulkNote, setBulkNote] = useState("")
@@ -180,10 +199,6 @@ export default function Evaluation() {
 
       const workflowsData = payload.data.workflows
       setWorkflows(workflowsData)
-      setSelectedWorkflowIds((current) => {
-        const validIds = new Set(workflowsData.map((workflow) => workflow.workflowId))
-        return new Set(Array.from(current).filter((id) => validIds.has(id)))
-      })
       setDrafts(
         workflowsData.reduce<Record<string, WorkflowDraft>>((acc, workflow) => {
           acc[workflow.workflowId] = toDraft(workflow)
@@ -297,9 +312,17 @@ export default function Evaluation() {
   }
 
   const toggleAllWorkflowSelections = (checked: boolean) => {
-    setSelectedWorkflowIds(
-      checked ? new Set(workflows.map((workflow) => workflow.workflowId)) : new Set()
-    )
+    setSelectedWorkflowIds((current) => {
+      const next = new Set(current)
+      for (const workflow of workflows) {
+        if (checked) {
+          next.add(workflow.workflowId)
+        } else {
+          next.delete(workflow.workflowId)
+        }
+      }
+      return next
+    })
   }
 
   const notifySelectedApplicants = async () => {
@@ -307,6 +330,66 @@ export default function Evaluation() {
     if (targetWorkflowIds.length === 0) {
       toast.error("Select at least one applicant from the table")
       return
+    }
+
+    let schedulePayload:
+      | {
+          title: string
+          description?: string
+          startDate: string
+          endDate?: string | null
+          allDay: boolean
+        }
+      | undefined
+    if (attachSchedule) {
+      const trimmedScheduleTitle = scheduleTitle.trim()
+      if (!trimmedScheduleTitle) {
+        toast.error("Schedule title is required when calendar scheduling is enabled")
+        return
+      }
+
+      if (!scheduleStartDate) {
+        toast.error("Schedule start date is required")
+        return
+      }
+
+      const startDateInputValue = scheduleAllDay
+        ? scheduleStartDate.split("T")[0] || scheduleStartDate
+        : scheduleStartDate
+      const parsedStartDate = scheduleAllDay
+        ? parseManilaDateInput(startDateInputValue)
+        : parseManilaDateTimeInput(scheduleStartDate)
+      if (!parsedStartDate) {
+        toast.error("Schedule start date is invalid")
+        return
+      }
+
+      let parsedEndDate: Date | null = null
+      if (scheduleEndDate) {
+        const endDateInputValue = scheduleAllDay
+          ? scheduleEndDate.split("T")[0] || scheduleEndDate
+          : scheduleEndDate
+        parsedEndDate = scheduleAllDay
+          ? parseManilaDateInput(endDateInputValue)
+          : parseManilaDateTimeInput(scheduleEndDate)
+        if (!parsedEndDate) {
+          toast.error("Schedule end date is invalid")
+          return
+        }
+
+        if (parsedEndDate.getTime() < parsedStartDate.getTime()) {
+          toast.error("Schedule end date must be after or equal to start date")
+          return
+        }
+      }
+
+      schedulePayload = {
+        title: trimmedScheduleTitle,
+        description: scheduleDescription.trim() || undefined,
+        startDate: parsedStartDate.toISOString(),
+        endDate: parsedEndDate ? parsedEndDate.toISOString() : null,
+        allDay: scheduleAllDay,
+      }
     }
 
     setNotifyingApplicants(true)
@@ -317,6 +400,7 @@ export default function Evaluation() {
         body: JSON.stringify({
           workflowIds: targetWorkflowIds,
           note: notificationNote.trim() || undefined,
+          schedule: schedulePayload,
         }),
       })
       const payload = (await response.json()) as BulkNotifyWorkflowsResponse
@@ -331,6 +415,13 @@ export default function Evaluation() {
           result.emailSent === 1 ? "" : "s"
         } sent).`
       )
+      if (result.scheduledEvent) {
+        toast.success(
+          `Scheduled "${result.scheduledEvent.title}" for ${result.scheduledEvent.recipientCount} selected applicant${
+            result.scheduledEvent.recipientCount === 1 ? "" : "s"
+          }.`
+        )
+      }
       if (result.missingWorkflowIds.length > 0) {
         toast.info(
           `${result.missingWorkflowIds.length} selected record${
@@ -341,6 +432,12 @@ export default function Evaluation() {
 
       setSelectedWorkflowIds(new Set())
       setNotificationNote("")
+      setAttachSchedule(false)
+      setScheduleTitle("")
+      setScheduleDescription("")
+      setScheduleAllDay(false)
+      setScheduleStartDate(formatDateTimeInputInManila(new Date()))
+      setScheduleEndDate("")
       await loadWorkflows()
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to notify selected applicants")
@@ -465,6 +562,7 @@ export default function Evaluation() {
                       />
                     </TableHead>
                     <TableHead>Applicant</TableHead>
+                    <TableHead>Category</TableHead>
                     <TableHead>Stage</TableHead>
                     <TableHead>Priority</TableHead>
                     <TableHead>Score</TableHead>
@@ -478,6 +576,7 @@ export default function Evaluation() {
                   {workflows.map((workflow) => {
                     const draft = drafts[workflow.workflowId]
                     if (!draft) return null
+                    const isSpesBaby = workflow.applicantCategory === "spes_baby"
 
                     return (
                       <TableRow key={workflow.workflowId}>
@@ -493,56 +592,75 @@ export default function Evaluation() {
                           <div className="font-medium">{workflow.applicantName}</div>
                         </TableCell>
                         <TableCell>
+                          <Badge variant={isSpesBaby ? "secondary" : "outline"}>
+                            {APPLICANT_CATEGORY_LABELS[workflow.applicantCategory]}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
                           <Badge variant={getStageBadgeVariant(workflow.stage)}>
                             {WORKFLOW_STAGE_LABELS[workflow.stage]}
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          <NativeSelect
-                            value={draft.priority}
-                            className={getPrioritySelectClass(draft.priority)}
-                            onChange={(event) =>
-                              updateDraft(workflow.workflowId, (current) => ({
-                                ...current,
-                                priority: event.target.value as ApplicantPriority | "",
-                              }))
-                            }
-                          >
-                            <NativeSelectOption value="">Not set</NativeSelectOption>
-                            <NativeSelectOption value="high">High</NativeSelectOption>
-                            <NativeSelectOption value="moderate">Moderate</NativeSelectOption>
-                            <NativeSelectOption value="low">Low</NativeSelectOption>
-                          </NativeSelect>
+                          {isSpesBaby ? (
+                            <Badge variant="outline">N/A</Badge>
+                          ) : (
+                            <NativeSelect
+                              value={draft.priority}
+                              className={getPrioritySelectClass(draft.priority)}
+                              onChange={(event) =>
+                                updateDraft(workflow.workflowId, (current) => ({
+                                  ...current,
+                                  priority: event.target.value as ApplicantPriority | "",
+                                }))
+                              }
+                            >
+                              <NativeSelectOption value="">Not set</NativeSelectOption>
+                              <NativeSelectOption value="high">High</NativeSelectOption>
+                              <NativeSelectOption value="moderate">Moderate</NativeSelectOption>
+                              <NativeSelectOption value="low">Low</NativeSelectOption>
+                            </NativeSelect>
+                          )}
                         </TableCell>
                         <TableCell>
-                          <Input
-                            type="number"
-                            min={0}
-                            className="h-9 w-24"
-                            value={draft.examScore}
-                            onChange={(event) =>
-                              updateDraft(workflow.workflowId, (current) => ({
-                                ...current,
-                                examScore: event.target.value,
-                              }))
-                            }
-                          />
+                          {isSpesBaby ? (
+                            <Badge variant="outline">N/A</Badge>
+                          ) : (
+                            <Input
+                              type="number"
+                              min={0}
+                              className="h-9 w-24"
+                              value={draft.examScore}
+                              onChange={(event) =>
+                                updateDraft(workflow.workflowId, (current) => ({
+                                  ...current,
+                                  examScore: event.target.value,
+                                }))
+                              }
+                            />
+                          )}
                         </TableCell>
                         <TableCell>
-                          <Badge
-                            variant={
-                              workflow.examResult === "passed"
-                                ? "secondary"
-                                : workflow.examResult === "failed"
-                                  ? "destructive"
-                                  : "outline"
-                            }
-                          >
-                            {workflow.examResult.toUpperCase()}
-                          </Badge>
+                          {isSpesBaby ? (
+                            <Badge variant="outline">N/A</Badge>
+                          ) : (
+                            <Badge
+                              variant={
+                                workflow.examResult === "passed"
+                                  ? "secondary"
+                                  : workflow.examResult === "failed"
+                                    ? "destructive"
+                                    : "outline"
+                              }
+                            >
+                              {workflow.examResult.toUpperCase()}
+                            </Badge>
+                          )}
                         </TableCell>
                         <TableCell>
-                          <span className="font-medium">{workflow.rankPosition ?? "—"}</span>
+                          <span className="font-medium">
+                            {isSpesBaby ? "N/A" : workflow.rankPosition ?? "—"}
+                          </span>
                         </TableCell>
                         <TableCell>
                           <Badge variant={getSelectionStatusBadgeVariant(workflow.selectionStatus)}>
@@ -550,17 +668,23 @@ export default function Evaluation() {
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          <Button
-                            type="button"
-                            size="sm"
-                            onClick={() => void saveWorkflow(workflow.workflowId)}
-                            disabled={savingWorkflowId === workflow.workflowId}
-                          >
-                            {savingWorkflowId === workflow.workflowId && (
-                              <Spinner data-icon="inline-start" />
-                            )}
-                            Save Row
-                          </Button>
+                          {isSpesBaby ? (
+                            <span className="text-xs text-muted-foreground">
+                              Basic fields only
+                            </span>
+                          ) : (
+                            <Button
+                              type="button"
+                              size="sm"
+                              onClick={() => void saveWorkflow(workflow.workflowId)}
+                              disabled={savingWorkflowId === workflow.workflowId}
+                            >
+                              {savingWorkflowId === workflow.workflowId && (
+                                <Spinner data-icon="inline-start" />
+                              )}
+                              Save Row
+                            </Button>
+                          )}
                         </TableCell>
                       </TableRow>
                     )
@@ -600,6 +724,84 @@ export default function Evaluation() {
                     onChange={(event) => setNotificationNote(event.target.value)}
                     placeholder="Optional note added to the notification message"
                   />
+                </div>
+
+                <div className="rounded-lg border p-4 space-y-4">
+                  <div className="flex items-start gap-3">
+                    <Checkbox
+                      id="attachSchedule"
+                      checked={attachSchedule}
+                      onCheckedChange={(checked) => setAttachSchedule(checked === true)}
+                    />
+                    <div className="space-y-1">
+                      <Label htmlFor="attachSchedule" className="cursor-pointer">
+                        Add calendar event for selected applicants
+                      </Label>
+                      <p className="text-xs text-muted-foreground">
+                        Calendar-only schedule. This does not change applicant workflow stage.
+                      </p>
+                    </div>
+                  </div>
+
+                  {attachSchedule && (
+                    <div className="space-y-3 rounded-lg bg-muted/30 p-3">
+                      <div className="flex flex-col gap-2">
+                        <Label htmlFor="notifyScheduleTitle">Schedule Title</Label>
+                        <Input
+                          id="notifyScheduleTitle"
+                          value={scheduleTitle}
+                          onChange={(event) => setScheduleTitle(event.target.value)}
+                          placeholder="e.g. SPES Requirements Follow-up"
+                        />
+                      </div>
+
+                      <div className="flex flex-col gap-2">
+                        <Label htmlFor="notifyScheduleDescription">Schedule Description (optional)</Label>
+                        <Textarea
+                          id="notifyScheduleDescription"
+                          value={scheduleDescription}
+                          onChange={(event) => setScheduleDescription(event.target.value)}
+                          placeholder="Optional details about this scheduled event"
+                        />
+                      </div>
+
+                      <div className="flex items-center gap-3">
+                        <Checkbox
+                          id="notifyScheduleAllDay"
+                          checked={scheduleAllDay}
+                          onCheckedChange={(checked) => setScheduleAllDay(checked === true)}
+                        />
+                        <Label htmlFor="notifyScheduleAllDay" className="cursor-pointer">
+                          All-day event
+                        </Label>
+                      </div>
+
+                      <div className="grid gap-3 md:grid-cols-2">
+                        <div className="flex flex-col gap-2">
+                          <Label htmlFor="notifyScheduleStart">
+                            {scheduleAllDay ? "Start Date" : "Start Date & Time"}
+                          </Label>
+                          <Input
+                            id="notifyScheduleStart"
+                            type={scheduleAllDay ? "date" : "datetime-local"}
+                            value={scheduleAllDay ? scheduleStartDate.split("T")[0] || "" : scheduleStartDate}
+                            onChange={(event) => setScheduleStartDate(event.target.value)}
+                          />
+                        </div>
+                        <div className="flex flex-col gap-2">
+                          <Label htmlFor="notifyScheduleEnd">
+                            {scheduleAllDay ? "End Date (optional)" : "End Date & Time (optional)"}
+                          </Label>
+                          <Input
+                            id="notifyScheduleEnd"
+                            type={scheduleAllDay ? "date" : "datetime-local"}
+                            value={scheduleAllDay ? scheduleEndDate.split("T")[0] || "" : scheduleEndDate}
+                            onChange={(event) => setScheduleEndDate(event.target.value)}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div className="rounded-lg bg-muted/40 p-3 text-sm text-muted-foreground">

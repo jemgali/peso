@@ -90,6 +90,7 @@ const SECTION_FIELDS: Record<string, (keyof SPESApplicationFormValues)[]> = {
     "motherOccupation",
     "motherContact",
     "numberOfSiblings",
+    "siblings",
   ],
   guardian: [
     "guardianName",
@@ -103,8 +104,11 @@ const SECTION_FIELDS: Record<string, (keyof SPESApplicationFormValues)[]> = {
   education: ["gradeYear", "schoolName", "trackCourse", "schoolYear"],
   skills: ["skills"],
   "spes-info": [
+    "applicationType",
     "isFourPsBeneficiary",
     "applicationYear",
+    "spesBabiesAvailmentYears",
+    "spesAvailments",
     "motivation",
   ],
   documents: ["documents"],
@@ -133,12 +137,12 @@ const TOUCHED_FIELDS: Record<string, string[]> = {
     "profileMunicipality",
     "profileProvince",
   ],
-  family: ["fatherName", "motherMaidenName"],
+  family: ["fatherName", "motherMaidenName", "siblings"],
   guardian: [],
   benefactor: ["benefactorName"],
   education: ["gradeYear", "schoolName", "trackCourse", "schoolYear"],
   skills: ["skills"],
-  "spes-info": ["applicationYear", "motivation"],
+  "spes-info": ["applicationYear", "spesAvailments", "motivation"],
   documents: ["documents"],
   review: [],
 };
@@ -281,8 +285,11 @@ const SPESApplicationForm: React.FC<SPESApplicationFormProps> = ({
       // Skills
       skills: [],
       // SPES Info
+      applicationType: applicationType || "new",
       isFourPsBeneficiary: false,
       applicationYear: undefined,
+      spesBabiesAvailmentYears: undefined,
+      spesAvailments: [],
       motivation: "",
       // Documents (placeholder)
       documents: {},
@@ -314,6 +321,27 @@ const SPESApplicationForm: React.FC<SPESApplicationFormProps> = ({
     control,
     name: "profileLanguageDialect",
   });
+
+  const spesAvailmentsFieldArray = useFieldArray({
+    control,
+    name: "spesAvailments",
+  });
+
+  const watchedSpesAvailments = watch("spesAvailments");
+
+  useEffect(() => {
+    setValue("applicationType", applicationType || "new");
+  }, [applicationType, setValue]);
+
+  useEffect(() => {
+    if (applicationType === "spes-baby") {
+      const count = watchedSpesAvailments?.length || 0;
+      setValue("spesBabiesAvailmentYears", count > 0 ? count : undefined);
+      return;
+    }
+
+    setValue("spesBabiesAvailmentYears", undefined);
+  }, [applicationType, watchedSpesAvailments?.length, setValue]);
 
   // Update validation statuses based on form state
   const getStepStatuses = useCallback((): Record<string, StepStatus> => {
@@ -461,12 +489,17 @@ const SPESApplicationForm: React.FC<SPESApplicationFormProps> = ({
   const onSubmit = async (data: SPESApplicationFormValues) => {
     setIsPending(true);
     try {
+      const payload = {
+        ...data,
+        applicationType: applicationType || data.applicationType || "new",
+      };
+
       const response = await fetch("/api/client/application", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(data),
+        body: JSON.stringify(payload),
       });
 
       if (!response.ok) {
@@ -514,6 +547,7 @@ const SPESApplicationForm: React.FC<SPESApplicationFormProps> = ({
     siblingsFieldArray,
     skillsFieldArray,
     languageFieldArray,
+    spesAvailmentsFieldArray,
   };
 
   // Render only the current section (10 steps total)
@@ -534,7 +568,7 @@ const SPESApplicationForm: React.FC<SPESApplicationFormProps> = ({
       case 6:
         return <SkillsSection {...sectionWithFieldArrayProps} />;
       case 7:
-        return <SPESInfoSection {...sectionWithControlProps} />;
+        return <SPESInfoSection {...sectionWithFieldArrayProps} />;
       case 8:
         return <DocumentsSection {...sectionProps} />;
       case 9: {

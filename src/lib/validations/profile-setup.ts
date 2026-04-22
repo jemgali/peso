@@ -1,4 +1,8 @@
 import { z } from "zod";
+import {
+  formatPhilippineMobileInput,
+  PHILIPPINE_MOBILE_REGEX,
+} from "@/lib/phone";
 
 // Language item schema (reused from spes-application)
 export const languageItemSchema = z.object({
@@ -22,7 +26,18 @@ export const profileSetupSchema = z.object({
   profileReligion: z.string().min(1, "Religion is required"),
   profileLanguageDialect: z.array(languageItemSchema).min(1, "At least one language is required"),
   profileEmail: z.string().email("Valid email is required"),
-  profileContact: z.string().min(1, "Contact number is required"),
+  profileContact: z.preprocess(
+    (value) =>
+      typeof value === "string" ? formatPhilippineMobileInput(value) : value,
+    z
+      .string()
+      .trim()
+      .min(1, "Contact number is required")
+      .regex(
+        PHILIPPINE_MOBILE_REGEX,
+        "Contact number must follow 09xx xxx xxxx",
+      ),
+  ),
   profileFacebook: z.string().url("Please enter a valid Facebook URL").optional().or(z.literal("")),
   profileDisability: z.string().optional(),
   profilePwdId: z.string().optional(),

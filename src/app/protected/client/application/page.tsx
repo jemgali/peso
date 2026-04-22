@@ -32,6 +32,7 @@ const Page = async () => {
         submittedAt: Date;
         updatedAt: Date;
         isGrantee: boolean;
+        applicantType: "new" | "spes-baby";
       }
     | undefined;
 
@@ -48,6 +49,9 @@ const Page = async () => {
           guardian: true,
           education: true,
           spes: true,
+          spesAvailments: {
+            orderBy: { availmentOrder: "asc" },
+          },
         documents: true,
       },
     });
@@ -61,6 +65,7 @@ const Page = async () => {
       const education = profile.education;
       const spes = profile.spes;
       const siblings = profile.siblings;
+      const spesAvailments = profile.spesAvailments;
       const documentsProfile = profile.documents;
       
       // Transform language dialect from string[] back to { value: string }[] // Assuming simple format here for Combobox or Multi-select
@@ -137,6 +142,10 @@ const Page = async () => {
           isFourPsBeneficiary: spes.isFourPsBeneficiary ?? false,
           applicationYear: spes.applicationYear ?? new Date().getFullYear(),
           spesBabiesAvailmentYears: spes.spesBabiesAvailmentYears ?? undefined,
+          spesAvailments: spesAvailments.map((availment) => ({
+            yearOfAvailment: availment.yearOfAvailment,
+            assignedOffice: availment.assignedOffice,
+          })),
           motivation: spes.motivation || "",
         }),
         // From ProfileDocuments
@@ -169,6 +178,7 @@ const Page = async () => {
             submittedAt: latest.submittedAt,
             updatedAt: latest.updatedAt,
             isGrantee: latest.spesWorkflow?.selectionStatus === "GRANTEE",
+            applicantType: latest.applicantType === "SPES_BABY" ? "spes-baby" : "new",
           }
         : undefined;
 
@@ -232,6 +242,11 @@ const Page = async () => {
         userEmail={userEmail} 
         defaultValues={defaultValues} 
         revisionFeedback={revisionFeedback} 
+        initialApplicationType={
+          latestSubmission?.status === "needs_revision"
+            ? latestSubmission.applicantType
+            : undefined
+        }
       />
     </div>
   );

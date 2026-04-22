@@ -1,4 +1,5 @@
 import type {
+  ApplicationApplicantType as PrismaApplicantType,
   Prisma,
   SpesExamResult as PrismaExamResult,
   SpesPriorityLevel as PrismaPriorityLevel,
@@ -8,6 +9,7 @@ import type {
 import type {
   ApplicantPriority,
   ExamResult,
+  SpesApplicantCategory,
   SpesSelectionStatus,
   SpesWorkflowListItem,
   SpesWorkflowStage,
@@ -36,6 +38,10 @@ export function toApiExamResult(result: PrismaExamResult): ExamResult {
 
 export function toApiSelectionStatus(status: PrismaSelectionStatus): SpesSelectionStatus {
   return status.toLowerCase() as SpesSelectionStatus
+}
+
+export function toApiApplicantCategory(applicantType: PrismaApplicantType): SpesApplicantCategory {
+  return applicantType === "SPES_BABY" ? "spes_baby" : "new"
 }
 
 export function toDbSelectionStatus(status: SpesSelectionStatus): PrismaSelectionStatus {
@@ -108,6 +114,7 @@ export function toWorkflowListItem(
     workflowId: workflow.workflowId,
     submissionId: workflow.submissionId,
     applicantName: fullName || "Unnamed applicant",
+    applicantCategory: toApiApplicantCategory(workflow.submission.applicantType),
     stage: toApiStage(workflow.stage),
     priority: toApiPriority(workflow.priority),
     examScore: workflow.examScore,

@@ -73,6 +73,9 @@ export interface ApplicationListItem {
   status: ApplicationStatus;
   applicantType: ApplicantType;
   hasReview: boolean;
+  hadNeedsRevision: boolean;
+  resubmittedAfterRevision: boolean;
+  latestNeedsRevisionReviewedAt: string | null;
   submittedAt: string;
   updatedAt: string;
   applicant: {
@@ -116,6 +119,9 @@ export interface ApplicationDetailResponse {
       profileId: string;
       status: ApplicationStatus;
       applicantType: ApplicantType;
+      hadNeedsRevision: boolean;
+      resubmittedAfterRevision: boolean;
+      latestNeedsRevisionReviewedAt: string | null;
       submittedAt: string;
       updatedAt: string;
     };

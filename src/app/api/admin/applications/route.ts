@@ -98,6 +98,18 @@ export async function GET(
               },
             },
           },
+          reviews: {
+            where: {
+              decision: "needs_revision",
+            },
+            select: {
+              reviewedAt: true,
+            },
+            orderBy: {
+              reviewedAt: "desc",
+            },
+            take: 1,
+          },
           _count: {
             select: {
               reviews: true,
@@ -127,6 +139,23 @@ export async function GET(
       success: true,
       data: {
         applications: applications.map((app) => ({
+          ...(function computeRevisionState() {
+            const latestNeedsRevisionReview = app.reviews[0]?.reviewedAt ?? null;
+            const hadNeedsRevision = Boolean(latestNeedsRevisionReview);
+            const resubmittedAfterRevision = Boolean(
+              latestNeedsRevisionReview &&
+                app.submittedAt.getTime() > latestNeedsRevisionReview.getTime() &&
+                (app.status === "pending" || app.status === "in_review")
+            );
+
+            return {
+              hadNeedsRevision,
+              resubmittedAfterRevision,
+              latestNeedsRevisionReviewedAt: latestNeedsRevisionReview
+                ? latestNeedsRevisionReview.toISOString()
+                : null,
+            };
+          })(),
           submissionId: app.submissionId,
           profileId: app.profileId,
           status: app.status as ApplicationStatus,

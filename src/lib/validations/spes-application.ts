@@ -1,4 +1,8 @@
 import { z } from "zod";
+import {
+  formatPhilippineMobileInput,
+  PHILIPPINE_MOBILE_REGEX,
+} from "@/lib/phone";
 
 // ============================================
 // Section Validation Schemas for SPES Application Form
@@ -9,6 +13,30 @@ import { z } from "zod";
 export const languageItemSchema = z.object({
   value: z.string().min(1, "Language name is required"),
 });
+
+export const applicationTypeSchema = z.enum(["new", "spes-baby"]);
+
+const requiredContactSchema = z.preprocess(
+  (value) =>
+    typeof value === "string" ? formatPhilippineMobileInput(value) : value,
+  z
+    .string()
+    .trim()
+    .min(1, "Contact number is required")
+    .regex(PHILIPPINE_MOBILE_REGEX, "Contact number must follow 09xx xxx xxxx"),
+);
+
+const optionalContactSchema = z.preprocess(
+  (value) =>
+    typeof value === "string" ? formatPhilippineMobileInput(value) : value,
+  z
+    .string()
+    .trim()
+    .refine((value) => value === "" || PHILIPPINE_MOBILE_REGEX.test(value), {
+      message: "Contact number must follow 09xx xxx xxxx",
+    })
+    .optional(),
+);
 
 // ProfileUser - Basic Information
 export const basicInfoSchema = z.object({
@@ -34,7 +62,7 @@ export const personalDetailsSchema = z.object({
     .array(languageItemSchema)
     .min(1, "At least one language is required"),
   profileEmail: z.string().email("Valid email is required"),
-  profileContact: z.string().min(1, "Contact number is required"),
+  profileContact: requiredContactSchema,
   profileFacebook: z.string().url("Please enter a valid Facebook URL"),
   profileDisability: z.string().optional(),
   profilePwdId: z.string().optional(),
@@ -61,10 +89,10 @@ export const siblingSchema = z.object({
 export const familySchema = z.object({
   fatherName: z.string().min(1, "Father's name is required"),
   fatherOccupation: z.string().optional(),
-  fatherContact: z.string().optional(),
+  fatherContact: optionalContactSchema,
   motherMaidenName: z.string().min(1, "Mother's maiden name is required"),
   motherOccupation: z.string().optional(),
-  motherContact: z.string().optional(),
+  motherContact: optionalContactSchema,
   numberOfSiblings: z.preprocess(
     (v) => (v === "" || v === undefined ? undefined : Number(v)),
     z.number().min(0).optional(),
@@ -75,7 +103,7 @@ export const familySchema = z.object({
 // ProfileGuardian - Guardian Information (fully optional)
 export const guardianSchema = z.object({
   guardianName: z.string().optional(),
-  guardianContact: z.string().optional(),
+  guardianContact: optionalContactSchema,
   guardianAddress: z.string().optional(),
   guardianAge: z.preprocess(
     (v) => (v === "" || v === undefined ? undefined : Number(v)),
@@ -120,6 +148,20 @@ export const spesInfoSchema = z.object({
     (val) => (val === "" || val === undefined ? undefined : Number(val)),
     z.number().min(1, "Please provide the number of years").optional(),
   ),
+  spesAvailments: z
+    .array(
+      z.object({
+        yearOfAvailment: z.preprocess(
+          (val) => (val === "" || val === undefined ? undefined : Number(val)),
+          z.number().int().min(1900, "Please provide a valid availment year"),
+        ),
+        assignedOffice: z
+          .string()
+          .trim()
+          .min(1, "Assigned office is required"),
+      }),
+    )
+    .optional(),
   motivation: z.string().min(1, "Please provide your motivation for applying"),
 });
 
@@ -130,6 +172,7 @@ export const documentsSchema = z.object({
 
 // Combined SPES Application Schema
 export const spesApplicationSchema = z.object({
+  applicationType: applicationTypeSchema.optional(),
   ...basicInfoSchema.shape,
   ...personalDetailsSchema.shape,
   ...addressSchema.shape,
@@ -140,6 +183,17 @@ export const spesApplicationSchema = z.object({
   ...skillsSchema.shape,
   ...spesInfoSchema.shape,
   ...documentsSchema.shape,
+}).superRefine((values, ctx) => {
+  if (values.applicationType === "spes-baby") {
+    if (!values.spesAvailments || values.spesAvailments.length === 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["spesAvailments"],
+        message:
+          "Add at least one availment year and assigned office for SPES Baby applications",
+      });
+    }
+  }
 });
 
 // ============================================
@@ -208,6 +262,30 @@ export function validateSection(
   sectionId: string,
   formValues: Partial<SPESApplicationFormValues>,
 ): boolean {
+  if (sectionId === "family") {
+    const siblings = formValues.siblings || [];
+    const hasIncompleteSibling = siblings.some(
+      (sibling) =>
+        !sibling?.name?.trim() ||
+        sibling.age === undefined ||
+        sibling.age === null ||
+        Number(sibling.age) < 1,
+    );
+    if (hasIncompleteSibling) return false;
+  }
+
+  if (sectionId === "spes-info" && formValues.applicationType === "spes-baby") {
+    const availments = formValues.spesAvailments || [];
+    if (availments.length === 0) return false;
+    const hasIncompleteAvailment = availments.some(
+      (availment) =>
+        !availment ||
+        Number(availment.yearOfAvailment) < 1900 ||
+        !availment.assignedOffice?.trim(),
+    );
+    if (hasIncompleteAvailment) return false;
+  }
+
   const requiredFields = sectionRequiredFields[sectionId] || [];
 
   if (requiredFields.length === 0) {
