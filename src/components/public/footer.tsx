@@ -14,6 +14,7 @@ const Footer = () => {
             width={48}
             height={48}
             className="object-contain"
+            style={{ height: "auto" }}
           />
           <Image
             src="/assets/baguio_seal.png"
