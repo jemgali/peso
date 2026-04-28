@@ -1,8 +1,10 @@
-import React, { useState } from "react";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import React, { useMemo, useState } from "react";
 import { Button } from "@/ui/button";
 import { Card } from "@/ui/card";
 import { Spinner } from "@/ui/spinner";
 import { ExternalLink } from "lucide-react";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/ui/tabs";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -34,6 +36,15 @@ const DOCUMENT_LABELS: Record<string, string> = {
   deathCertificate: "Death Certificate",
 };
 
+const REQUIRED_DOCUMENT_IDS = [
+  "psaCertificate",
+  "grades",
+  "affidavitLowIncome",
+  "barangayCertLowIncome",
+  "barangayCertResidency",
+  "incomeTaxReturn",
+];
+
 const ReviewSection: React.FC<ReviewSectionProps> = ({
   formValues,
   isPending,
@@ -44,6 +55,7 @@ const ReviewSection: React.FC<ReviewSectionProps> = ({
   triggerValidation,
 }) => {
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [selectedDocumentId, setSelectedDocumentId] = useState<string>("");
 
   const handleSubmitClick = () => {
     if (isValid) {
@@ -105,6 +117,33 @@ const ReviewSection: React.FC<ReviewSectionProps> = ({
     string,
     UploadedDocument
   >;
+  const uploadedDocumentEntries = useMemo(
+    () => Object.entries(uploadedDocuments),
+    [uploadedDocuments],
+  );
+  const requiredUploadedDocuments = useMemo(
+    () =>
+      uploadedDocumentEntries.filter(([documentId]) =>
+        REQUIRED_DOCUMENT_IDS.includes(documentId),
+      ),
+    [uploadedDocumentEntries],
+  );
+  const optionalUploadedDocuments = useMemo(
+    () =>
+      uploadedDocumentEntries.filter(
+        ([documentId]) => !REQUIRED_DOCUMENT_IDS.includes(documentId),
+      ),
+    [uploadedDocumentEntries],
+  );
+
+  const activeSelectedDocumentId =
+    selectedDocumentId && uploadedDocuments[selectedDocumentId]
+      ? selectedDocumentId
+      : requiredUploadedDocuments[0]?.[0] || optionalUploadedDocuments[0]?.[0] || "";
+
+  const selectedDocument = activeSelectedDocumentId
+    ? uploadedDocuments[activeSelectedDocumentId]
+    : undefined;
 
   return (
     <div id="review" className="scroll-mt-24">
@@ -239,14 +278,18 @@ const ReviewSection: React.FC<ReviewSectionProps> = ({
               </p>
               <div className="space-y-1">
                 {formValues.siblings.map((sibling, index) => (
-                  <div key={index} className="text-sm">
-                    <span className="font-medium">{sibling.name || "Unnamed"}</span>
-                    {sibling.age && <span className="text-muted-foreground"> ({sibling.age} yrs)</span>}
-                    {sibling.occupation && <span className="text-muted-foreground"> - {sibling.occupation}</span>}
-                  </div>
-                ))}
+                    <div key={index} className="text-sm">
+                      <span className="font-medium">{sibling.name || "Unnamed"}</span>
+                      {sibling.age && <span className="text-muted-foreground"> ({sibling.age} yrs)</span>}
+                      {sibling.occupation && <span className="text-muted-foreground"> - {sibling.occupation}</span>}
+                      <span className="text-muted-foreground">
+                        {" "}
+                        - {sibling.sameHousehold ? "Same household" : "Not same household"}
+                      </span>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
           )}
         </Card>
 
@@ -332,55 +375,126 @@ const ReviewSection: React.FC<ReviewSectionProps> = ({
         {/* Documents */}
         <Card className="p-4 bg-muted/30">
           <h3 className="text-sm font-semibold mb-3">Documents</h3>
-          <div className="space-y-2">
-            {Object.keys(uploadedDocuments).length > 0 ? (
-              Object.entries(uploadedDocuments).map(([docId, doc]) => (
-                <div
-                  key={docId}
-                  className="space-y-3 rounded-md border border-muted/60 bg-background/60 p-3"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="text-sm font-semibold">
-                        {DOCUMENT_LABELS[docId] || docId}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {doc.fileName || "Uploaded document"}
-                      </p>
-                    </div>
-                    {doc.url && (
-                      <a
-                        href={doc.url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline"
-                      >
-                        Open
-                        <ExternalLink className="h-3 w-3" />
-                      </a>
-                    )}
-                  </div>
+          {uploadedDocumentEntries.length > 0 ? (
+            <Tabs defaultValue="required" className="space-y-4">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="required">
+                  Required ({requiredUploadedDocuments.length})
+                </TabsTrigger>
+                <TabsTrigger value="optional">
+                  Optional ({optionalUploadedDocuments.length})
+                </TabsTrigger>
+              </TabsList>
 
-                  {doc.url && doc.fileType === "application/pdf" && (
-                    <iframe
-                      src={doc.url}
-                      title={doc.fileName || docId}
-                      className="h-[360px] w-full rounded border bg-muted/20"
-                    />
-                  )}
-                  {doc.url && doc.fileType?.startsWith("image/") && (
-                    <img
-                      src={doc.url}
-                      alt={doc.fileName || docId}
-                      className="max-h-[360px] w-full rounded border bg-muted/20 object-contain"
-                    />
-                  )}
+              <TabsContent value="required" className="space-y-2">
+                {requiredUploadedDocuments.length > 0 ? (
+                  requiredUploadedDocuments.map(([documentId, document]) => (
+                    <button
+                      key={documentId}
+                      type="button"
+                      onClick={() => setSelectedDocumentId(documentId)}
+                      className={`flex w-full items-center justify-between rounded-md border p-2 text-left text-sm transition-colors ${
+                        activeSelectedDocumentId === documentId
+                          ? "border-primary bg-primary/5"
+                          : "hover:bg-muted/40"
+                      }`}
+                    >
+                      <span className="font-medium">
+                        {DOCUMENT_LABELS[documentId] || documentId}
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        {document.fileName || "Uploaded file"}
+                      </span>
+                    </button>
+                  ))
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    No required documents uploaded yet.
+                  </p>
+                )}
+              </TabsContent>
+
+              <TabsContent value="optional" className="space-y-2">
+                {optionalUploadedDocuments.length > 0 ? (
+                  optionalUploadedDocuments.map(([documentId, document]) => (
+                    <button
+                      key={documentId}
+                      type="button"
+                      onClick={() => setSelectedDocumentId(documentId)}
+                      className={`flex w-full items-center justify-between rounded-md border p-2 text-left text-sm transition-colors ${
+                        activeSelectedDocumentId === documentId
+                          ? "border-primary bg-primary/5"
+                          : "hover:bg-muted/40"
+                      }`}
+                    >
+                      <span className="font-medium">
+                        {DOCUMENT_LABELS[documentId] || documentId}
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        {document.fileName || "Uploaded file"}
+                      </span>
+                    </button>
+                  ))
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    No optional documents uploaded.
+                  </p>
+                )}
+              </TabsContent>
+            </Tabs>
+          ) : (
+            <p className="text-sm text-muted-foreground">No documents uploaded.</p>
+          )}
+
+          {selectedDocument && (
+            <div className="mt-4 space-y-3 rounded-md border border-muted/60 bg-background/60 p-3">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-sm font-semibold">
+                    {DOCUMENT_LABELS[activeSelectedDocumentId] || activeSelectedDocumentId}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {selectedDocument.fileName || "Uploaded document"}
+                  </p>
                 </div>
-              ))
-            ) : (
-              <p className="text-sm text-muted-foreground">No documents uploaded.</p>
-            )}
-          </div>
+                {selectedDocument.url && (
+                  <a
+                    href={selectedDocument.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline"
+                  >
+                    Open
+                    <ExternalLink className="h-3 w-3" />
+                  </a>
+                )}
+              </div>
+
+              {selectedDocument.url &&
+                selectedDocument.fileType === "application/pdf" && (
+                  <iframe
+                    src={selectedDocument.url}
+                    title={selectedDocument.fileName || activeSelectedDocumentId}
+                    className="h-[360px] w-full rounded border bg-muted/20"
+                  />
+                )}
+              {selectedDocument.url &&
+                selectedDocument.fileType?.startsWith("image/") && (
+                  <img
+                    src={selectedDocument.url}
+                    alt={selectedDocument.fileName || activeSelectedDocumentId}
+                    className="max-h-[360px] w-full rounded border bg-muted/20 object-contain"
+                  />
+                )}
+              {selectedDocument.url &&
+                selectedDocument.fileType !== "application/pdf" &&
+                !selectedDocument.fileType?.startsWith("image/") && (
+                  <p className="text-xs text-muted-foreground">
+                    Preview unavailable for this file type. Use Open to view.
+                  </p>
+                )}
+            </div>
+          )}
         </Card>
       </div>
 

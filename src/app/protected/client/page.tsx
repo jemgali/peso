@@ -1,12 +1,10 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Spinner } from "@/components/ui/spinner";
-import { FileText, LayoutGrid, Activity } from "lucide-react";
+import { LayoutGrid, Activity } from "lucide-react";
 import { PageHeader } from "@/components/shared";
 import DashboardStatusTracker from "@/components/client/dashboard-status-tracker";
 import DashboardNotifications from "@/components/client/dashboard-notifications";
@@ -22,6 +20,11 @@ function getStatusLabel(status: string) {
     rejected: "Rejected",
   };
   return labels[status] || status;
+}
+
+function getDashboardStatusLabel(status: string, isGrantee: boolean) {
+  if (isGrantee) return "Grantee"
+  return getStatusLabel(status)
 }
 
 function getStatusVariant(
@@ -121,14 +124,20 @@ const Page = () => {
                       <Badge
                         variant={getStatusVariant(statusData.submission.status)}
                       >
-                        {getStatusLabel(statusData.submission.status)}
+                        {getDashboardStatusLabel(
+                          statusData.submission.status,
+                          Boolean(statusData.workflow?.isGrantee),
+                        )}
                       </Badge>
                     </div>
                     <div className="flex flex-col gap-1">
                       <div className="flex items-center justify-between text-sm">
                         <span className="text-muted-foreground">SPES</span>
                         <span className="font-medium">
-                          {getStatusLabel(statusData.submission.status)}
+                          {getDashboardStatusLabel(
+                            statusData.submission.status,
+                            Boolean(statusData.workflow?.isGrantee),
+                          )}
                         </span>
                       </div>
                     </div>
@@ -156,6 +165,7 @@ const Page = () => {
                 submittedAt={statusData.submission.submittedAt}
                 updatedAt={statusData.submission.updatedAt}
                 latestReviewComments={statusData.latestReview?.overallComments}
+                isGrantee={Boolean(statusData.workflow?.isGrantee)}
               />
             ) : (
               <Card className="h-fit">
@@ -183,6 +193,7 @@ const Page = () => {
               submittedAt={statusData.submission.submittedAt}
               updatedAt={statusData.submission.updatedAt}
               latestReviewComments={statusData.latestReview?.overallComments}
+              isGrantee={Boolean(statusData.workflow?.isGrantee)}
             />
           )}
         </div>

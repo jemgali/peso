@@ -71,7 +71,7 @@ export async function POST(
           availment.assignedOffice.length > 0
       );
 
-    const applicantType =
+    const computedApplicantType =
       data.applicationType === "spes-baby"
         ? "SPES_BABY"
         : data.applicationType === "new"
@@ -91,6 +91,29 @@ export async function POST(
 
     // Use a transaction to ensure data consistency
     const result = await prisma.$transaction(async (tx) => {
+      const targetApplicationYear =
+        data.applicationYear || new Date().getFullYear();
+      const latestGranteeSubmission = await tx.applicationSubmission.findFirst({
+        where: {
+          profile: { userId },
+          spesWorkflow: { selectionStatus: "GRANTEE" },
+        },
+        orderBy: {
+          submittedAt: "desc",
+        },
+        select: {
+          submittedAt: true,
+        },
+      });
+      const forceSpesBabyApplicantType = Boolean(
+        latestGranteeSubmission &&
+          latestGranteeSubmission.submittedAt.getUTCFullYear() <
+            targetApplicationYear,
+      );
+      const applicantType = forceSpesBabyApplicantType
+        ? "SPES_BABY"
+        : computedApplicantType;
+
       // Check if profile already exists for this user
       let profile = await tx.profileUser.findUnique({
         where: { userId },
@@ -251,6 +274,7 @@ export async function POST(
           siblingName: sibling.name,
           siblingAge: Number(sibling.age),
           siblingOccupation: sibling.occupation || null,
+          siblingSameHousehold: Boolean(sibling.sameHousehold),
           siblingOrder: index,
         }));
 

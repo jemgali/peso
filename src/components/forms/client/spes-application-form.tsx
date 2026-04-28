@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
@@ -139,7 +140,7 @@ const TOUCHED_FIELDS: Record<string, string[]> = {
   ],
   family: ["fatherName", "motherMaidenName", "siblings"],
   guardian: [],
-  benefactor: ["benefactorName"],
+  benefactor: ["benefactorName", "benefactorRelationship"],
   education: ["gradeYear", "schoolName", "trackCourse", "schoolYear"],
   skills: ["skills"],
   "spes-info": ["applicationYear", "spesAvailments", "motivation"],
@@ -350,7 +351,7 @@ const SPESApplicationForm: React.FC<SPESApplicationFormProps> = ({
     SECTION_IDS.forEach((sectionId, index) => {
       const sectionHasErrors = checkSectionErrors(sectionId, errors);
       const sectionIsValid = validateSection(sectionId, getValues());
-      const isOptional = ["skills", "benefactor", "guardian"].includes(sectionId);
+      const isOptional = ["skills", "guardian"].includes(sectionId);
       const sectionTouched = checkSectionTouched(sectionId, touchedFields);
       const sectionHasData = checkSectionHasData(sectionId, getValues());
 

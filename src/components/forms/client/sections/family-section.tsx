@@ -179,7 +179,7 @@ const FamilySection: React.FC<FormSectionWithFieldArrayProps> = ({
                   key={field.id}
                   className="flex gap-2 items-start p-3 bg-muted/30 rounded-lg"
                 >
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-2 flex-1">
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-2 flex-1">
                     <div className="space-y-1">
                       <FieldLabel htmlFor={`siblings.${index}.name`} required>
                         Sibling Name
@@ -235,6 +235,24 @@ const FamilySection: React.FC<FormSectionWithFieldArrayProps> = ({
                         placeholder="Occupation"
                       />
                     </div>
+                    <div className="space-y-1">
+                      <FieldLabel htmlFor={`siblings.${index}.sameHousehold`}>
+                        Same Household
+                      </FieldLabel>
+                      <label
+                        htmlFor={`siblings.${index}.sameHousehold`}
+                        className="flex h-10 items-center gap-2 rounded-md border border-input bg-background px-3 text-sm"
+                      >
+                        <input
+                          {...register(`siblings.${index}.sameHousehold` as const)}
+                          type="checkbox"
+                          id={`siblings.${index}.sameHousehold`}
+                          disabled={isPending}
+                          className="size-4"
+                        />
+                        <span>Lives with applicant</span>
+                      </label>
+                    </div>
                   </div>
                   <Button
                     type="button"
@@ -254,7 +272,12 @@ const FamilySection: React.FC<FormSectionWithFieldArrayProps> = ({
                 variant="outline"
                 size="sm"
                 onClick={() =>
-                  siblingsFieldArray?.append({ name: "", age: 0, occupation: "" })
+                  siblingsFieldArray?.append({
+                    name: "",
+                    age: 0,
+                    occupation: "",
+                    sameHousehold: false,
+                  })
                 }
                 disabled={isPending}
               >

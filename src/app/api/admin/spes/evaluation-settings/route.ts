@@ -3,6 +3,10 @@ import { headers } from "next/headers"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import {
+  computeWorkflowRankMap,
+  toApiApplicantCategory,
+} from "@/lib/utils/spes-workflow"
+import {
   updateExamSettingsSchema,
   type ExamSettingsResponse,
 } from "@/lib/validations/spes-workflow"
@@ -45,6 +49,40 @@ export async function GET(): Promise<NextResponse<ExamSettingsResponse>> {
       updatedById: adminUserId,
     },
   })
+
+  const workflows = await prisma.spesWorkflow.findMany({
+    select: {
+      workflowId: true,
+      examScore: true,
+      priority: true,
+      submission: {
+        select: {
+          applicantType: true,
+        },
+      },
+    },
+  })
+
+  const rankMap = computeWorkflowRankMap(
+    workflows.map((workflow) => ({
+      workflowId: workflow.workflowId,
+      applicantCategory: toApiApplicantCategory(workflow.submission.applicantType),
+      examScore: workflow.examScore,
+      priority: workflow.priority,
+    })),
+    { totalScore: settings.totalScore }
+  )
+
+  await prisma.$transaction(
+    workflows.map((workflow) =>
+      prisma.spesWorkflow.update({
+        where: { workflowId: workflow.workflowId },
+        data: {
+          rankPosition: rankMap.get(workflow.workflowId) ?? null,
+        },
+      })
+    )
+  )
 
   return NextResponse.json({
     success: true,

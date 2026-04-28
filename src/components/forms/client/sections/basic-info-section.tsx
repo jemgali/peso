@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable react-hooks/set-state-in-effect */
 import React, { useEffect, useState, useMemo, useRef } from "react";
 import { Input } from "@/ui/input";
 import { Button } from "@/ui/button";

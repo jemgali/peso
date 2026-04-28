@@ -174,6 +174,11 @@ export async function PATCH(
               select: {
                 profileFirstName: true,
                 profileLastName: true,
+                spes: {
+                  select: {
+                    remarks: true,
+                  },
+                },
               },
             },
           },

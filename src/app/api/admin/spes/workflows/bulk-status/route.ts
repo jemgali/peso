@@ -7,6 +7,7 @@ import type {
 } from "@/generated/prisma/client"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { sendEvaluationBulkNotifyEmail } from "@/lib/email"
 import {
   bulkUpdateWorkflowStatusSchema,
   type BulkUpdateWorkflowStatusResponse,
@@ -96,6 +97,22 @@ export async function POST(
       selectionStatus: true,
       selectedById: true,
       stage: true,
+      submission: {
+        select: {
+          profile: {
+            select: {
+              userId: true,
+              profileFirstName: true,
+              profileLastName: true,
+              user: {
+                select: {
+                  email: true,
+                },
+              },
+            },
+          },
+        },
+      },
     },
   })
 
@@ -111,8 +128,10 @@ export async function POST(
 
   let updated = 0
   let autoDenied = 0
+  const granteeEmailRecipients: Array<{ email: string; applicantName: string }> = []
 
   await prisma.$transaction(async (tx) => {
+    const notifications: Prisma.NotificationCreateManyInput[] = []
     for (const workflow of existingWorkflows) {
       const nextSelectionStatus =
         workflow.examResult === "FAILED" ? "DENIED" : requestedSelectionStatus
@@ -149,6 +168,34 @@ export async function POST(
         data: updateData,
       })
 
+      const becameGrantee =
+        workflow.selectionStatus !== "GRANTEE" && nextSelectionStatus === "GRANTEE"
+      if (becameGrantee) {
+        const applicantName =
+          [
+            workflow.submission.profile.profileFirstName?.trim() || "",
+            workflow.submission.profile.profileLastName?.trim() || "",
+          ]
+            .filter(Boolean)
+            .join(" ")
+            .trim() || "Applicant"
+
+        notifications.push({
+          notificationId: crypto.randomUUID(),
+          userId: workflow.submission.profile.userId,
+          type: "application_approved",
+          title: "SPES Grantee Selected",
+          message:
+            "Congratulations! You have been selected as an SPES grantee. Please check your application status for next steps.",
+          link: "/protected/client/application/status",
+        })
+
+        granteeEmailRecipients.push({
+          email: workflow.submission.profile.user.email,
+          applicantName,
+        })
+      }
+
       if (hasStageChange) {
         await tx.spesStageHistory.create({
           data: {
@@ -163,7 +210,23 @@ export async function POST(
 
       updated += 1
     }
+
+    if (notifications.length > 0) {
+      await tx.notification.createMany({
+        data: notifications,
+      })
+    }
   })
+
+  await Promise.allSettled(
+    granteeEmailRecipients.map((recipient) =>
+      sendEvaluationBulkNotifyEmail({
+        to: recipient.email,
+        applicantName: recipient.applicantName,
+        note: "Congratulations! You were selected as an SPES grantee.",
+      })
+    )
+  )
 
   return NextResponse.json({
     success: true,

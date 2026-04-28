@@ -8,6 +8,7 @@ import type {
 } from "@/generated/prisma/client"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { sendEvaluationBulkNotifyEmail } from "@/lib/email"
 import {
   updateWorkflowSchema,
   type UpdateWorkflowResponse,
@@ -15,6 +16,7 @@ import {
 import {
   computeWorkflowRankMap,
   getPassingScore,
+  toApiApplicantCategory,
   toDbPriority,
   toDbSelectionStatus,
   toDbStage,
@@ -95,15 +97,32 @@ function getDerivedStage(
   return currentStage
 }
 
-async function recalculateRankPositions(tx: Prisma.TransactionClient): Promise<void> {
+async function recalculateRankPositions(
+  tx: Prisma.TransactionClient,
+  totalScore: number
+): Promise<void> {
   const workflows = await tx.spesWorkflow.findMany({
     select: {
       workflowId: true,
       examScore: true,
+      priority: true,
+      submission: {
+        select: {
+          applicantType: true,
+        },
+      },
     },
   })
 
-  const rankMap = computeWorkflowRankMap(workflows)
+  const rankMap = computeWorkflowRankMap(
+    workflows.map((workflow) => ({
+      workflowId: workflow.workflowId,
+      applicantCategory: toApiApplicantCategory(workflow.submission.applicantType),
+      examScore: workflow.examScore,
+      priority: workflow.priority,
+    })),
+    { totalScore }
+  )
 
   await Promise.all(
     workflows.map((workflow) =>
@@ -153,6 +172,19 @@ export async function PATCH(
       submission: {
         select: {
           applicantType: true,
+          profileId: true,
+          profile: {
+            select: {
+              userId: true,
+              profileFirstName: true,
+              profileLastName: true,
+              user: {
+                select: {
+                  email: true,
+                },
+              },
+            },
+          },
         },
       },
     },
@@ -225,8 +257,8 @@ export async function PATCH(
       : null
   }
 
-  if (parsed.data.examScore !== undefined) {
-    updateData.examScore = parsed.data.examScore
+    if (parsed.data.examScore !== undefined) {
+      updateData.examScore = parsed.data.examScore
     if (parsed.data.examScore === null) {
       nextExamResult = "PENDING"
     } else {
@@ -242,12 +274,17 @@ export async function PATCH(
   if (parsed.data.assignedOffice !== undefined) {
     updateData.assignedOffice = parsed.data.assignedOffice?.trim() || null
   }
+  const nextRemarksValue =
+    parsed.data.remarks !== undefined ? parsed.data.remarks?.trim() || null : undefined
 
   const nextSelectionStatus = deriveSelectionStatus(
     existingWorkflow.selectionStatus,
     nextExamResult,
     parsed.data.selectionStatus
   )
+  const becameGrantee =
+    existingWorkflow.selectionStatus !== "GRANTEE" &&
+    nextSelectionStatus === "GRANTEE"
   updateData.selectionStatus = nextSelectionStatus
 
   if (nextSelectionStatus === "GRANTEE") {
@@ -262,15 +299,46 @@ export async function PATCH(
   if (derivedStage !== existingWorkflow.stage) {
     updateData.stage = derivedStage
   }
+  const hasWorkflowUpdates = Object.keys(updateData).length > 0
 
   const updatedWorkflow = await prisma.$transaction(async (tx) => {
-    await tx.spesWorkflow.update({
-      where: { workflowId },
-      data: updateData,
-    })
+    if (hasWorkflowUpdates) {
+      await tx.spesWorkflow.update({
+        where: { workflowId },
+        data: updateData,
+      })
+    }
 
-    if (parsed.data.examScore !== undefined) {
-      await recalculateRankPositions(tx)
+    if (parsed.data.examScore !== undefined || parsed.data.priority !== undefined) {
+      await recalculateRankPositions(tx, settings.totalScore)
+    }
+
+    if (nextRemarksValue !== undefined) {
+      await tx.profileSPES.upsert({
+        where: { profileId: existingWorkflow.submission.profileId },
+        update: {
+          remarks: nextRemarksValue,
+        },
+        create: {
+          spesId: crypto.randomUUID(),
+          profileId: existingWorkflow.submission.profileId,
+          remarks: nextRemarksValue,
+        },
+      })
+    }
+
+    if (becameGrantee) {
+      await tx.notification.create({
+        data: {
+          notificationId: crypto.randomUUID(),
+          userId: existingWorkflow.submission.profile.userId,
+          type: "application_approved",
+          title: "SPES Grantee Selected",
+          message:
+            "Congratulations! You have been selected as an SPES grantee. Please check your application status for next steps.",
+          link: "/protected/client/application/status",
+        },
+      })
     }
 
     const workflow = await tx.spesWorkflow.findUnique({
@@ -282,6 +350,11 @@ export async function PATCH(
               select: {
                 profileFirstName: true,
                 profileLastName: true,
+                spes: {
+                  select: {
+                    remarks: true,
+                  },
+                },
               },
             },
           },
@@ -313,6 +386,24 @@ export async function PATCH(
 
     return workflow
   })
+
+  if (becameGrantee) {
+    const applicantName = [
+      existingWorkflow.submission.profile.profileFirstName?.trim() || "",
+      existingWorkflow.submission.profile.profileLastName?.trim() || "",
+    ]
+      .filter(Boolean)
+      .join(" ")
+      .trim() || "Applicant"
+
+    sendEvaluationBulkNotifyEmail({
+      to: existingWorkflow.submission.profile.user.email,
+      applicantName,
+      note: "Congratulations! You were selected as an SPES grantee.",
+    }).catch((error) => {
+      console.error("Failed to send grantee email notification:", error)
+    })
+  }
 
   return NextResponse.json({
     success: true,

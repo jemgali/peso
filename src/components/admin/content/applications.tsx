@@ -21,7 +21,7 @@ import {
 } from "@/ui/select";
 import { Badge } from "@/ui/badge";
 import { Card } from "@/ui/card";
-import { Search, Eye, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, Eye, ChevronDown, ChevronLeft, ChevronRight, ChevronUp } from "lucide-react";
 import { ApplicationsListSkeleton } from "@/ui/skeletons";
 import type {
   ApplicantType,
@@ -75,6 +75,7 @@ const Applications = () => {
   const [availableYears, setAvailableYears] = useState<number[]>([currentYear]);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
+  const [expandedAvailmentSubmissionId, setExpandedAvailmentSubmissionId] = useState<string | null>(null);
   const pageSize = 20;
 
   useEffect(() => {
@@ -215,6 +216,7 @@ const Applications = () => {
                   <TableHead>Applicant</TableHead>
                   <TableHead>Email</TableHead>
                   <TableHead>Type</TableHead>
+                  <TableHead>Years of Availment</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Submitted</TableHead>
                   <TableHead className="text-right">Action</TableHead>
@@ -234,6 +236,38 @@ const Applications = () => {
                       >
                         {APPLICANT_TYPE_LABELS[app.applicantType]}
                       </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {app.availmentYears.length > 0 ? (
+                        <div className="space-y-2">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() =>
+                              setExpandedAvailmentSubmissionId((current) =>
+                                current === app.submissionId ? null : app.submissionId,
+                              )
+                            }
+                          >
+                            View History
+                            {expandedAvailmentSubmissionId === app.submissionId ? (
+                              <ChevronUp className="ml-1 h-4 w-4" />
+                            ) : (
+                              <ChevronDown className="ml-1 h-4 w-4" />
+                            )}
+                          </Button>
+                          {expandedAvailmentSubmissionId === app.submissionId && (
+                            <div className="rounded-md border bg-background p-2 text-xs shadow-sm">
+                              {app.availmentYears.map((year) => (
+                                <div key={year}>{year}</div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">—</span>
+                      )}
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-wrap items-center gap-2">
