@@ -1,0 +1,18 @@
+SPES Application Process (Client Side)
+
+1. Family Section (sibling) - add field (checkbox) - living in the same household
+2. GSIS Beneficiary is required
+3. Document Section (form samples) - encoded barangay cert. and use a more general form (without logos).
+4. Client SPES Notification - notify user if they are a SPES Grantee.
+5. Client SPES Dashboard - change applicants status to Grantee (if accepted).
+6. Review Section (documents) - fix ui.
+
+SPES Application Process (Admin Side)
+
+1. Qualified applicants for this will automatically be SPES Baby next time they apply. Fetch data from last year's application and enable them to edit it.
+2. Admin SPES Evaluation (Rank) - Formula: ((score/total)*30%) + ((priority/highest-priority)*70%).
+3. Admin SPES Evaluation (Remarks) - add a remarks action button for the applicant records.
+4. Admin SPES Batch Management - only grantees should be shown.
+5. Attach files regarding the office evaluation of SPES grantees.
+6. Years of Availment found when searching the name of the applicants.
+7. Admin Sidebar (SPES) Add new tab for Remarks/Records of Violation.
