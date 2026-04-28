@@ -44,3 +44,6 @@ next-env.d.ts
 
 # uploaded documents (local server storage)
 /uploads
+
+# additional files to ignore here
+prompt.txt

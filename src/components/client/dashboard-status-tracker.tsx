@@ -23,6 +23,7 @@ interface StatusTrackerProps {
   submittedAt: string
   updatedAt: string
   latestReviewComments?: string | null
+  isGrantee?: boolean
 }
 
 const TIMELINE_STEPS = [
@@ -61,7 +62,18 @@ function getActiveStep(status: ApplicationStatus): number {
   }
 }
 
-function getStatusBadge(status: ApplicationStatus) {
+function getStatusBadge(status: ApplicationStatus, isGrantee: boolean) {
+  if (isGrantee) {
+    return (
+      <Badge
+        variant="default"
+        className="bg-green-600 hover:bg-green-700 text-white"
+      >
+        Grantee
+      </Badge>
+    )
+  }
+
   const config: Record<
     ApplicationStatus,
     { label: string; variant: "default" | "secondary" | "destructive" | "outline"; className?: string }
@@ -95,6 +107,7 @@ export default function DashboardStatusTracker({
   submittedAt,
   updatedAt,
   latestReviewComments,
+  isGrantee = false,
 }: StatusTrackerProps) {
   const activeStep = getActiveStep(status)
 
@@ -103,7 +116,7 @@ export default function DashboardStatusTracker({
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="text-base">SPES Application</CardTitle>
-          {getStatusBadge(status)}
+          {getStatusBadge(status, isGrantee)}
         </div>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">

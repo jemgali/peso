@@ -45,6 +45,7 @@ import {
 type WorkflowDraft = {
   priority: ApplicantPriority | ""
   examScore: string
+  remarks: string
 }
 
 const WORKFLOW_STAGE_LABELS: Record<SpesWorkflowStage, string> = {
@@ -108,6 +109,7 @@ function toDraft(workflow: SpesWorkflowListItem): WorkflowDraft {
   return {
     priority: workflow.priority || "",
     examScore: workflow.examScore === null ? "" : String(workflow.examScore),
+    remarks: workflow.remarks || "",
   }
 }
 
@@ -273,21 +275,33 @@ export default function Evaluation() {
   const saveWorkflow = async (workflowId: string) => {
     const draft = drafts[workflowId]
     if (!draft) return
+    const workflow = workflows.find((item) => item.workflowId === workflowId)
+    if (!workflow) return
+    const isSpesBaby = workflow.applicantCategory === "spes_baby"
+    const requestPayload: {
+      priority?: ApplicantPriority | null
+      examScore?: number | null
+      remarks: string | null
+    } = {
+      remarks: draft.remarks.trim() ? draft.remarks.trim() : null,
+    }
+
+    if (!isSpesBaby) {
+      requestPayload.priority = draft.priority || null
+      requestPayload.examScore = draft.examScore === "" ? null : Number(draft.examScore)
+    }
 
     setSavingWorkflowId(workflowId)
     try {
       const response = await fetch(`${ROUTES.API.ADMIN.SPES.WORKFLOWS}/${workflowId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          priority: draft.priority || null,
-          examScore: draft.examScore === "" ? null : Number(draft.examScore),
-        }),
+        body: JSON.stringify(requestPayload),
       })
 
-      const payload = (await response.json()) as UpdateWorkflowResponse
-      if (!response.ok || !payload.success) {
-        throw new Error(payload.error || "Failed to save workflow row")
+      const responsePayload = (await response.json()) as UpdateWorkflowResponse
+      if (!response.ok || !responsePayload.success) {
+        throw new Error(responsePayload.error || "Failed to save workflow row")
       }
 
       toast.success("Evaluation row updated")
@@ -297,6 +311,17 @@ export default function Evaluation() {
     } finally {
       setSavingWorkflowId(null)
     }
+  }
+
+  const editRemarks = (workflowId: string) => {
+    const draft = drafts[workflowId]
+    if (!draft) return
+    const nextRemarks = window.prompt("Remarks", draft.remarks)
+    if (nextRemarks === null) return
+    updateDraft(workflowId, (current) => ({
+      ...current,
+      remarks: nextRemarks,
+    }))
   }
 
   const toggleWorkflowSelection = (workflowId: string, checked: boolean) => {
@@ -590,6 +615,11 @@ export default function Evaluation() {
                         </TableCell>
                         <TableCell>
                           <div className="font-medium">{workflow.applicantName}</div>
+                          {draft.remarks.trim() && (
+                            <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
+                              Remarks: {draft.remarks}
+                            </p>
+                          )}
                         </TableCell>
                         <TableCell>
                           <Badge variant={isSpesBaby ? "secondary" : "outline"}>
@@ -668,11 +698,15 @@ export default function Evaluation() {
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          {isSpesBaby ? (
-                            <span className="text-xs text-muted-foreground">
-                              Basic fields only
-                            </span>
-                          ) : (
+                          <div className="flex items-center gap-2">
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              onClick={() => editRemarks(workflow.workflowId)}
+                            >
+                              Remarks
+                            </Button>
                             <Button
                               type="button"
                               size="sm"
@@ -682,9 +716,9 @@ export default function Evaluation() {
                               {savingWorkflowId === workflow.workflowId && (
                                 <Spinner data-icon="inline-start" />
                               )}
-                              Save Row
+                              Save
                             </Button>
-                          )}
+                          </div>
                         </TableCell>
                       </TableRow>
                     )

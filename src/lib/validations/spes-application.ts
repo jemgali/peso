@@ -84,6 +84,7 @@ export const siblingSchema = z.object({
     z.number().min(1, "Sibling age is required"),
   ),
   occupation: z.string().optional(),
+  sameHousehold: z.boolean().optional().default(false),
 });
 
 export const familySchema = z.object({
@@ -115,8 +116,11 @@ export const guardianSchema = z.object({
 
 // ProfileBenefactor - Benefactor Information
 export const benefactorSchema = z.object({
-  benefactorName: z.string().optional(),
-  benefactorRelationship: z.string().optional(),
+  benefactorName: z.string().trim().min(1, "Benefactor name is required"),
+  benefactorRelationship: z
+    .string()
+    .trim()
+    .min(1, "Benefactor relationship is required"),
 });
 
 // ProfileEducation - Education Information (all required)
@@ -239,7 +243,7 @@ export const sectionRequiredFields: Record<string, string[]> = {
   ],
   family: ["fatherName", "motherMaidenName"],
   guardian: [],
-  benefactor: [], // All optional
+  benefactor: ["benefactorName", "benefactorRelationship"],
   education: ["gradeYear", "schoolName", "trackCourse", "schoolYear"],
   skills: [], // All optional
   "spes-info": ["motivation"],

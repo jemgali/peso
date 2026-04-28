@@ -147,6 +147,7 @@ export async function GET(
           name: sibling.siblingName,
           age: sibling.siblingAge,
           occupation: sibling.siblingOccupation,
+          sameHousehold: sibling.siblingSameHousehold,
           order: sibling.siblingOrder,
         })),
         guardian: submission.profile.guardian as Record<string, unknown> | null,

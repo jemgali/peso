@@ -78,6 +78,7 @@ export const updateWorkflowSchema = z.object({
   examScore: z.coerce.number().min(0, "Exam score cannot be negative").nullable().optional(),
   selectionStatus: z.enum(MUTABLE_SELECTION_STATUSES).optional(),
   batchId: z.string().min(1).nullable().optional(),
+  remarks: z.string().trim().max(1000, "Remarks is too long").nullable().optional(),
   assignedOffice: z
     .string()
     .trim()
@@ -240,6 +241,7 @@ export interface SpesWorkflowListItem {
   examResult: ExamResult
   rankPosition: number | null
   selectionStatus: SpesSelectionStatus
+  remarks: string | null
   batchId: string | null
   batchName: string | null
   assignedOffice: string | null

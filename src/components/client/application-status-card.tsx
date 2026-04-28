@@ -18,6 +18,7 @@ interface ApplicationStatusCardProps {
   status: ApplicationStatus;
   submittedAt: string;
   updatedAt: string;
+  isGrantee?: boolean;
 }
 
 const STATUS_CONFIG: Record<
@@ -71,8 +72,17 @@ const ApplicationStatusCard: React.FC<ApplicationStatusCardProps> = ({
   status,
   submittedAt,
   updatedAt,
+  isGrantee = false,
 }) => {
-  const config = STATUS_CONFIG[status];
+  const config = isGrantee
+    ? {
+        label: "SPES Grantee",
+        description: "Congratulations! You have been selected as an SPES grantee.",
+        icon: <CheckCircle2 className="h-6 w-6" />,
+        color: "text-green-700",
+        bgColor: "bg-green-50 dark:bg-green-950/30 border-green-300 dark:border-green-800",
+      }
+    : STATUS_CONFIG[status];
 
   return (
     <Card className={`p-6 border ${config.bgColor}`}>

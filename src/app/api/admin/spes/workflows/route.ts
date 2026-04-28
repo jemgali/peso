@@ -6,7 +6,11 @@ import type {
 } from "@/generated/prisma/client"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
-import { computeWorkflowRankMap, toWorkflowListItem } from "@/lib/utils/spes-workflow"
+import {
+  computeWorkflowRankMap,
+  toApiApplicantCategory,
+  toWorkflowListItem,
+} from "@/lib/utils/spes-workflow"
 import {
   listWorkflowsQuerySchema,
   type SpesWorkflowListResponse,
@@ -67,6 +71,11 @@ export async function GET(request: Request): Promise<NextResponse<SpesWorkflowLi
             select: {
               profileFirstName: true,
               profileLastName: true,
+              spes: {
+                select: {
+                  remarks: true,
+                },
+              },
             },
           },
         },
@@ -81,17 +90,36 @@ export async function GET(request: Request): Promise<NextResponse<SpesWorkflowLi
     orderBy: [{ examScore: "desc" }, { updatedAt: "desc" }],
   })
 
+  const settings = await prisma.spesExamSettings.findUnique({
+    where: { scope: "spes" },
+    select: { totalScore: true },
+  })
+  const totalScore = settings?.totalScore ?? 100
+
   const rankMap = computeWorkflowRankMap(
     workflows.map((workflow) => ({
       workflowId: workflow.workflowId,
+      applicantCategory: toApiApplicantCategory(workflow.submission.applicantType),
       examScore: workflow.examScore,
+      priority: workflow.priority,
     }))
+    ,
+    { totalScore }
   )
+
+  const sortedWorkflows = [...workflows].sort((a, b) => {
+    const rankA = rankMap.get(a.workflowId) ?? null
+    const rankB = rankMap.get(b.workflowId) ?? null
+    if (rankA === null && rankB === null) return 0
+    if (rankA === null) return 1
+    if (rankB === null) return -1
+    return rankA - rankB
+  })
 
   return NextResponse.json({
     success: true,
     data: {
-      workflows: workflows.map((workflow) =>
+      workflows: sortedWorkflows.map((workflow) =>
         toWorkflowListItem(workflow, { rankPosition: rankMap.get(workflow.workflowId) ?? null })
       ),
     },

@@ -49,9 +49,7 @@ import type {
 type LguOfficeSource = Record<string, string | string[]>;
 
 function isPasser(workflow: SpesWorkflowListItem): boolean {
-  return (
-    workflow.selectionStatus === "grantee" || workflow.examResult === "passed"
-  );
+  return workflow.selectionStatus === "grantee";
 }
 
 function parseOfficeOptions(payload: unknown): string[] {

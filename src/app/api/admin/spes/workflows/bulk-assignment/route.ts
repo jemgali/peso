@@ -122,6 +122,7 @@ export async function POST(request: Request): Promise<NextResponse<BulkAssignWor
     select: {
       workflowId: true,
       stage: true,
+      selectionStatus: true,
       batchId: true,
       assignedOffice: true,
       submission: {
@@ -143,7 +144,17 @@ export async function POST(request: Request): Promise<NextResponse<BulkAssignWor
     )
   }
 
-  const foundIds = new Set(existingWorkflows.map((workflow) => workflow.workflowId))
+  const eligibleWorkflows = existingWorkflows.filter(
+    (workflow) => workflow.selectionStatus === "GRANTEE"
+  )
+  if (eligibleWorkflows.length === 0) {
+    return NextResponse.json(
+      { success: false, error: "Only grantee workflows can be assigned to batches or offices" },
+      { status: 400 }
+    )
+  }
+
+  const foundIds = new Set(eligibleWorkflows.map((workflow) => workflow.workflowId))
   const missingWorkflowIds = workflowIds.filter((workflowId) => !foundIds.has(workflowId))
 
   let updated = 0
@@ -151,7 +162,7 @@ export async function POST(request: Request): Promise<NextResponse<BulkAssignWor
   await prisma.$transaction(async (tx) => {
     const notifications: Prisma.NotificationCreateManyInput[] = []
 
-    for (const workflow of existingWorkflows) {
+    for (const workflow of eligibleWorkflows) {
       const batchChanged = hasBatchInput && nextBatchId !== workflow.batchId
       const clearOfficeForRemoval =
         removeFromBatchInput && batchChanged && workflow.assignedOffice !== null

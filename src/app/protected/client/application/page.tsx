@@ -22,6 +22,7 @@ const Page = async () => {
 
   const userEmail = session?.user?.email || "";
   const userId = session?.user?.id;
+  const currentYear = new Date().getFullYear();
 
   // Fetch existing profile data (from onboarding or previous saves) to pre-populate the form
   let defaultValues: Record<string, unknown> | undefined;
@@ -32,6 +33,8 @@ const Page = async () => {
         submittedAt: Date;
         updatedAt: Date;
         isGrantee: boolean;
+        assignedOffice: string | null;
+        applicationYear: number;
         applicantType: "new" | "spes-baby";
       }
     | undefined;
@@ -47,6 +50,7 @@ const Page = async () => {
             orderBy: { siblingOrder: "asc" },
           },
           guardian: true,
+          benefactor: true,
           education: true,
           spes: true,
           spesAvailments: {
@@ -62,6 +66,7 @@ const Page = async () => {
       const address = profile.address;
       const family = profile.family;
       const guardian = profile.guardian;
+      const benefactor = profile.benefactor;
       const education = profile.education;
       const spes = profile.spes;
       const siblings = profile.siblings;
@@ -119,6 +124,7 @@ const Page = async () => {
             name: sibling.siblingName,
             age: sibling.siblingAge,
             occupation: sibling.siblingOccupation || "",
+            sameHousehold: sibling.siblingSameHousehold,
           })),
         }),
         // From ProfileGuardian
@@ -129,6 +135,11 @@ const Page = async () => {
           guardianAge: guardian.guardianAge ?? undefined,
           guardianOccupation: guardian.guardianOccupation || "",
           guardianRelationship: guardian.guardianRelationship || "",
+        }),
+        // From ProfileBenefactor
+        ...(benefactor && {
+          benefactorName: benefactor.benefactorName || "",
+          benefactorRelationship: benefactor.benefactorRelationship || "",
         }),
         // From ProfileEducation
         ...(education && {
@@ -162,6 +173,7 @@ const Page = async () => {
           spesWorkflow: {
             select: {
               selectionStatus: true,
+              assignedOffice: true,
             },
           },
           reviews: {
@@ -178,6 +190,9 @@ const Page = async () => {
             submittedAt: latest.submittedAt,
             updatedAt: latest.updatedAt,
             isGrantee: latest.spesWorkflow?.selectionStatus === "GRANTEE",
+            assignedOffice: latest.spesWorkflow?.assignedOffice || null,
+            applicationYear:
+              spes?.applicationYear ?? latest.submittedAt.getUTCFullYear(),
             applicantType: latest.applicantType === "SPES_BABY" ? "spes-baby" : "new",
           }
         : undefined;
@@ -197,12 +212,47 @@ const Page = async () => {
     }
   }
 
-  if (latestSubmission?.status === "approved") {
-    if (latestSubmission.isGrantee) {
-      redirect("/protected/client/application/documents");
+  const isReturningGranteeSpesBaby = Boolean(
+    latestSubmission?.isGrantee &&
+      (latestSubmission.applicationYear || 0) < currentYear,
+  );
+
+  if (isReturningGranteeSpesBaby && defaultValues) {
+    const existingAvailments = Array.isArray(defaultValues.spesAvailments)
+      ? (defaultValues.spesAvailments as Array<{
+          yearOfAvailment?: number;
+          assignedOffice?: string;
+        }>)
+      : [];
+
+    if (existingAvailments.length === 0) {
+      const previousYear =
+        latestSubmission?.applicationYear && latestSubmission.applicationYear > 0
+          ? latestSubmission.applicationYear
+          : currentYear - 1;
+      defaultValues.spesAvailments = [
+        {
+          yearOfAvailment: previousYear,
+          assignedOffice: latestSubmission?.assignedOffice || "",
+        },
+      ];
     }
 
-    redirect("/protected/client/application/status");
+    const availmentCount = Array.isArray(defaultValues.spesAvailments)
+      ? defaultValues.spesAvailments.length
+      : 1;
+    defaultValues.spesBabiesAvailmentYears = availmentCount;
+  }
+
+  if (latestSubmission?.status === "approved") {
+    const isCurrentCycleApproval =
+      (latestSubmission.applicationYear || 0) >= currentYear;
+    if (isCurrentCycleApproval) {
+      if (latestSubmission.isGrantee) {
+        redirect("/protected/client/application/documents");
+      }
+      redirect("/protected/client/application/status");
+    }
   }
 
   if (
@@ -243,7 +293,9 @@ const Page = async () => {
         defaultValues={defaultValues} 
         revisionFeedback={revisionFeedback} 
         initialApplicationType={
-          latestSubmission?.status === "needs_revision"
+          isReturningGranteeSpesBaby
+            ? "spes-baby"
+            : latestSubmission?.status === "needs_revision"
             ? latestSubmission.applicantType
             : undefined
         }

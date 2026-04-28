@@ -390,7 +390,8 @@ const ApplicationViewer: React.FC<ApplicationViewerProps> = ({
                       {String(sibling.name ?? "Unnamed sibling")}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      Age: {String(sibling.age ?? "—")} • Occupation: {String(sibling.occupation ?? "—")}
+                      Age: {String(sibling.age ?? "—")} • Occupation: {String(sibling.occupation ?? "—")} • Same household:{" "}
+                      {sibling.sameHousehold ? "Yes" : "No"}
                     </p>
                   </div>
                 ))}

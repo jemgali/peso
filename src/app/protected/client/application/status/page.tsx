@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Card, CardContent, CardHeader, CardTitle } from "@/ui/card";
+import { Card } from "@/ui/card";
 import { Button } from "@/ui/button";
 import { Badge } from "@/ui/badge";
 import { Alert, AlertTitle, AlertDescription, AlertAction } from "@/components/ui/alert";
@@ -155,6 +155,7 @@ export default function ApplicationStatusPage() {
           status={submission.status}
           submittedAt={submission.submittedAt}
           updatedAt={submission.updatedAt}
+          isGrantee={Boolean(workflow?.isGrantee)}
         />
       )}
 

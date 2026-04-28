@@ -72,6 +72,7 @@ export interface ApplicationListItem {
   profileId: string;
   status: ApplicationStatus;
   applicantType: ApplicantType;
+  availmentYears: number[];
   hasReview: boolean;
   hadNeedsRevision: boolean;
   resubmittedAfterRevision: boolean;

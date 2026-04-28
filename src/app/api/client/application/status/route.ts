@@ -246,6 +246,7 @@ export async function GET(): Promise<NextResponse<ClientApplicationStatusRespons
           name: sibling.siblingName,
           age: sibling.siblingAge,
           occupation: sibling.siblingOccupation,
+          sameHousehold: sibling.siblingSameHousehold,
           order: sibling.siblingOrder,
         })),
         guardian: profile.guardian as Record<string, unknown> | null,

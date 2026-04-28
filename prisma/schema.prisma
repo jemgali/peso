@@ -266,6 +266,7 @@ model ProfileSibling {
   siblingName       String      @map("sibling_name")
   siblingAge        Int         @map("sibling_age")
   siblingOccupation String?     @map("sibling_occupation")
+  siblingSameHousehold Boolean  @default(false) @map("sibling_same_household")
   siblingOrder      Int         @default(0) @map("sibling_order")
 
   @@index([profileId])

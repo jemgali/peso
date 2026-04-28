@@ -96,6 +96,14 @@ export async function GET(
                   email: true,
                 },
               },
+              spesAvailments: {
+                select: {
+                  yearOfAvailment: true,
+                },
+                orderBy: {
+                  yearOfAvailment: "desc",
+                },
+              },
             },
           },
           reviews: {
@@ -164,6 +172,13 @@ export async function GET(
               ? ("spes_baby" as ApplicantType)
               : ("new" as ApplicantType),
           hasReview: app._count.reviews > 0,
+          availmentYears: Array.from(
+            new Set(
+              app.profile.spesAvailments
+                .map((availment) => availment.yearOfAvailment)
+                .filter((year) => Number.isFinite(year))
+            )
+          ).sort((a, b) => b - a),
           submittedAt: app.submittedAt.toISOString(),
           updatedAt: app.updatedAt.toISOString(),
           applicant: {
