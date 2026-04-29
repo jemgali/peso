@@ -1,3 +1,0 @@
-- Document Section (form samples) - encoded barangay cert. and use a more general form (without logos).
-- Admin Sidebar (SPES) Add new tab for Remarks/Records of Violation.
-- Attach files regarding the office evaluation of SPES grantees.

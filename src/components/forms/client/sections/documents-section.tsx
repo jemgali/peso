@@ -61,31 +61,42 @@ const REQUIRED_DOCUMENTS: DocumentRequirement[] = [
     description: "Original or authenticated PSA birth certificate",
     required: true,
     sampleImages: [
-      { src: `${SAMPLE_BASE}/psa-birth-cert.jpg`, label: "psa-birth-cert.jpg" },
+      { src: `${SAMPLE_BASE}/psa-birth-cert.png`, label: "psa-birth-cert.png" },
+    ],
+  },
+  {
+    id: "proofOfEnrollment",
+    name: "Proof of Enrollment",
+    description: "Proof of current school enrollment",
+    required: true,
+    sampleImages: [
+      { src: `${SAMPLE_BASE}/proof-of-enrollment.png`, label: "proof-of-enrollment.png" },
     ],
   },
   {
     id: "grades",
     name: "Grades",
-    description: "Latest available report card or transcript of records",
+    description:
+      "If Highschool/Elementary is picked (Grade 1-12), upload last school year and current school year grades. If College is picked (Year 1-5, Masters, Doctorate), upload only first semester grades. This only modifies the description on the upload field, since the system can't verify the uploaded file of a PDF.",
     required: true,
     sampleImages: [
       {
-        src: `${SAMPLE_BASE}/report-card-front.jpg`,
-        label: "report-card-front.jpg",
+        src: `${SAMPLE_BASE}/report-card-front.png`,
+        label: "report-card-front.png",
       },
       {
-        src: `${SAMPLE_BASE}/report-card-back.jpg`,
-        label: "report-card-back.jpg",
+        src: `${SAMPLE_BASE}/report-card-back.png`,
+        label: "report-card-back.png",
       },
     ],
   },
   {
     id: "affidavitLowIncome",
     name: "Affidavit of Low Income (PAO)",
-    description: "Affidavit of low income from the Public Attorney's Office",
+    description:
+      "Both parents should have an affidavit of low income. If only one parent is present, attach affidavit of solo parent. Indicate the Poverty Threshold (e.g. P192,000.00). This only modifies the description on the upload field, since the system can't verify the uploaded file of a PDF.",
     required: true,
-    sampleImages: [{ src: `${SAMPLE_BASE}/low-income.jpg`, label: "low-income.jpg" }],
+    sampleImages: [{ src: `${SAMPLE_BASE}/affidavit-low-income.png`, label: "affidavit-low-income.png" }],
   },
   {
     id: "barangayCertLowIncome",
@@ -94,8 +105,8 @@ const REQUIRED_DOCUMENTS: DocumentRequirement[] = [
     required: true,
     sampleImages: [
       {
-        src: `${SAMPLE_BASE}/inc-tax-return-2.jpg`,
-        label: "inc-tax-return-2.jpg",
+        src: `${SAMPLE_BASE}/barangay-low-income.png`,
+        label: "barangay-low-income.png",
       },
     ],
   },
@@ -112,16 +123,37 @@ const REQUIRED_DOCUMENTS: DocumentRequirement[] = [
     ],
   },
   {
+    id: "outOfSchoolYouthCertificate",
+    name: "Out Of School Youth Certificate",
+    description:
+      "If the beneficiary has stopped schooling. This only modifies the description on the upload field, since the system can't verify the uploaded file of a PDF.",
+    required: false,
+  },
+  {
+    id: "certificateOfGuardianship",
+    name: "Certificate of Guardianship",
+    description:
+      "If the birth parents are deceased or if the beneficiary has been abandoned by the parents. This only modifies the description on the upload field, since the system can't verify the uploaded file of a PDF.",
+    required: false,
+  },
+  {
     id: "incomeTaxReturn",
     name: "Income Tax Return",
     description: "Latest Income Tax Return (ITR) of parent/guardian",
-    required: true,
+    required: false,
     sampleImages: [
       {
-        src: `${SAMPLE_BASE}/inc-tax-return-1.jpg`,
-        label: "inc-tax-return-1.jpg",
+        src: `${SAMPLE_BASE}/income-tax-return.png`,
+        label: "income-tax-return.png",
       },
     ],
+  },
+  {
+    id: "certificateOfMarriage",
+    name: "Certificate of Marriage",
+    description:
+      "If the parents were married more than once, particularly the mother. This only modifies the description on the upload field, since the system can't verify the uploaded file of a PDF.",
+    required: false,
   },
   {
     id: "affidavitSoloParent",

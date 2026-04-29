@@ -128,7 +128,7 @@ const DashboardCalendar: React.FC = () => {
         </div>
       </CardHeader>
 
-      <CardContent className="space-y-4">
+      <CardContent className="flex flex-col gap-4">
         {loading ? (
           <div className="flex items-center justify-center py-8">
             <Spinner className="size-6 text-muted-foreground" />
@@ -171,17 +171,24 @@ const DashboardCalendar: React.FC = () => {
                   const isSelected = isSameDay(date, selectedDate);
                   const today = isSameDay(date, new Date());
 
-                  return (
-                    <button
-                      key={`${key}-${idx}`}
-                      type="button"
-                      onClick={() => setSelectedDate(date)}
-                      className={cn(
-                        "min-h-20 border-b border-r p-1 text-left transition-colors hover:bg-muted/40",
-                        !currentMonth && "bg-muted/20 text-muted-foreground",
-                        isSelected && "bg-primary/10"
-                      )}
-                    >
+                    return (
+                      <div
+                        key={`${key}-${idx}`}
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => setSelectedDate(date)}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter" || event.key === " ") {
+                            event.preventDefault();
+                            setSelectedDate(date);
+                          }
+                        }}
+                        className={cn(
+                          "min-h-20 cursor-pointer border-b border-r p-1 text-left transition-colors hover:bg-muted/40",
+                          !currentMonth && "bg-muted/20 text-muted-foreground",
+                          isSelected && "bg-primary/10"
+                        )}
+                      >
                       <div
                         className={cn(
                           "mb-1 flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold",
@@ -190,29 +197,36 @@ const DashboardCalendar: React.FC = () => {
                       >
                         {date.getDate()}
                       </div>
-                      <div className="space-y-1">
-                        {dayEvents.slice(0, 2).map((event) => (
-                          <div
+                        <div className="flex flex-col gap-1">
+                          {dayEvents.slice(0, 2).map((event) => (
+                          <button
                             key={event.id}
+                            type="button"
+                            onClick={(clickEvent) => {
+                              clickEvent.stopPropagation();
+                              setSelectedDate(date);
+                              setSelectedAnnouncement(event);
+                              setDialogOpen(true);
+                            }}
                             className={cn(
-                              "truncate rounded px-1 py-0.5 text-[10px] text-white",
+                              "truncate rounded px-1 py-0.5 text-left text-[10px] text-white",
                               EVENT_TYPE_COLORS[event.type] || "bg-gray-500"
                             )}
                           >
                             {event.title}
-                          </div>
+                          </button>
                         ))}
                         {dayEvents.length > 2 && (
                           <p className="text-[10px] text-muted-foreground">+{dayEvents.length - 2} more</p>
                         )}
                       </div>
-                    </button>
-                  );
-                })}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
 
-            <div className="space-y-2">
+            <div className="flex flex-col gap-2">
               <p className="text-sm font-medium text-muted-foreground">
                 {selectedDate.toLocaleDateString("en-US", {
                   month: "long",

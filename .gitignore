@@ -46,4 +46,7 @@ next-env.d.ts
 /uploads
 
 # additional files to ignore here
-prompt.txt
+prompts.txt
+lint-errors.txt
+/.agents
+/.github

@@ -12,6 +12,7 @@ import {
   FolderPlus,
   ClipboardCheck,
   Layers,
+  FileWarning,
 } from "lucide-react";
 import { usePathname } from "next/navigation";
 import {
@@ -44,6 +45,7 @@ const spesNavItems: NavItem[] = [
     icon: ClipboardCheck,
   },
   { title: "Batch Management", url: "/protected/admin/batches", icon: Layers },
+  { title: "Remarks/Records of Violation", url: "/protected/admin/remarks", icon: FileWarning },
   { title: "Reports", url: "/protected/admin/reports", icon: FileText },
 ];
 
@@ -66,6 +68,7 @@ function isSpesRoute(pathname: string): boolean {
     pathname.startsWith("/protected/admin/applications") ||
     pathname.startsWith("/protected/admin/evaluation") ||
     pathname.startsWith("/protected/admin/batches") ||
+    pathname.startsWith("/protected/admin/remarks") ||
     pathname.startsWith("/protected/admin/reports")
   );
 }

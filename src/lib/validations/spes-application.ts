@@ -249,11 +249,11 @@ export const sectionRequiredFields: Record<string, string[]> = {
   "spes-info": ["motivation"],
   documents: [
     "psaCertificate",
+    "proofOfEnrollment",
     "grades",
     "affidavitLowIncome",
     "barangayCertLowIncome",
     "barangayCertResidency",
-    "incomeTaxReturn",
   ],
   review: [], // No fields, just review
 };

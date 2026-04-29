@@ -38,6 +38,8 @@ export async function GET(
     // Parse query parameters
     const { searchParams } = new URL(request.url);
     const unreadOnly = searchParams.get("unreadOnly") === "true";
+    const limitParam = searchParams.get("limit");
+    const limit = limitParam ? Number(limitParam) : null;
 
     // Build where clause
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -46,13 +48,18 @@ export async function GET(
       where.isRead = false;
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const queryOptions: any = {
+      where,
+      orderBy: { createdAt: "desc" },
+    };
+    if (Number.isInteger(limit) && limit !== null && limit > 0) {
+      queryOptions.take = limit;
+    }
+
     // Fetch notifications and unread count
     const [notifications, unreadCount] = await Promise.all([
-      prisma.notification.findMany({
-        where,
-        orderBy: { createdAt: "desc" },
-        take: 50, // Limit to most recent 50
-      }),
+      prisma.notification.findMany(queryOptions),
       prisma.notification.count({
         where: { userId, isRead: false },
       }),

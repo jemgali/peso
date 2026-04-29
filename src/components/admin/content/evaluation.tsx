@@ -781,12 +781,16 @@ export default function Evaluation() {
                     <div className="space-y-3 rounded-lg bg-muted/30 p-3">
                       <div className="flex flex-col gap-2">
                         <Label htmlFor="notifyScheduleTitle">Schedule Title</Label>
-                        <Input
+                        <NativeSelect
                           id="notifyScheduleTitle"
                           value={scheduleTitle}
                           onChange={(event) => setScheduleTitle(event.target.value)}
-                          placeholder="e.g. SPES Requirements Follow-up"
-                        />
+                        >
+                          <NativeSelectOption value="">Select Title</NativeSelectOption>
+                          <NativeSelectOption value="Interview">Interview</NativeSelectOption>
+                          <NativeSelectOption value="Examination">Examination</NativeSelectOption>
+                          <NativeSelectOption value="Others">Others</NativeSelectOption>
+                        </NativeSelect>
                       </div>
 
                       <div className="flex flex-col gap-2">
