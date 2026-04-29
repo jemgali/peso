@@ -7,8 +7,8 @@ import { Spinner } from "@/components/ui/spinner";
 import { LayoutGrid, Activity } from "lucide-react";
 import { PageHeader } from "@/components/shared";
 import DashboardStatusTracker from "@/components/client/dashboard-status-tracker";
-import DashboardNotifications from "@/components/client/dashboard-notifications";
 import DashboardCalendar from "@/components/client/dashboard-calendar";
+import BatchSelection from "@/components/client/batch-selection";
 import type { ClientApplicationStatusResponse } from "@/lib/validations/application-review";
 
 function getStatusLabel(status: string) {
@@ -151,14 +151,16 @@ const Page = () => {
             </Card>
           </div>
 
+          {/* Batch Selection for Grantees */}
+          <BatchSelection />
+
           {/* Calendar with Announcements — replaces DashboardAnnouncements */}
           <DashboardCalendar />
         </div>
 
         {/* Right sidebar — Status Tracker */}
         <div className="hidden lg:block">
-          <div className="sticky top-6 space-y-4">
-            <DashboardNotifications />
+          <div className="sticky top-6 flex flex-col gap-4">
             {statusData?.hasApplication && statusData.submission ? (
               <DashboardStatusTracker
                 status={statusData.submission.status}
@@ -184,10 +186,9 @@ const Page = () => {
           </div>
         </div>
 
-        {/* Mobile notifications + status tracker (shown below content on small screens) */}
-        <div className="space-y-4 lg:hidden">
-          <DashboardNotifications />
-          {statusData?.hasApplication && statusData.submission && (
+        {/* Mobile status tracker */}
+        <div className="lg:hidden">
+          {statusData?.hasApplication && statusData.submission ? (
             <DashboardStatusTracker
               status={statusData.submission.status}
               submittedAt={statusData.submission.submittedAt}
@@ -195,6 +196,17 @@ const Page = () => {
               latestReviewComments={statusData.latestReview?.overallComments}
               isGrantee={Boolean(statusData.workflow?.isGrantee)}
             />
+          ) : (
+            <Card className="h-fit">
+              <CardHeader>
+                <CardTitle className="text-base">Application Status</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground">
+                  Submit an application to track your progress here.
+                </p>
+              </CardContent>
+            </Card>
           )}
         </div>
       </div>

@@ -97,7 +97,7 @@ const STAGE_CONFIG: Record<
   },
 }
 
-const CLIENT_APPLICATION_STATUS_LINK = "/protected/client/application/status"
+const CLIENT_DASHBOARD_LINK = "/protected/client"
 
 async function getAdminUserId(): Promise<string | null> {
   const session = await auth.api.getSession({
@@ -333,9 +333,12 @@ export async function POST(
       const notificationTitle = wasUpdated
         ? `${stageConfig.label} Schedule Updated`
         : `${stageConfig.label} Scheduled`
-      const notificationMessage = wasUpdated
+      const baseNotificationMessage = wasUpdated
         ? `Your SPES ${stageConfig.label.toLowerCase()} schedule has been updated to ${scheduleDateLabel}.`
         : `Your SPES ${stageConfig.label.toLowerCase()} has been scheduled for ${scheduleDateLabel}.`
+      const notificationMessage = eventDescription
+        ? `${baseNotificationMessage}\nDetails: ${eventDescription}`
+        : baseNotificationMessage
       const notificationType = wasUpdated
         ? `${stageConfig.notificationTypeBase}_updated`
         : `${stageConfig.notificationTypeBase}_created`
@@ -357,7 +360,7 @@ export async function POST(
           type: notificationType,
           title: notificationTitle,
           message: notificationMessage,
-          link: CLIENT_APPLICATION_STATUS_LINK,
+          link: CLIENT_DASHBOARD_LINK,
         },
       })
 
@@ -368,7 +371,7 @@ export async function POST(
           title: notificationTitle,
           message: notificationMessage,
           type: notificationType,
-          link: CLIENT_APPLICATION_STATUS_LINK,
+          link: CLIENT_DASHBOARD_LINK,
         },
         wasUpdated,
       }

@@ -61,29 +61,29 @@ enum ApplicationApplicantType {
 
 model User {
   // Primary Key
-  id            String       @id
+  id                      String                   @id
   // Other fields
-  name          String
-  email         String
-  emailVerified Boolean      @default(false)
-  image         String?
-  role          String?
-  banned        Boolean?
-  banReason     String?
-  banExpires    DateTime?
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
+  name                    String
+  email                   String
+  emailVerified           Boolean                  @default(false)
+  image                   String?
+  role                    String?
+  banned                  Boolean?
+  banReason               String?
+  banExpires              DateTime?
+  createdAt               DateTime                 @default(now())
+  updatedAt               DateTime                 @updatedAt
   // Relationships
-  sessions      Session[]
-  accounts      Account[]
-  profile       ProfileUser?
-  reviews       ApplicationReview[]
-  notifications Notification[]
+  sessions                Session[]
+  accounts                Account[]
+  profile                 ProfileUser?
+  reviews                 ApplicationReview[]
+  notifications           Notification[]
   scheduleEventRecipients ScheduleEventRecipient[]
-  examSettingsUpdates SpesExamSettings[] @relation("SpesExamSettingsUpdatedBy")
-  createdSpesBatches SpesBatch[] @relation("SpesBatchCreatedBy")
-  selectedSpesWorkflows SpesWorkflow[] @relation("SpesSelectedBy")
-  spesStageChanges SpesStageHistory[] @relation("SpesStageChangedBy")
+  examSettingsUpdates     SpesExamSettings[]       @relation("SpesExamSettingsUpdatedBy")
+  createdSpesBatches      SpesBatch[]              @relation("SpesBatchCreatedBy")
+  selectedSpesWorkflows   SpesWorkflow[]           @relation("SpesSelectedBy")
+  spesStageChanges        SpesStageHistory[]       @relation("SpesStageChangedBy")
 
   // Other things
   @@unique([email])
@@ -159,16 +159,16 @@ model Verification {
 // SPES Applicant Name + Role
 model ProfileUser {
   // Foreign Key
-  userId            String             @unique @map("user_id")
-  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId            String                  @unique @map("user_id")
+  user              User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
   // Primary Key
-  profileId         String             @id @map("profile_id")
+  profileId         String                  @id @map("profile_id")
   // Other fields
-  profileLastName   String?            @map("profile_last_name")
-  profileFirstName  String?            @map("profile_first_name")
-  profileMiddleName String?            @map("profile_middle_name")
-  profileSuffix     String?            @map("profile_suffix")
-  profileEmail      String?            @map("profile_email")
+  profileLastName   String?                 @map("profile_last_name")
+  profileFirstName  String?                 @map("profile_first_name")
+  profileMiddleName String?                 @map("profile_middle_name")
+  profileSuffix     String?                 @map("profile_suffix")
+  profileEmail      String?                 @map("profile_email")
   // Relationships
   personal          ProfilePersonal?
   address           ProfileAddress?
@@ -205,11 +205,11 @@ model ProfilePersonal {
   profileReligion        String?     @map("profile_religion")
   profileLanguageDialect Json?       @map("profile_language_dialect")
 
-  profileContact         String?     @map("profile_contact")
-  profileFacebook        String?     @map("profile_facebook")
+  profileContact    String? @map("profile_contact")
+  profileFacebook   String? @map("profile_facebook")
   // Disability (if applicable)
-  profileDisability      String?     @map("profile_disability")
-  profilePwdId           String?     @map("profile_pwd_id")
+  profileDisability String? @map("profile_disability")
+  profilePwdId      String? @map("profile_pwd_id")
 
   @@map("profile_personal")
   @@schema("public")
@@ -258,16 +258,16 @@ model ProfileFamily {
 
 model ProfileSibling {
   // Foreign Key
-  profileId         String      @map("profile_id")
-  profile           ProfileUser @relation(fields: [profileId], references: [profileId], onDelete: Cascade)
+  profileId            String      @map("profile_id")
+  profile              ProfileUser @relation(fields: [profileId], references: [profileId], onDelete: Cascade)
   // Primary Key
-  siblingId         String      @id @map("sibling_id")
+  siblingId            String      @id @map("sibling_id")
   // Sibling fields
-  siblingName       String      @map("sibling_name")
-  siblingAge        Int         @map("sibling_age")
-  siblingOccupation String?     @map("sibling_occupation")
-  siblingSameHousehold Boolean  @default(false) @map("sibling_same_household")
-  siblingOrder      Int         @default(0) @map("sibling_order")
+  siblingName          String      @map("sibling_name")
+  siblingAge           Int         @map("sibling_age")
+  siblingOccupation    String?     @map("sibling_occupation")
+  siblingSameHousehold Boolean     @default(false) @map("sibling_same_household")
+  siblingOrder         Int         @default(0) @map("sibling_order")
 
   @@index([profileId])
   @@map("profile_sibling")
@@ -359,16 +359,16 @@ model ProfileDocuments {
 // SPES-Specific Information (4Ps beneficiary, application year, motivation, remarks)
 model ProfileSPES {
   // Foreign Key
-  profileId           String      @unique @map("profile_id")
-  profile             ProfileUser @relation(fields: [profileId], references: [profileId], onDelete: Cascade)
+  profileId                String      @unique @map("profile_id")
+  profile                  ProfileUser @relation(fields: [profileId], references: [profileId], onDelete: Cascade)
   // Primary Key
-  spesId              String      @id @map("spes_id")
+  spesId                   String      @id @map("spes_id")
   // Other fields
-  isFourPsBeneficiary Boolean?    @map("is_four_ps_beneficiary")
-  applicationYear     Int?        @map("application_year")
-  spesBabiesAvailmentYears Int?   @map("spes_babies_availment_years")
-  motivation          String?     @map("motivation")
-  remarks             String?     @map("remarks")
+  isFourPsBeneficiary      Boolean?    @map("is_four_ps_beneficiary")
+  applicationYear          Int?        @map("application_year")
+  spesBabiesAvailmentYears Int?        @map("spes_babies_availment_years")
+  motivation               String?     @map("motivation")
+  remarks                  String?     @map("remarks")
 
   @@map("profile_spes")
   @@schema("public")
@@ -376,14 +376,14 @@ model ProfileSPES {
 
 model ProfileSPESAvailment {
   // Foreign Key
-  profileId         String      @map("profile_id")
-  profile           ProfileUser @relation(fields: [profileId], references: [profileId], onDelete: Cascade)
+  profileId       String      @map("profile_id")
+  profile         ProfileUser @relation(fields: [profileId], references: [profileId], onDelete: Cascade)
   // Primary Key
-  availmentId       String      @id @map("availment_id")
+  availmentId     String      @id @map("availment_id")
   // Availment fields
-  yearOfAvailment   Int         @map("year_of_availment")
-  assignedOffice    String      @map("assigned_office")
-  availmentOrder    Int         @default(0) @map("availment_order")
+  yearOfAvailment Int         @map("year_of_availment")
+  assignedOffice  String      @map("assigned_office")
+  availmentOrder  Int         @default(0) @map("availment_order")
 
   @@index([profileId])
   @@map("profile_spes_availment")
@@ -395,19 +395,19 @@ model ProfileSPESAvailment {
 // Application submission status enum values: pending, in_review, approved, needs_revision, rejected
 model ApplicationSubmission {
   // Foreign Key
-  profileId       String              @map("profile_id")
-  profile         ProfileUser         @relation(fields: [profileId], references: [profileId], onDelete: Cascade)
+  profileId     String                   @map("profile_id")
+  profile       ProfileUser              @relation(fields: [profileId], references: [profileId], onDelete: Cascade)
   // Primary Key
-  submissionId    String              @id @map("submission_id")
+  submissionId  String                   @id @map("submission_id")
   // Status fields
-  status          String              @default("pending") @map("status") // pending, in_review, approved, needs_revision, rejected
-  applicantType   ApplicationApplicantType @default(NEW) @map("applicant_type")
+  status        String                   @default("pending") @map("status") // pending, in_review, approved, needs_revision, rejected
+  applicantType ApplicationApplicantType @default(NEW) @map("applicant_type")
   // Timestamps
-  submittedAt     DateTime            @default(now()) @map("submitted_at")
-  updatedAt       DateTime            @updatedAt @map("updated_at")
+  submittedAt   DateTime                 @default(now()) @map("submitted_at")
+  updatedAt     DateTime                 @updatedAt @map("updated_at")
   // Relationships
-  reviews         ApplicationReview[]
-  spesWorkflow    SpesWorkflow?
+  reviews       ApplicationReview[]
+  spesWorkflow  SpesWorkflow?
 
   @@index([profileId])
   @@index([status])
@@ -418,17 +418,17 @@ model ApplicationSubmission {
 
 model SpesExamSettings {
   // Primary Key
-  settingsId               String   @id @map("settings_id")
+  settingsId              String   @id @map("settings_id")
   // Scope identifier
-  scope                    String   @unique @default("spes") @map("scope")
+  scope                   String   @unique @default("spes") @map("scope")
   // Exam computation settings
-  totalScore               Int      @default(100) @map("total_score")
-  passingThresholdPercent  Int      @default(75) @map("passing_threshold_percent")
+  totalScore              Int      @default(100) @map("total_score")
+  passingThresholdPercent Int      @default(75) @map("passing_threshold_percent")
   // Audit fields
-  updatedById              String?  @map("updated_by_id")
-  updatedBy                User?    @relation("SpesExamSettingsUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
-  createdAt                DateTime @default(now()) @map("created_at")
-  updatedAt                DateTime @updatedAt @map("updated_at")
+  updatedById             String?  @map("updated_by_id")
+  updatedBy               User?    @relation("SpesExamSettingsUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+  createdAt               DateTime @default(now()) @map("created_at")
+  updatedAt               DateTime @updatedAt @map("updated_at")
 
   @@map("spes_exam_settings")
   @@schema("public")
@@ -436,18 +436,18 @@ model SpesExamSettings {
 
 model SpesBatch {
   // Primary Key
-  batchId       String         @id @map("batch_id")
+  batchId     String         @id @map("batch_id")
   // Batch details
-  batchName     String         @map("batch_name")
-  startDate     DateTime       @map("start_date") @db.Date
-  officeName    String?        @map("office_name")
+  batchName   String         @map("batch_name")
+  startDate   DateTime       @map("start_date") @db.Date
+  officeName  String?        @map("office_name")
   // Audit fields
-  createdById   String?        @map("created_by_id")
-  createdBy     User?          @relation("SpesBatchCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
-  createdAt     DateTime       @default(now()) @map("created_at")
-  updatedAt     DateTime       @updatedAt @map("updated_at")
+  createdById String?        @map("created_by_id")
+  createdBy   User?          @relation("SpesBatchCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt   DateTime       @default(now()) @map("created_at")
+  updatedAt   DateTime       @updatedAt @map("updated_at")
   // Relationships
-  workflows     SpesWorkflow[]
+  workflows   SpesWorkflow[]
 
   @@index([startDate])
   @@map("spes_batch")
@@ -456,38 +456,39 @@ model SpesBatch {
 
 model SpesWorkflow {
   // Primary Key
-  workflowId                   String             @id @map("workflow_id")
+  workflowId                 String                @id @map("workflow_id")
   // Application reference
-  submissionId                 String             @unique @map("submission_id")
-  submission                   ApplicationSubmission @relation(fields: [submissionId], references: [submissionId], onDelete: Cascade)
+  submissionId               String                @unique @map("submission_id")
+  submission                 ApplicationSubmission @relation(fields: [submissionId], references: [submissionId], onDelete: Cascade)
   // Workflow state
-  stage                        SpesWorkflowStage  @default(APPLICATION_APPROVED) @map("stage")
-  priority                     SpesPriorityLevel? @map("priority")
+  stage                      SpesWorkflowStage     @default(APPLICATION_APPROVED) @map("stage")
+  priority                   SpesPriorityLevel?    @map("priority")
   // Schedule links
-  interviewScheduleEventId     String?            @map("interview_schedule_event_id")
-  examScheduleEventId          String?            @map("exam_schedule_event_id")
-  orientationScheduleEventId   String?            @map("orientation_schedule_event_id")
-  interviewScheduleEvent       ScheduleEvent?     @relation("SpesInterviewEvent", fields: [interviewScheduleEventId], references: [id], onDelete: SetNull)
-  examScheduleEvent            ScheduleEvent?     @relation("SpesExamEvent", fields: [examScheduleEventId], references: [id], onDelete: SetNull)
-  orientationScheduleEvent     ScheduleEvent?     @relation("SpesOrientationEvent", fields: [orientationScheduleEventId], references: [id], onDelete: SetNull)
+  interviewScheduleEventId   String?               @map("interview_schedule_event_id")
+  examScheduleEventId        String?               @map("exam_schedule_event_id")
+  orientationScheduleEventId String?               @map("orientation_schedule_event_id")
+  interviewScheduleEvent     ScheduleEvent?        @relation("SpesInterviewEvent", fields: [interviewScheduleEventId], references: [id], onDelete: SetNull)
+  examScheduleEvent          ScheduleEvent?        @relation("SpesExamEvent", fields: [examScheduleEventId], references: [id], onDelete: SetNull)
+  orientationScheduleEvent   ScheduleEvent?        @relation("SpesOrientationEvent", fields: [orientationScheduleEventId], references: [id], onDelete: SetNull)
   // Evaluation fields
-  examScore                    Float?             @map("exam_score")
-  examResult                   SpesExamResult     @default(PENDING) @map("exam_result")
-  rankPosition                 Int?               @map("rank_position")
-  selectionStatus              SpesSelectionStatus @default(PENDING) @map("selection_status")
+  examScore                  Float?                @map("exam_score")
+  examResult                 SpesExamResult        @default(PENDING) @map("exam_result")
+  rankPosition               Int?                  @map("rank_position")
+  selectionStatus            SpesSelectionStatus   @default(PENDING) @map("selection_status")
   // Grantee audit fields
-  selectedById                 String?            @map("selected_by_id")
-  selectedBy                   User?              @relation("SpesSelectedBy", fields: [selectedById], references: [id], onDelete: SetNull)
-  selectedAt                   DateTime?          @map("selected_at")
+  selectedById               String?               @map("selected_by_id")
+  selectedBy                 User?                 @relation("SpesSelectedBy", fields: [selectedById], references: [id], onDelete: SetNull)
+  selectedAt                 DateTime?             @map("selected_at")
   // Deployment fields
-  batchId                      String?            @map("batch_id")
-  batch                        SpesBatch?         @relation(fields: [batchId], references: [batchId], onDelete: SetNull)
-  assignedOffice               String?            @map("assigned_office")
+  batchId                    String?               @map("batch_id")
+  batch                      SpesBatch?            @relation(fields: [batchId], references: [batchId], onDelete: SetNull)
+  assignedOffice             String?               @map("assigned_office")
   // Audit fields
-  createdAt                    DateTime           @default(now()) @map("created_at")
-  updatedAt                    DateTime           @updatedAt @map("updated_at")
+  createdAt                  DateTime              @default(now()) @map("created_at")
+  updatedAt                  DateTime              @updatedAt @map("updated_at")
   // Relationships
-  stageHistory                 SpesStageHistory[]
+  stageHistory               SpesStageHistory[]
+  granteeRecords             SpesGranteeRecord[]
 
   @@index([stage])
   @@index([priority])
@@ -499,41 +500,73 @@ model SpesWorkflow {
 
 model SpesStageHistory {
   // Primary Key
-  historyId     String            @id @map("history_id")
+  historyId   String            @id @map("history_id")
   // Workflow reference
-  workflowId    String            @map("workflow_id")
-  workflow      SpesWorkflow      @relation(fields: [workflowId], references: [workflowId], onDelete: Cascade)
+  workflowId  String            @map("workflow_id")
+  workflow    SpesWorkflow      @relation(fields: [workflowId], references: [workflowId], onDelete: Cascade)
   // Stage snapshot
-  stage         SpesWorkflowStage @map("stage")
-  note          String?           @map("note")
+  stage       SpesWorkflowStage @map("stage")
+  note        String?           @map("note")
   // Audit fields
-  createdById   String?           @map("created_by_id")
-  createdBy     User?             @relation("SpesStageChangedBy", fields: [createdById], references: [id], onDelete: SetNull)
-  createdAt     DateTime          @default(now()) @map("created_at")
+  createdById String?           @map("created_by_id")
+  createdBy   User?             @relation("SpesStageChangedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt   DateTime          @default(now()) @map("created_at")
 
   @@index([workflowId, createdAt])
   @@map("spes_stage_history")
   @@schema("public")
 }
 
+model SpesGranteeRecord {
+  // Primary Key
+  recordId   String       @id @map("record_id")
+  // Workflow reference
+  workflowId String       @map("workflow_id")
+  workflow   SpesWorkflow @relation(fields: [workflowId], references: [workflowId], onDelete: Cascade)
+
+  // Evaluation Scores
+  punctuality  Int @map("punctuality")
+  respect      Int @map("respect")
+  honesty      Int @map("honesty")
+  adaptability Int @map("adaptability")
+  expression   Int @map("expression")
+  initiative   Int @map("initiative")
+  following    Int @map("following")
+  efficiency   Int @map("efficiency")
+  creativity   Int @map("creativity")
+
+  // Additional details
+  remarks     String? @map("remarks")
+  ratedBy     String  @map("rated_by")
+  documentUrl String? @map("document_url")
+
+  // Audit fields
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([workflowId])
+  @@map("spes_grantee_record")
+  @@schema("public")
+}
+
 // Application review by admin
 model ApplicationReview {
   // Foreign Key - Submission being reviewed
-  submissionId          String                   @map("submission_id")
-  submission            ApplicationSubmission    @relation(fields: [submissionId], references: [submissionId], onDelete: Cascade)
+  submissionId     String                   @map("submission_id")
+  submission       ApplicationSubmission    @relation(fields: [submissionId], references: [submissionId], onDelete: Cascade)
   // Foreign Key - Admin who reviewed
-  reviewerId            String                   @map("reviewer_id")
-  reviewer              User                     @relation(fields: [reviewerId], references: [id], onDelete: Cascade)
+  reviewerId       String                   @map("reviewer_id")
+  reviewer         User                     @relation(fields: [reviewerId], references: [id], onDelete: Cascade)
   // Primary Key
-  reviewId              String                   @id @map("review_id")
+  reviewId         String                   @id @map("review_id")
   // Review decision
-  decision              String                   @map("decision") // approved, needs_revision, rejected
-  overallComments       String?                  @map("overall_comments")
+  decision         String                   @map("decision") // approved, needs_revision, rejected
+  overallComments  String?                  @map("overall_comments")
   // Timestamps
-  reviewedAt            DateTime                 @default(now()) @map("reviewed_at")
+  reviewedAt       DateTime                 @default(now()) @map("reviewed_at")
   // Relationships
-  fieldFeedback         ReviewFieldFeedback[]
-  documentFeedback      ReviewDocumentFeedback[]
+  fieldFeedback    ReviewFieldFeedback[]
+  documentFeedback ReviewDocumentFeedback[]
 
   @@index([submissionId])
   @@index([reviewerId])
@@ -544,16 +577,16 @@ model ApplicationReview {
 // Per-field feedback from admin review
 model ReviewFieldFeedback {
   // Foreign Key
-  reviewId    String            @map("review_id")
-  review      ApplicationReview @relation(fields: [reviewId], references: [reviewId], onDelete: Cascade)
+  reviewId   String            @map("review_id")
+  review     ApplicationReview @relation(fields: [reviewId], references: [reviewId], onDelete: Cascade)
   // Primary Key
-  feedbackId  String            @id @map("feedback_id")
+  feedbackId String            @id @map("feedback_id")
   // Field identification
-  sectionId   String            @map("section_id") // e.g., "basic-info", "personal-details"
-  fieldName   String            @map("field_name") // e.g., "profileLastName", "profileBirthdate"
+  sectionId  String            @map("section_id") // e.g., "basic-info", "personal-details"
+  fieldName  String            @map("field_name") // e.g., "profileLastName", "profileBirthdate"
   // Feedback
-  status      String            @map("status") // valid, invalid
-  comment     String?           @map("comment")
+  status     String            @map("status") // valid, invalid
+  comment    String?           @map("comment")
 
   @@index([reviewId])
   @@map("review_field_feedback")
@@ -581,19 +614,19 @@ model ReviewDocumentFeedback {
 // In-app notifications
 model Notification {
   // Foreign Key - User receiving notification
-  userId        String    @map("user_id")
-  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId         String   @map("user_id")
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   // Primary Key
   notificationId String   @id @map("notification_id")
   // Notification content
-  type          String    @map("type") // application_approved, application_revision, application_rejected
-  title         String    @map("title")
-  message       String    @map("message")
-  link          String?   @map("link") // Optional link to related page
+  type           String   @map("type") // application_approved, application_revision, application_rejected
+  title          String   @map("title")
+  message        String   @map("message")
+  link           String?  @map("link") // Optional link to related page
   // Status
-  isRead        Boolean   @default(false) @map("is_read")
+  isRead         Boolean  @default(false) @map("is_read")
   // Timestamps
-  createdAt     DateTime  @default(now()) @map("created_at")
+  createdAt      DateTime @default(now()) @map("created_at")
 
   @@index([userId])
   @@index([isRead])
@@ -610,8 +643,8 @@ model Program {
   // Program details
   title       String
   description String?
-  image       String?  // URL to program logo/image
-  link        String?  // URL to program details page
+  image       String? // URL to program logo/image
+  link        String? // URL to program details page
   // Status and ordering
   status      String   @default("active") // active, inactive
   order       Int      @default(0) // Display order
@@ -628,22 +661,22 @@ model Program {
 // Schedule events (announcements, deadlines, schedules)
 model ScheduleEvent {
   // Primary Key
-  id          String    @id @default(cuid())
+  id                   String                   @id @default(cuid())
   // Event details
-  title       String
-  description String?
-  type        String    // announcement, schedule, deadline
-  visibility  String    @default("all") // all, clients, employees
+  title                String
+  description          String?
+  type                 String // announcement, schedule, deadline
+  visibility           String                   @default("all") // all, clients, employees
   // Date/Time
-  startDate   DateTime  @map("start_date")
-  endDate     DateTime? @map("end_date")
-  allDay      Boolean   @default(false) @map("all_day")
+  startDate            DateTime                 @map("start_date")
+  endDate              DateTime?                @map("end_date")
+  allDay               Boolean                  @default(false) @map("all_day")
   // Timestamps
-  createdAt   DateTime  @default(now()) @map("created_at")
-  updatedAt   DateTime  @updatedAt @map("updated_at")
-  interviewWorkflows   SpesWorkflow[] @relation("SpesInterviewEvent")
-  examWorkflows        SpesWorkflow[] @relation("SpesExamEvent")
-  orientationWorkflows SpesWorkflow[] @relation("SpesOrientationEvent")
+  createdAt            DateTime                 @default(now()) @map("created_at")
+  updatedAt            DateTime                 @updatedAt @map("updated_at")
+  interviewWorkflows   SpesWorkflow[]           @relation("SpesInterviewEvent")
+  examWorkflows        SpesWorkflow[]           @relation("SpesExamEvent")
+  orientationWorkflows SpesWorkflow[]           @relation("SpesOrientationEvent")
   recipients           ScheduleEventRecipient[]
 
   @@index([startDate])
@@ -654,12 +687,12 @@ model ScheduleEvent {
 
 model ScheduleEventRecipient {
   // Foreign Key
-  eventId     String        @map("event_id")
-  event       ScheduleEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  userId      String        @map("user_id")
-  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  eventId   String        @map("event_id")
+  event     ScheduleEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  userId    String        @map("user_id")
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   // Audit fields
-  createdAt   DateTime      @default(now()) @map("created_at")
+  createdAt DateTime      @default(now()) @map("created_at")
 
   @@id([eventId, userId])
   @@index([userId])

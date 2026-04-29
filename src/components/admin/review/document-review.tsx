@@ -44,15 +44,23 @@ const DOCUMENT_TYPES = [
     required: true,
   },
   {
+    id: "proofOfEnrollment",
+    name: "Proof of Enrollment",
+    description: "Proof of current school enrollment",
+    required: true,
+  },
+  {
     id: "grades",
     name: "Grades",
-    description: "Latest available report card or transcript of records",
+    description:
+      "If Highschool/Elementary is picked (Grade 1-12), upload last school year and current school year grades. If College is picked (Year 1-5, Masters, Doctorate), upload only first semester grades. This only modifies the description on the upload field, since the system can't verify the uploaded file of a PDF.",
     required: true,
   },
   {
     id: "affidavitLowIncome",
     name: "Affidavit of Low Income (PAO)",
-    description: "Affidavit of low income from the Public Attorney's Office",
+    description:
+      "Both parents should have an affidavit of low income. If only one parent is present, attach affidavit of solo parent. Indicate the Poverty Threshold (e.g. P192,000.00). This only modifies the description on the upload field, since the system can't verify the uploaded file of a PDF.",
     required: true,
   },
   {
@@ -68,10 +76,31 @@ const DOCUMENT_TYPES = [
     required: true,
   },
   {
+    id: "outOfSchoolYouthCertificate",
+    name: "Out Of School Youth Certificate",
+    description:
+      "If the beneficiary has stopped schooling. This only modifies the description on the upload field, since the system can't verify the uploaded file of a PDF.",
+    required: false,
+  },
+  {
+    id: "certificateOfGuardianship",
+    name: "Certificate of Guardianship",
+    description:
+      "If the birth parents are deceased or if the beneficiary has been abandoned by the parents. This only modifies the description on the upload field, since the system can't verify the uploaded file of a PDF.",
+    required: false,
+  },
+  {
     id: "incomeTaxReturn",
     name: "Income Tax Return",
     description: "Latest Income Tax Return (ITR) of parent/guardian",
-    required: true,
+    required: false,
+  },
+  {
+    id: "certificateOfMarriage",
+    name: "Certificate of Marriage",
+    description:
+      "If the parents were married more than once, particularly the mother. This only modifies the description on the upload field, since the system can't verify the uploaded file of a PDF.",
+    required: false,
   },
   {
     id: "affidavitSoloParent",

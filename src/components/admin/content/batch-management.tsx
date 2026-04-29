@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/spinner";
 import { Badge } from "@/components/ui/badge";
@@ -44,7 +45,13 @@ import type {
   CreateBatchResponse,
   SpesWorkflowListItem,
   SpesWorkflowListResponse,
+  BulkNotifyWorkflowsResponse,
 } from "@/lib/validations/spes-workflow";
+import {
+  formatDateTimeInputInManila,
+  parseManilaDateInput,
+  parseManilaDateTimeInput,
+} from "@/lib/manila-datetime";
 
 type LguOfficeSource = Record<string, string | string[]>;
 
@@ -86,7 +93,6 @@ export default function BatchManagement() {
   const [loadingWorkflows, setLoadingWorkflows] = useState(true);
   const [loadingOfficeOptions, setLoadingOfficeOptions] = useState(true);
   const [savingBatch, setSavingBatch] = useState(false);
-  const [addingToBatch, setAddingToBatch] = useState(false);
   const [removingFromBatch, setRemovingFromBatch] = useState(false);
   const [assigningOffice, setAssigningOffice] = useState(false);
 
@@ -97,14 +103,24 @@ export default function BatchManagement() {
   const [batchName, setBatchName] = useState("");
   const [startDate, setStartDate] = useState("");
   const [selectedBatchId, setSelectedBatchId] = useState("");
-  const [selectedGranteeIds, setSelectedGranteeIds] = useState<Set<string>>(
-    new Set(),
-  );
   const [selectedBatchWorkflowIds, setSelectedBatchWorkflowIds] = useState<
     Set<string>
   >(new Set());
   const [selectedOffice, setSelectedOffice] = useState("");
-  const [granteeSearch, setGranteeSearch] = useState("");
+
+  const currentYear = new Date().getFullYear().toString();
+  const [batchYearFilter, setBatchYearFilter] = useState(currentYear);
+
+  const [notifyingApplicants, setNotifyingApplicants] = useState(false);
+  const [notificationNote, setNotificationNote] = useState("");
+  const [attachSchedule, setAttachSchedule] = useState(false);
+  const [scheduleTitle, setScheduleTitle] = useState("");
+  const [scheduleDescription, setScheduleDescription] = useState("");
+  const [scheduleAllDay, setScheduleAllDay] = useState(false);
+  const [scheduleStartDate, setScheduleStartDate] = useState(
+    formatDateTimeInputInManila(new Date())
+  );
+  const [scheduleEndDate, setScheduleEndDate] = useState("");
 
   const loadBatches = useCallback(async () => {
     setLoadingBatches(true);
@@ -148,12 +164,6 @@ export default function BatchManagement() {
       }
 
       setWorkflows(fetchedWorkflows);
-      setSelectedGranteeIds((current) => {
-        const valid = new Set(
-          fetchedWorkflows.map((workflow) => workflow.workflowId),
-        );
-        return new Set(Array.from(current).filter((id) => valid.has(id)));
-      });
       setSelectedBatchWorkflowIds((current) => {
         const valid = new Set(
           fetchedWorkflows.map((workflow) => workflow.workflowId),
@@ -216,7 +226,6 @@ export default function BatchManagement() {
   }, [batches, selectedBatchId]);
 
   useEffect(() => {
-    setSelectedGranteeIds(new Set());
     setSelectedBatchWorkflowIds(new Set());
   }, [selectedBatchId]);
 
@@ -254,42 +263,108 @@ export default function BatchManagement() {
     }
   };
 
-  const addSelectedGranteesToBatch = async () => {
-    const workflowIds = Array.from(selectedGranteeIds);
-    if (!selectedBatchId) {
-      toast.error("Select a target batch first");
-      return;
-    }
-    if (workflowIds.length === 0) {
-      toast.error("Select at least one grantee from the Grantees tab");
+  const notifySelectedApplicants = async () => {
+    const targetWorkflowIds = Array.from(selectedBatchWorkflowIds);
+    if (targetWorkflowIds.length === 0) {
+      toast.error("Select at least one applicant from the batch");
       return;
     }
 
-    setAddingToBatch(true);
+    let schedulePayload:
+      | {
+          title: string;
+          description?: string;
+          startDate: string;
+          endDate?: string | null;
+          allDay: boolean;
+        }
+      | undefined;
+
+    if (attachSchedule) {
+      const trimmedScheduleTitle = scheduleTitle.trim();
+      if (!trimmedScheduleTitle) {
+        toast.error(
+          "Schedule title is required when calendar scheduling is enabled",
+        );
+        return;
+      }
+
+      if (!scheduleStartDate) {
+        toast.error("Schedule start date is required");
+        return;
+      }
+
+      const startDateInputValue = scheduleAllDay
+        ? scheduleStartDate.split("T")[0] || scheduleStartDate
+        : scheduleStartDate;
+      const parsedStartDate = scheduleAllDay
+        ? parseManilaDateInput(startDateInputValue)
+        : parseManilaDateTimeInput(scheduleStartDate);
+      if (!parsedStartDate) {
+        toast.error("Schedule start date is invalid");
+        return;
+      }
+
+      let parsedEndDate: Date | null = null;
+      if (scheduleEndDate) {
+        const endDateInputValue = scheduleAllDay
+          ? scheduleEndDate.split("T")[0] || scheduleEndDate
+          : scheduleEndDate;
+        parsedEndDate = scheduleAllDay
+          ? parseManilaDateInput(endDateInputValue)
+          : parseManilaDateTimeInput(scheduleEndDate);
+        if (!parsedEndDate) {
+          toast.error("Schedule end date is invalid");
+          return;
+        }
+
+        if (parsedEndDate.getTime() < parsedStartDate.getTime()) {
+          toast.error("Schedule end date must be after or equal to start date");
+          return;
+        }
+      }
+
+      schedulePayload = {
+        title: trimmedScheduleTitle,
+        description: scheduleDescription.trim() || undefined,
+        startDate: parsedStartDate.toISOString(),
+        endDate: parsedEndDate ? parsedEndDate.toISOString() : null,
+        allDay: scheduleAllDay,
+      };
+    }
+
+    setNotifyingApplicants(true);
     try {
-      const response = await fetch(
-        ROUTES.API.ADMIN.SPES.WORKFLOWS_BULK_ASSIGNMENT,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            workflowIds,
-            batchId: selectedBatchId,
-          }),
-        },
-      );
-      const payload = (await response.json()) as BulkAssignWorkflowsResponse;
+      const response = await fetch(ROUTES.API.ADMIN.SPES.WORKFLOWS_NOTIFY, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          workflowIds: targetWorkflowIds,
+          note: notificationNote.trim() || undefined,
+          schedule: schedulePayload,
+        }),
+      });
+      const payload = (await response.json()) as BulkNotifyWorkflowsResponse;
       const result = payload.data;
 
       if (!response.ok || !payload.success || !result) {
-        throw new Error(
-          payload.error || "Failed to add selected grantees to batch",
-        );
+        throw new Error(payload.error || "Failed to notify selected applicants");
       }
 
       toast.success(
-        `Added ${result.updated} grantee${result.updated === 1 ? "" : "s"} to selected batch.`,
+        `Notified ${result.notified} applicant${
+          result.notified === 1 ? "" : "s"
+        } (${result.emailSent} email${result.emailSent === 1 ? "" : "s"} sent).`,
       );
+      if (result.scheduledEvent) {
+        toast.success(
+          `Scheduled "${result.scheduledEvent.title}" for ${
+            result.scheduledEvent.recipientCount
+          } selected applicant${
+            result.scheduledEvent.recipientCount === 1 ? "" : "s"
+          }.`,
+        );
+      }
       if (result.missingWorkflowIds.length > 0) {
         toast.info(
           `${result.missingWorkflowIds.length} selected record${
@@ -298,16 +373,23 @@ export default function BatchManagement() {
         );
       }
 
-      setSelectedGranteeIds(new Set());
-      await Promise.all([loadWorkflows(), loadBatches()]);
+      setSelectedBatchWorkflowIds(new Set());
+      setNotificationNote("");
+      setAttachSchedule(false);
+      setScheduleTitle("");
+      setScheduleDescription("");
+      setScheduleAllDay(false);
+      setScheduleStartDate(formatDateTimeInputInManila(new Date()));
+      setScheduleEndDate("");
+      await loadWorkflows();
     } catch (error) {
       toast.error(
         error instanceof Error
           ? error.message
-          : "Failed to add selected grantees to batch",
+          : "Failed to notify selected applicants",
       );
     } finally {
-      setAddingToBatch(false);
+      setNotifyingApplicants(false);
     }
   };
 
@@ -444,57 +526,18 @@ export default function BatchManagement() {
     [workflows, selectedBatchId],
   );
 
-  const filteredGrantees = useMemo(() => {
-    const search = granteeSearch.trim().toLowerCase();
-    return workflows.filter((workflow) => {
-      if (!isPasser(workflow)) return false;
-      if (selectedBatchId && workflow.batchId === selectedBatchId) return false;
-      if (!search) return true;
-      return workflow.applicantName.toLowerCase().includes(search);
+  const filteredBatches = useMemo(() => {
+    return batches.filter(batch => {
+      const year = new Date(batch.startDate).getFullYear().toString();
+      return year === batchYearFilter;
     });
-  }, [workflows, granteeSearch, selectedBatchId]);
-
-  const allGranteesSelected =
-    filteredGrantees.length > 0 &&
-    filteredGrantees.every((workflow) =>
-      selectedGranteeIds.has(workflow.workflowId),
-    );
+  }, [batches, batchYearFilter]);
 
   const allBatchMembersSelected =
     batchMembers.length > 0 &&
     batchMembers.every((workflow) =>
       selectedBatchWorkflowIds.has(workflow.workflowId),
     );
-
-  const toggleGranteeSelection = (workflowId: string, checked: boolean) => {
-    setSelectedGranteeIds((current) => {
-      const next = new Set(current);
-      if (checked) {
-        next.add(workflowId);
-      } else {
-        next.delete(workflowId);
-      }
-      return next;
-    });
-  };
-
-  const toggleAllGranteeSelections = (checked: boolean) => {
-    setSelectedGranteeIds((current) => {
-      if (!checked) {
-        const next = new Set(current);
-        for (const workflow of filteredGrantees) {
-          next.delete(workflow.workflowId);
-        }
-        return next;
-      }
-
-      const next = new Set(current);
-      for (const workflow of filteredGrantees) {
-        next.add(workflow.workflowId);
-      }
-      return next;
-    });
-  };
 
   const toggleBatchWorkflowSelection = (
     workflowId: string,
@@ -551,19 +594,32 @@ export default function BatchManagement() {
           <CardContent>
             <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
               <div className="flex w-full max-w-70 flex-col gap-2">
+                <Label htmlFor="batchYearFilter">Year Filter</Label>
+                <NativeSelect
+                  id="batchYearFilter"
+                  value={batchYearFilter}
+                  onChange={(event) => setBatchYearFilter(event.target.value)}
+                >
+                  <NativeSelectOption value={(new Date().getFullYear() - 1).toString()}>{new Date().getFullYear() - 1}</NativeSelectOption>
+                  <NativeSelectOption value={(new Date().getFullYear()).toString()}>{new Date().getFullYear()}</NativeSelectOption>
+                  <NativeSelectOption value={(new Date().getFullYear() + 1).toString()}>{new Date().getFullYear() + 1}</NativeSelectOption>
+                </NativeSelect>
+              </div>
+
+              <div className="flex w-full max-w-70 flex-col gap-2">
                 <Label htmlFor="batchSelect">Batch</Label>
                 <NativeSelect
                   id="batchSelect"
                   value={selectedBatchId}
                   onChange={(event) => setSelectedBatchId(event.target.value)}
-                  disabled={loadingBatches || batches.length === 0}
+                  disabled={loadingBatches || filteredBatches.length === 0}
                 >
-                  {batches.length === 0 ? (
+                  {filteredBatches.length === 0 ? (
                     <NativeSelectOption value="">
-                      No batches available
+                      No batches available for {batchYearFilter}
                     </NativeSelectOption>
                   ) : (
-                    batches.map((batch) => (
+                    filteredBatches.map((batch) => (
                       <NativeSelectOption
                         key={batch.batchId}
                         value={batch.batchId}
@@ -576,18 +632,6 @@ export default function BatchManagement() {
               </div>
 
               <div className="flex flex-wrap items-center gap-2">
-                <Button
-                  type="button"
-                  onClick={addSelectedGranteesToBatch}
-                  disabled={
-                    addingToBatch ||
-                    !selectedBatchId ||
-                    selectedGranteeIds.size === 0
-                  }
-                >
-                  {addingToBatch && <Spinner data-icon="inline-start" />}
-                  Add Selected
-                </Button>
 
                 <Button
                   type="button"
@@ -701,7 +745,7 @@ export default function BatchManagement() {
         <Tabs defaultValue="batch-creation" className="space-y-4">
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="batch-creation">Batch Creation</TabsTrigger>
-            <TabsTrigger value="grantees">Grantees</TabsTrigger>
+            <TabsTrigger value="notify">Notify</TabsTrigger>
             <TabsTrigger value="office-assignment">
               Office Assignment
             </TabsTrigger>
@@ -766,92 +810,119 @@ export default function BatchManagement() {
             </Card>
           </TabsContent>
 
-          <TabsContent value="grantees" className="mt-0">
+          <TabsContent value="notify" className="mt-0">
             <Card>
               <CardHeader>
-                <CardTitle>Grantees</CardTitle>
+                <CardTitle>Notify</CardTitle>
                 <CardDescription>
-                  Select grantees here. Then use left-side button to add
-                  selected grantees to chosen batch.
+                  Send an email notification and schedule a calendar event for the selected applicants.
                 </CardDescription>
               </CardHeader>
               <CardContent className="flex flex-col gap-4">
-                <Input
-                  placeholder="Search grantee name..."
-                  value={granteeSearch}
-                  onChange={(event) => setGranteeSearch(event.target.value)}
-                />
-                <div className="rounded-lg bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
-                  Selected grantees:{" "}
-                  <span className="font-medium text-foreground">
-                    {selectedGranteeIds.size}
-                  </span>
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="notificationNote">Notification Note (optional)</Label>
+                  <Textarea
+                    id="notificationNote"
+                    value={notificationNote}
+                    onChange={(event) => setNotificationNote(event.target.value)}
+                    placeholder="Additional context included in the notification email..."
+                  />
                 </div>
 
-                {loadingWorkflows ? (
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Spinner data-icon="inline-start" />
-                    Loading grantees...
+                <div className="rounded-lg border p-4 shadow-sm">
+                  <div className="mb-4 flex items-start gap-2">
+                    <Checkbox
+                      id="attachSchedule"
+                      checked={attachSchedule}
+                      onCheckedChange={(checked) => setAttachSchedule(checked === true)}
+                    />
+                    <div className="space-y-1">
+                      <Label htmlFor="attachSchedule" className="cursor-pointer">
+                        Add calendar event for selected applicants
+                      </Label>
+                      <p className="text-xs text-muted-foreground">
+                        Include a schedule event in the notification email.
+                      </p>
+                    </div>
                   </div>
-                ) : workflowError ? (
-                  <p className="text-sm text-destructive">{workflowError}</p>
-                ) : filteredGrantees.length === 0 ? (
-                  <Empty>
-                    <EmptyHeader>
-                      <EmptyMedia variant="icon">
-                        <UsersIcon />
-                      </EmptyMedia>
-                      <EmptyTitle>No grantees found</EmptyTitle>
-                      <EmptyDescription>
-                        Adjust search or wait for more qualified records.
-                      </EmptyDescription>
-                    </EmptyHeader>
-                  </Empty>
-                ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-10">
-                          <Checkbox
-                            checked={allGranteesSelected}
-                            onCheckedChange={(checked) =>
-                              toggleAllGranteeSelections(checked === true)
-                            }
+
+                  {attachSchedule && (
+                    <div className="space-y-3 rounded-lg bg-muted/30 p-3">
+                      <div className="flex flex-col gap-2">
+                        <Label htmlFor="notifyScheduleTitle">Schedule Title</Label>
+                        <NativeSelect
+                          id="notifyScheduleTitle"
+                          value={scheduleTitle}
+                          onChange={(event) => setScheduleTitle(event.target.value)}
+                        >
+                          <NativeSelectOption value="">Select Title</NativeSelectOption>
+                          <NativeSelectOption value="Orientation">Orientation</NativeSelectOption>
+                          <NativeSelectOption value="Deployment">Deployment</NativeSelectOption>
+                          <NativeSelectOption value="Others">Others</NativeSelectOption>
+                        </NativeSelect>
+                      </div>
+
+                      <div className="flex flex-col gap-2">
+                        <Label htmlFor="notifyScheduleDescription">Schedule Description (optional)</Label>
+                        <Textarea
+                          id="notifyScheduleDescription"
+                          value={scheduleDescription}
+                          onChange={(event) => setScheduleDescription(event.target.value)}
+                          placeholder="Optional details about this scheduled event"
+                        />
+                      </div>
+
+                      <div className="flex items-center gap-3">
+                        <Checkbox
+                          id="notifyScheduleAllDay"
+                          checked={scheduleAllDay}
+                          onCheckedChange={(checked) => setScheduleAllDay(checked === true)}
+                        />
+                        <Label htmlFor="notifyScheduleAllDay" className="cursor-pointer">
+                          All-day event
+                        </Label>
+                      </div>
+
+                      <div className="grid gap-3 md:grid-cols-2">
+                        <div className="flex flex-col gap-2">
+                          <Label htmlFor="notifyScheduleStart">
+                            {scheduleAllDay ? "Start Date" : "Start Date & Time"}
+                          </Label>
+                          <Input
+                            id="notifyScheduleStart"
+                            type={scheduleAllDay ? "date" : "datetime-local"}
+                            value={scheduleAllDay ? scheduleStartDate.split("T")[0] || "" : scheduleStartDate}
+                            onChange={(event) => setScheduleStartDate(event.target.value)}
                           />
-                        </TableHead>
-                        <TableHead>Applicant</TableHead>
-                        <TableHead>Current Batch</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredGrantees.map((workflow) => (
-                        <TableRow key={workflow.workflowId}>
-                          <TableCell>
-                            <Checkbox
-                              checked={selectedGranteeIds.has(
-                                workflow.workflowId,
-                              )}
-                              onCheckedChange={(checked) =>
-                                toggleGranteeSelection(
-                                  workflow.workflowId,
-                                  checked === true,
-                                )
-                              }
-                            />
-                          </TableCell>
-                          <TableCell>
-                            <div className="font-medium">
-                              {workflow.applicantName}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            {workflow.batchName || "Unassigned"}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                )}
+                        </div>
+                        <div className="flex flex-col gap-2">
+                          <Label htmlFor="notifyScheduleEnd">
+                            {scheduleAllDay ? "End Date (optional)" : "End Date & Time (optional)"}
+                          </Label>
+                          <Input
+                            id="notifyScheduleEnd"
+                            type={scheduleAllDay ? "date" : "datetime-local"}
+                            value={scheduleAllDay ? scheduleEndDate.split("T")[0] || "" : scheduleEndDate}
+                            onChange={(event) => setScheduleEndDate(event.target.value)}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="rounded-lg bg-muted/40 p-3 text-sm text-muted-foreground">
+                  Selected applicants: <span className="font-medium text-foreground">{selectedBatchWorkflowIds.size}</span>
+                </div>
+
+                <Button
+                  type="button"
+                  onClick={notifySelectedApplicants}
+                  disabled={notifyingApplicants || selectedBatchWorkflowIds.size === 0}
+                >
+                  {notifyingApplicants && <Spinner data-icon="inline-start" />}
+                  Send Notification
+                </Button>
               </CardContent>
             </Card>
           </TabsContent>

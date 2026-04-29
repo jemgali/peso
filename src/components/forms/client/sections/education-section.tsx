@@ -1,16 +1,37 @@
 "use client";
 
 import React from "react";
-import { FieldSet, FieldGroup, Field, FieldLabel, FieldError } from "@/ui/field";
+import {
+  FieldSet,
+  FieldGroup,
+  Field,
+  FieldLabel,
+  FieldError,
+} from "@/ui/field";
 import { TextField } from "@/components/shared";
 import { useAutoCapitalize } from "@/hooks/use-auto-capitalize";
 import type { FormSectionProps } from "./types";
 
 const GRADE_YEAR_OPTIONS = [
-  { group: "Elementary", options: ["Grade 1", "Grade 2", "Grade 3", "Grade 4", "Grade 5", "Grade 6"] },
-  { group: "Junior High School", options: ["Grade 7", "Grade 8", "Grade 9", "Grade 10"] },
+  {
+    group: "Elementary",
+    options: ["Grade 1", "Grade 2", "Grade 3", "Grade 4", "Grade 5", "Grade 6"],
+  },
+  {
+    group: "Junior High School",
+    options: ["Grade 7", "Grade 8", "Grade 9", "Grade 10"],
+  },
   { group: "Senior High School", options: ["Grade 11", "Grade 12"] },
-  { group: "College/University", options: ["1st Year College", "2nd Year College", "3rd Year College", "4th Year College", "5th Year College"] },
+  {
+    group: "College/University",
+    options: [
+      "1st Year College",
+      "2nd Year College",
+      "3rd Year College",
+      "4th Year College",
+      "5th Year College",
+    ],
+  },
   { group: "Vocational", options: ["Vocational/TESDA"] },
   { group: "Graduate Studies", options: ["Masters", "Doctorate"] },
 ];
@@ -46,13 +67,13 @@ const EducationSection: React.FC<FormSectionProps> = ({
   const { handleBlur: autoCapitalizeBlur } = useAutoCapitalize(setValue);
   const selectedGradeYear = watch?.("gradeYear") || "";
   const useStrandDropdown = SENIOR_HIGH_GRADES.has(selectedGradeYear);
-  
+
   return (
     <div id="education" className="scroll-mt-24">
       <div className="mb-4">
         <h2 className="text-lg font-semibold">Educational Background</h2>
         <p className="text-sm text-muted-foreground">
-          Tell us about your education. All fields are required.
+          Tell us about your current education. All fields are required.
         </p>
       </div>
 
@@ -74,7 +95,9 @@ const EducationSection: React.FC<FormSectionProps> = ({
                 {GRADE_YEAR_OPTIONS.map((group) => (
                   <optgroup key={group.group} label={group.group}>
                     {group.options.map((opt) => (
-                      <option key={opt} value={opt}>{opt}</option>
+                      <option key={opt} value={opt}>
+                        {opt}
+                      </option>
                     ))}
                   </optgroup>
                 ))}

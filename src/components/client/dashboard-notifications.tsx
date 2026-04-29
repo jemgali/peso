@@ -1,157 +1,251 @@
-"use client";
+"use client"
 
-import React, { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Bell, Loader2, CheckCheck } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { cn } from "@/lib/utils";
-import type { NotificationItem, NotificationType } from "@/lib/validations/application-review";
+import React, { useEffect, useMemo, useState } from "react"
+import { useRouter } from "next/navigation"
+import {
+  ArrowUpRight,
+  Bell,
+  CalendarDays,
+  CheckCheck,
+  CircleAlert,
+  CircleCheck,
+  CircleX,
+} from "lucide-react"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { Spinner } from "@/components/ui/spinner"
+import { cn } from "@/lib/utils"
+import type { NotificationItem } from "@/lib/validations/application-review"
 
-const NOTIFICATION_ICONS: Record<NotificationType, { icon: string; color: string }> = {
-  application_approved: { icon: "🎉", color: "text-green-600" },
-  application_revision: { icon: "⚠️", color: "text-orange-600" },
-  application_rejected: { icon: "❌", color: "text-red-600" },
-};
+const CLIENT_DASHBOARD_ROUTE = "/protected/client"
+const CLIENT_STATUS_ROUTE = "/protected/client/application/status"
 
-const DashboardNotifications: React.FC = () => {
-  const router = useRouter();
-  const [loading, setLoading] = useState(true);
-  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
-  const [unreadCount, setUnreadCount] = useState(0);
+function formatNotificationDate(value: string) {
+  return new Date(value).toLocaleString("en-PH", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  })
+}
+
+function getNotificationIcon(type: string) {
+  if (type.includes("approved")) return CircleCheck
+  if (type.includes("rejected")) return CircleX
+  if (type.includes("revision")) return CircleAlert
+  if (type.includes("schedule")) return CalendarDays
+  return Bell
+}
+
+function resolveNotificationTarget(notification: NotificationItem): string {
+  if (notification.link) return notification.link
+
+  const type = notification.type.toLowerCase()
+  if (type.includes("schedule")) return CLIENT_DASHBOARD_ROUTE
+
+  const message = notification.message.toLowerCase()
+  if (message.includes("schedule")) return CLIENT_DASHBOARD_ROUTE
+
+  return CLIENT_STATUS_ROUTE
+}
+
+export default function DashboardNotifications() {
+  const router = useRouter()
+  const [loading, setLoading] = useState(true)
+  const [notifications, setNotifications] = useState<NotificationItem[]>([])
+  const [unreadCount, setUnreadCount] = useState(0)
+
+  const sortedNotifications = useMemo(
+    () =>
+      [...notifications].sort(
+        (a, b) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      ),
+    [notifications]
+  )
 
   const fetchNotifications = async () => {
     try {
-      const response = await fetch("/api/notifications");
-      const data = await response.json();
+      const response = await fetch("/api/notifications")
+      const data = await response.json()
       if (data.success) {
-        setNotifications(data.data.notifications);
-        setUnreadCount(data.data.unreadCount);
+        setNotifications(data.data.notifications)
+        setUnreadCount(data.data.unreadCount)
       }
     } catch (error) {
-      console.error("Error fetching notifications:", error);
+      console.error("Error fetching notifications:", error)
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   useEffect(() => {
-    fetchNotifications();
-    const interval = setInterval(fetchNotifications, 30000);
-    return () => clearInterval(interval);
-  }, []);
+    fetchNotifications()
+    const interval = setInterval(fetchNotifications, 30000)
+    return () => clearInterval(interval)
+  }, [])
 
   const markAsRead = async (notificationId: string) => {
     try {
-      await fetch(`/api/notifications/${notificationId}`, { method: "PATCH" });
+      await fetch(`/api/notifications/${notificationId}`, { method: "PATCH" })
       setNotifications((prev) =>
-        prev.map((n) =>
-          n.notificationId === notificationId ? { ...n, isRead: true } : n
+        prev.map((notification) =>
+          notification.notificationId === notificationId
+            ? { ...notification, isRead: true }
+            : notification
         )
-      );
-      setUnreadCount((prev) => Math.max(0, prev - 1));
+      )
+      setUnreadCount((prev) => Math.max(0, prev - 1))
     } catch (error) {
-      console.error("Error marking notification as read:", error);
+      console.error("Error marking notification as read:", error)
     }
-  };
+  }
+
+  const markAllAsRead = async () => {
+    const unreadNotifications = notifications.filter(
+      (notification) => !notification.isRead
+    )
+
+    if (unreadNotifications.length === 0) {
+      return
+    }
+
+    await Promise.all(
+      unreadNotifications.map((notification) =>
+        fetch(`/api/notifications/${notification.notificationId}`, {
+          method: "PATCH",
+        })
+      )
+    )
+
+    setNotifications((prev) =>
+      prev.map((notification) => ({ ...notification, isRead: true }))
+    )
+    setUnreadCount(0)
+  }
 
   const handleNotificationClick = async (notification: NotificationItem) => {
     if (!notification.isRead) {
-      await markAsRead(notification.notificationId);
+      await markAsRead(notification.notificationId)
     }
-    if (notification.link) {
-      router.push(notification.link);
-    }
-  };
 
-  const markAllAsRead = async () => {
-    const unreadNotifications = notifications.filter((n) => !n.isRead);
-    await Promise.all(
-      unreadNotifications.map((n) =>
-        fetch(`/api/notifications/${n.notificationId}`, { method: "PATCH" })
-      )
-    );
-    setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
-    setUnreadCount(0);
-  };
+    router.push(resolveNotificationTarget(notification))
+  }
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between pb-3">
+    <Card className="min-h-0">
+      <CardHeader className="border-b">
         <div className="flex items-center gap-2">
-          <Bell className="h-4 w-4 text-muted-foreground" />
-          <CardTitle className="text-base">Notifications</CardTitle>
-          {unreadCount > 0 && (
-            <span className="h-5 min-w-5 px-1 rounded-full bg-red-500 text-white text-xs flex items-center justify-center">
-              {unreadCount > 9 ? "9+" : unreadCount}
-            </span>
-          )}
+          <Bell className="size-4 text-muted-foreground" />
+          <div className="flex min-w-0 flex-col gap-0.5">
+            <CardTitle>Notifications</CardTitle>
+            <CardDescription>
+              All updates from PESO. Open item to view related page.
+            </CardDescription>
+          </div>
         </div>
-        {unreadCount > 0 && (
+        <CardAction className="flex items-center gap-2">
+          <Badge variant="secondary">{unreadCount} unread</Badge>
           <Button
             variant="ghost"
             size="sm"
-            className="text-xs"
             onClick={markAllAsRead}
+            disabled={unreadCount === 0}
           >
-            <CheckCheck className="h-3 w-3 mr-1" />
+            <CheckCheck data-icon="inline-start" />
             Mark all read
           </Button>
-        )}
+        </CardAction>
       </CardHeader>
-      <CardContent className="p-0">
+
+      <CardContent>
         {loading ? (
-          <div className="flex items-center justify-center py-6">
-            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+          <div className="flex items-center justify-center py-8">
+            <Spinner className="size-6 text-muted-foreground" />
           </div>
-        ) : notifications.length === 0 ? (
-          <div className="py-6 text-center text-muted-foreground px-4">
-            <Bell className="h-8 w-8 mx-auto mb-2 opacity-20" />
-            <p className="text-sm">No notifications yet</p>
-          </div>
+        ) : sortedNotifications.length === 0 ? (
+          <Empty className="border">
+            <EmptyHeader>
+              <EmptyMedia variant="icon">
+                <Bell />
+              </EmptyMedia>
+              <EmptyTitle>No notifications yet</EmptyTitle>
+              <EmptyDescription>
+                New announcements and updates will appear here.
+              </EmptyDescription>
+            </EmptyHeader>
+          </Empty>
         ) : (
-          <div className="max-h-64 overflow-y-auto">
-            {notifications.slice(0, 5).map((notification) => {
-              const config = NOTIFICATION_ICONS[notification.type];
-              return (
-                <button
-                  key={notification.notificationId}
-                  className={cn(
-                    "w-full p-3 text-left hover:bg-muted/50 transition-colors flex gap-3 border-b last:border-b-0",
-                    !notification.isRead && "bg-blue-50 dark:bg-blue-950/20"
-                  )}
-                  onClick={() => handleNotificationClick(notification)}
-                >
-                  <span className="text-lg shrink-0">{config?.icon || "📬"}</span>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between gap-2">
-                      <p
-                        className={cn(
-                          "text-sm truncate",
-                          !notification.isRead ? "font-semibold" : "font-medium"
-                        )}
-                      >
-                        {notification.title}
-                      </p>
-                      {!notification.isRead && (
-                        <span className="h-2 w-2 rounded-full bg-blue-500 shrink-0 mt-1.5" />
-                      )}
+          <ScrollArea className="max-h-[65vh]">
+            <div className="flex flex-col gap-2 pr-3">
+              {sortedNotifications.map((notification) => {
+                const NotificationIcon = getNotificationIcon(notification.type)
+
+                return (
+                  <button
+                    key={notification.notificationId}
+                    type="button"
+                    onClick={() => handleNotificationClick(notification)}
+                    className={cn(
+                      "flex w-full items-start gap-3 rounded-lg border p-3 text-left transition-colors hover:bg-muted/40",
+                      !notification.isRead && "border-primary/30 bg-primary/5"
+                    )}
+                  >
+                    <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+                      <NotificationIcon className="size-4" />
                     </div>
-                    <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
-                      {notification.message}
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {new Date(notification.createdAt).toLocaleDateString()}
-                    </p>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
+
+                    <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+                      <div className="flex items-start gap-2">
+                        <p
+                          className={cn(
+                            "truncate text-sm font-medium",
+                            !notification.isRead && "font-semibold"
+                          )}
+                        >
+                          {notification.title}
+                        </p>
+                        {!notification.isRead && (
+                          <Badge variant="secondary" className="shrink-0">
+                            New
+                          </Badge>
+                        )}
+                        <ArrowUpRight className="ml-auto size-4 shrink-0 text-muted-foreground" />
+                      </div>
+
+                      <p className="text-sm text-muted-foreground whitespace-pre-line">
+                        {notification.message}
+                      </p>
+
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                        <CalendarDays className="size-3.5" />
+                        <span>{formatNotificationDate(notification.createdAt)}</span>
+                      </div>
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
+          </ScrollArea>
         )}
       </CardContent>
     </Card>
-  );
-};
-
-export default DashboardNotifications;
+  )
+}

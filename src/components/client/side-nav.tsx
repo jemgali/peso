@@ -2,7 +2,7 @@
 
 import React from "react"
 import Link from "next/link"
-import { ChevronDown, FileText, LayoutDashboard } from "lucide-react"
+import { ChevronDown, FileText, LayoutDashboard, Megaphone } from "lucide-react"
 import { useActivePath } from "@/hooks/use-active-path"
 import {
   SidebarMenu,
@@ -28,6 +28,19 @@ const SideNav = () => {
           <Link href="/protected/client">
             <LayoutDashboard />
             <span>Dashboard</span>
+          </Link>
+        </SidebarMenuButton>
+      </SidebarMenuItem>
+
+      <SidebarMenuItem>
+        <SidebarMenuButton
+          asChild
+          isActive={checkActive("/protected/client/announcements")}
+          tooltip="Announcements"
+        >
+          <Link href="/protected/client/announcements">
+            <Megaphone />
+            <span>Announcements</span>
           </Link>
         </SidebarMenuButton>
       </SidebarMenuItem>

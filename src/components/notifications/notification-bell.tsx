@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/ui/button";
 import { Card } from "@/ui/card";
 import { Bell, Loader2, CheckCheck } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import type { NotificationItem, NotificationType } from "@/lib/validations/application-review";
 
@@ -20,6 +20,7 @@ interface NotificationBellProps {
 
 const NotificationBell: React.FC<NotificationBellProps> = ({ className }) => {
   const router = useRouter();
+  const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
@@ -29,7 +30,7 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ className }) => {
   // Fetch notifications
   const fetchNotifications = async () => {
     try {
-      const response = await fetch("/api/notifications");
+      const response = await fetch("/api/notifications?limit=10");
       const data = await response.json();
 
       if (data.success) {
@@ -105,6 +106,8 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ className }) => {
     setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
     setUnreadCount(0);
   };
+
+  const isClientArea = pathname.startsWith("/protected/client");
 
   return (
     <div className={cn("relative", className)} ref={dropdownRef}>
@@ -194,9 +197,17 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ className }) => {
           </div>
 
           {/* Footer */}
-          {notifications.length > 10 && (
+          {isClientArea && notifications.length > 0 && (
             <div className="p-2 border-t text-center">
-              <Button variant="ghost" size="sm" className="text-xs">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-xs"
+                onClick={() => {
+                  setIsOpen(false);
+                  router.push("/protected/client/announcements");
+                }}
+              >
                 View all notifications
               </Button>
             </div>

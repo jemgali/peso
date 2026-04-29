@@ -9,6 +9,7 @@ import {
 } from "@/lib/validations/spes-workflow"
 
 const CLIENT_APPLICATION_STATUS_ROUTE = "/protected/client/application/status"
+const CLIENT_DASHBOARD_ROUTE = "/protected/client"
 
 async function getAdminUserId(): Promise<string | null> {
   const session = await auth.api.getSession({
@@ -35,6 +36,34 @@ function getValidationErrorMessage(
 
 function getApplicantName(firstName: string | null, lastName: string | null): string {
   return [firstName?.trim() || "", lastName?.trim() || ""].filter(Boolean).join(" ").trim() || "Applicant"
+}
+
+function formatScheduleDateTime(
+  startDate: Date,
+  endDate: Date | null,
+  allDay: boolean
+): string {
+  const dateFormatter = new Intl.DateTimeFormat("en-PH", {
+    dateStyle: "medium",
+  })
+  const dateTimeFormatter = new Intl.DateTimeFormat("en-PH", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  })
+
+  if (allDay) {
+    if (endDate && endDate.toDateString() !== startDate.toDateString()) {
+      return `${dateFormatter.format(startDate)} to ${dateFormatter.format(endDate)}`
+    }
+
+    return dateFormatter.format(startDate)
+  }
+
+  if (endDate) {
+    return `${dateTimeFormatter.format(startDate)} to ${dateTimeFormatter.format(endDate)}`
+  }
+
+  return dateTimeFormatter.format(startDate)
 }
 
 export async function POST(request: Request): Promise<NextResponse<BulkNotifyWorkflowsResponse>> {
@@ -105,9 +134,28 @@ export async function POST(request: Request): Promise<NextResponse<BulkNotifyWor
   const missingWorkflowIds = workflowIds.filter((workflowId) => !foundIds.has(workflowId))
   const recipientUserIds = [...new Set(workflows.map((workflow) => workflow.submission.profile.userId))]
   const notificationTitle = "SPES Evaluation Update"
-  const notificationMessage = note
-    ? `PESO sent an update regarding your SPES application evaluation. Please check your application status page for details and next steps. Admin note: ${note}`
-    : "PESO sent an update regarding your SPES application evaluation. Please check your application status page for details and next steps."
+  const messageParts = [
+    "PESO sent an update regarding your SPES application evaluation.",
+    "Please check your application status page for details and next steps.",
+  ]
+  if (note) {
+    messageParts.push(`Admin note: ${note}`)
+  }
+  if (scheduleInput) {
+    const scheduleDateLabel = formatScheduleDateTime(
+      scheduleInput.startDate,
+      scheduleInput.endDate || null,
+      scheduleInput.allDay
+    )
+    messageParts.push(`Schedule: ${scheduleInput.title.trim()} — ${scheduleDateLabel}`)
+    if (scheduleInput.description?.trim()) {
+      messageParts.push(`Details: ${scheduleInput.description.trim()}`)
+    }
+  }
+  const notificationMessage = messageParts.join("\n")
+  const notificationLink = scheduleInput
+    ? CLIENT_DASHBOARD_ROUTE
+    : CLIENT_APPLICATION_STATUS_ROUTE
 
   let scheduledEvent:
     | {
@@ -158,7 +206,7 @@ export async function POST(request: Request): Promise<NextResponse<BulkNotifyWor
         type: "application_revision",
         title: notificationTitle,
         message: notificationMessage,
-        link: CLIENT_APPLICATION_STATUS_ROUTE,
+        link: notificationLink,
       })),
     })
   })

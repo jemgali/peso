@@ -17,11 +17,15 @@ export const MAX_FILE_SIZE = 10 * 1024 * 1024;
 // Document types that can be uploaded
 export const DOCUMENT_TYPES = [
   "psaCertificate",
+  "proofOfEnrollment",
   "grades",
   "affidavitLowIncome",
   "barangayCertLowIncome",
   "barangayCertResidency",
+  "outOfSchoolYouthCertificate",
+  "certificateOfGuardianship",
   "incomeTaxReturn",
+  "certificateOfMarriage",
   "affidavitSoloParent",
   "affidavitDiscrepancy",
   "deathCertificate",

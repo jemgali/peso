@@ -68,12 +68,19 @@ const SECTION_LABELS: Record<string, string> = {
 };
 
 const DOCUMENT_LABELS: Record<string, string> = {
-  psaCertificate: "PSA Birth Certificate",
-  schoolId: "School ID / Certificate of Enrollment",
-  grades: "Report Card / Grades",
-  barangayCertificate: "Barangay Certificate of Indigency",
-  fourPsId: "4Ps ID",
-  medicalCertificate: "Medical Certificate",
+  psaCertificate: "Original PSA Certificate",
+  proofOfEnrollment: "Proof of Enrollment",
+  grades: "Grades",
+  affidavitLowIncome: "Affidavit of Low Income (PAO)",
+  barangayCertLowIncome: "Barangay Certificate of Low Income (Parents)",
+  barangayCertResidency: "Barangay Certificate of Residency (Applicant)",
+  outOfSchoolYouthCertificate: "Out Of School Youth Certificate",
+  certificateOfGuardianship: "Certificate of Guardianship",
+  incomeTaxReturn: "Income Tax Return",
+  certificateOfMarriage: "Certificate of Marriage",
+  affidavitSoloParent: "Affidavit of Solo Parent",
+  affidavitDiscrepancy: "Affidavit of Discrepancy",
+  deathCertificate: "Death Certificate",
 };
 
 interface FeedbackDisplayProps {
