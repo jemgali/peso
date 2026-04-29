@@ -8,7 +8,10 @@ import type {
   DocumentFeedback,
 } from "@/lib/validations/application-review";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+// It will use the real key in production, but won't crash the build if missing
+const resend = new Resend(
+  process.env.RESEND_API_KEY || "re_dummy_key_for_build",
+);
 const FROM_EMAIL = "PESO <noreply@jemgali.tech>";
 
 interface SendApplicationEmailParams {
@@ -110,7 +113,10 @@ export async function sendEvaluationBulkNotifyEmail({
   to,
   applicantName,
   note,
-}: SendEvaluationBulkNotifyEmailParams): Promise<{ success: boolean; error?: string }> {
+}: SendEvaluationBulkNotifyEmailParams): Promise<{
+  success: boolean;
+  error?: string;
+}> {
   try {
     const noteText = note?.trim() ? `\n\nAdmin note: ${note.trim()}` : "";
     const { error } = await resend.emails.send({
