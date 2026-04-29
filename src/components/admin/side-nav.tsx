@@ -45,7 +45,7 @@ const spesNavItems: NavItem[] = [
     icon: ClipboardCheck,
   },
   { title: "Batch Management", url: "/protected/admin/batches", icon: Layers },
-  { title: "Remarks/Records of Violation", url: "/protected/admin/remarks", icon: FileWarning },
+  { title: "Remarks", url: "/protected/admin/remarks", icon: FileWarning },
   { title: "Reports", url: "/protected/admin/reports", icon: FileText },
 ];
 
