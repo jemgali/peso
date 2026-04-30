@@ -2,9 +2,7 @@ import { EmailTemplate } from "@/email-template/sample"; // Update the import pa
 import { Resend } from "resend";
 
 // It will use the real key in production, but won't crash the build if missing
-const resend = new Resend(
-  process.env.RESEND_API_KEY || "re_dummy_key_for_build",
-);
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function POST() {
   try {
