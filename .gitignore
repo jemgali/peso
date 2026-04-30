@@ -50,3 +50,10 @@ prompts.txt
 lint-errors.txt
 /.agents
 /.github
+/.open-next
+
+# wrangler files
+.wrangler
+.dev.vars*
+!.dev.vars.example
+!.env.example
