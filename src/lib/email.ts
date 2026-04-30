@@ -9,9 +9,7 @@ import type {
 } from "@/lib/validations/application-review";
 
 // It will use the real key in production, but won't crash the build if missing
-const resend = new Resend(
-  process.env.RESEND_API_KEY || "re_dummy_key_for_build",
-);
+const resend = new Resend(process.env.RESEND_API_KEY);
 const FROM_EMAIL = "PESO <noreply@jemgali.tech>";
 
 interface SendApplicationEmailParams {
