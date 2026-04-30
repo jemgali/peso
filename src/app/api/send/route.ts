@@ -2,7 +2,9 @@ import { EmailTemplate } from "@/email-template/sample"; // Update the import pa
 import { Resend } from "resend";
 
 export async function POST() {
-  const resend = new Resend(process.env.RESEND_API_KEY);
+  const resend = new Resend(
+    process.env.RESEND_API_KEY || "re_dummy_key_for_build",
+  );
 
   try {
     const { data, error } = await resend.emails.send({
