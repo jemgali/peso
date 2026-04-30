@@ -1,10 +1,9 @@
 import { EmailTemplate } from "@/email-template/sample"; // Update the import path if necessary based on your project structure
 import { Resend } from "resend";
 
-// It will use the real key in production, but won't crash the build if missing
-const resend = new Resend(process.env.RESEND_API_KEY);
-
 export async function POST() {
+  const resend = new Resend(process.env.RESEND_API_KEY);
+
   try {
     const { data, error } = await resend.emails.send({
       // Replace "Acme" with your desired sender name, and use any prefix with your verified domain
