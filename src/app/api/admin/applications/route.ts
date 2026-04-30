@@ -20,7 +20,7 @@ const adapter = new PrismaPg(pool as any);
 const prisma = new PrismaClient({ adapter });
 
 export async function GET(
-  request: NextRequest
+  request: NextRequest,
 ): Promise<NextResponse<ApplicationListResponse>> {
   try {
     // Verify admin authentication
@@ -31,14 +31,16 @@ export async function GET(
     if (!session?.user || session.user.role !== "admin") {
       return NextResponse.json(
         { success: false, error: "Unauthorized - Admin access required" },
-        { status: 403 }
+        { status: 403 },
       );
     }
 
     // Parse query parameters
     const { searchParams } = new URL(request.url);
     const statusParam = searchParams.get("status");
-    const status = APPLICATION_STATUSES.includes(statusParam as ApplicationStatus)
+    const status = APPLICATION_STATUSES.includes(
+      statusParam as ApplicationStatus,
+    )
       ? (statusParam as ApplicationStatus)
       : null;
     const yearParam = searchParams.get("year");
@@ -65,7 +67,7 @@ export async function GET(
         >;
       };
     } = {};
-    
+
     if (status) {
       where.status = status;
     }
@@ -136,7 +138,9 @@ export async function GET(
     ]);
 
     const availableYears = Array.from(
-      new Set(submissionYears.map((entry) => entry.submittedAt.getUTCFullYear()))
+      new Set(
+        submissionYears.map((entry) => entry.submittedAt.getUTCFullYear()),
+      ),
     );
     if (availableYears.length === 0) {
       availableYears.push(currentYear);
@@ -148,12 +152,13 @@ export async function GET(
       data: {
         applications: applications.map((app) => ({
           ...(function computeRevisionState() {
-            const latestNeedsRevisionReview = app.reviews[0]?.reviewedAt ?? null;
+            const latestNeedsRevisionReview =
+              app.reviews[0]?.reviewedAt ?? null;
             const hadNeedsRevision = Boolean(latestNeedsRevisionReview);
             const resubmittedAfterRevision = Boolean(
               latestNeedsRevisionReview &&
-                app.submittedAt.getTime() > latestNeedsRevisionReview.getTime() &&
-                (app.status === "pending" || app.status === "in_review")
+              app.submittedAt.getTime() > latestNeedsRevisionReview.getTime() &&
+              (app.status === "pending" || app.status === "in_review"),
             );
 
             return {
@@ -176,8 +181,8 @@ export async function GET(
             new Set(
               app.profile.spesAvailments
                 .map((availment) => availment.yearOfAvailment)
-                .filter((year) => Number.isFinite(year))
-            )
+                .filter((year) => Number.isFinite(year)),
+            ),
           ).sort((a, b) => b - a),
           submittedAt: app.submittedAt.toISOString(),
           updatedAt: app.updatedAt.toISOString(),
@@ -198,7 +203,7 @@ export async function GET(
     console.error("Error fetching applications:", error);
     return NextResponse.json(
       { success: false, error: "Internal server error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
