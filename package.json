@@ -6,9 +6,10 @@
   "scripts": {
     "postinstall": "prisma generate",
     "dev": "next dev",
-    "build": "opennextjs-cloudflare build",
+    "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "build:worker": "opennextjs-cloudflare build",
     "preview": "opennextjs-cloudflare preview",
     "deploy": "opennextjs-cloudflare deploy"
   },
