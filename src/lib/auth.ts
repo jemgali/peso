@@ -7,12 +7,12 @@ import { PrismaClient } from "@/generated/prisma/client";
 import { Pool } from "pg";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { nextCookies } from "better-auth/next-js";
-import { admin } from "better-auth/plugins"
+import { admin } from "better-auth/plugins";
 import { hashPassword, verifyPassword } from "./password";
 import { Resend } from "resend";
 
 const pool = new Pool({
-    connectionString: process.env.DATABASE_URL
+  connectionString: process.env.DATABASE_URL,
 });
 
 const adapter = new PrismaPg(pool as any);
@@ -21,11 +21,11 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 
 export const auth = betterAuth({
   baseURL: process.env.BETTER_AUTH_URL,
-  
+
   database: prismaAdapter(prisma, {
     provider: "postgresql",
   }),
-  
+
   emailAndPassword: {
     enabled: true,
     password: {
@@ -38,24 +38,24 @@ export const auth = betterAuth({
 
   emailVerification: {
     sendOnSignUp: true,
-    sendVerificationEmail: async ({ user, url, token}, request) => {
+    sendVerificationEmail: async ({ user, url, token }, request) => {
       await resend.emails.send({
         from: "PESO <noreply@jemgali.tech>",
         to: user.email,
         subject: "Verify your email address",
         html: `<p>Hi ${user.name},</p><p>Please click <a href="${url}">here</a> to verify your email address.</p>`,
-      })
-    }
+      });
+    },
   },
-  
+
   socialProviders: {
     google: {
       prompt: "select_account",
       clientId: process.env.GOOGLE_CLIENT_ID as string,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
-    }
+    },
   },
-  
+
   user: {
     additionalFields: {
       role: {
@@ -64,14 +64,14 @@ export const auth = betterAuth({
       },
     },
   },
-  
+
   databaseHooks: {
     user: {
       create: {
         before: async (user, ctx) => {
           // Normalize auth defaults: app uses "client" instead of generic "user".
           const normalizedRole =
-            !user.role || user.role === "user" ? "client" : user.role
+            !user.role || user.role === "user" ? "client" : user.role;
 
           // For OAuth signups (callback path), set emailVerified to false
           if (ctx?.path?.startsWith("/callback")) {
@@ -112,7 +112,7 @@ export const auth = betterAuth({
       },
     },
   },
-  
+
   hooks: {
     after: createAuthMiddleware(async (ctx) => {
       // After OAuth callback, if a new user was created, send verification email
@@ -122,7 +122,7 @@ export const auth = betterAuth({
           // Generate verification token and send email
           const token = crypto.randomUUID();
           const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
-          
+
           // Store verification token
           await prisma.verification.create({
             data: {
@@ -132,11 +132,12 @@ export const auth = betterAuth({
               expiresAt,
             },
           });
-          
+
           // Build verification URL
-          const baseUrl = process.env.BETTER_AUTH_URL || "http://localhost:3000";
+          const baseUrl =
+            process.env.BETTER_AUTH_URL || "http://localhost:3000";
           const verifyUrl = `${baseUrl}/api/auth/verify-email?token=${token}&callbackURL=/auth/verified`;
-          
+
           // Send verification email
           await resend.emails.send({
             from: "PESO <noreply@jemgali.tech>",
@@ -144,16 +145,13 @@ export const auth = betterAuth({
             subject: "Verify your email address",
             html: `<p>Hi ${newSession.user.name},</p><p>Please click <a href="${verifyUrl}">here</a> to verify your email address.</p>`,
           });
-          
+
           // Redirect to verify-email page instead of callback URL
           return ctx.redirect("/auth/verify-email");
         }
       }
     }),
   },
-  
-  plugins: [
-    nextCookies() as any,
-    admin(),
-  ]
+
+  plugins: [nextCookies() as any, admin()],
 });
