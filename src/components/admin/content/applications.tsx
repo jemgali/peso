@@ -15,27 +15,29 @@ import { Input } from "@/ui/input";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from "@/ui/select";
 import { Badge } from "@/ui/badge";
-import { Card } from "@/ui/card";
-import { Search, Eye, ChevronDown, ChevronLeft, ChevronRight, ChevronUp } from "lucide-react";
+import { Card, CardContent } from "@/ui/card";
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/ui/empty";
+import { Search, Eye, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, FileText } from "lucide-react";
 import { ApplicationsListSkeleton } from "@/ui/skeletons";
+import { PageHeader } from "@/components/shared";
+import ApplicationPeriodSettings from "@/components/admin/content/application-period-settings";
 import type {
   ApplicantType,
   ApplicationListItem,
   ApplicationStatus,
 } from "@/lib/validations/application-review";
-
-const STATUS_COLORS: Record<ApplicationStatus, string> = {
-  pending: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400",
-  in_review: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
-  approved: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
-  needs_revision: "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400",
-  rejected: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
-};
 
 const STATUS_LABELS: Record<ApplicationStatus, string> = {
   pending: "Pending",
@@ -45,14 +47,17 @@ const STATUS_LABELS: Record<ApplicationStatus, string> = {
   rejected: "Rejected",
 };
 
+const STATUS_BADGE_VARIANT: Record<ApplicationStatus, "default" | "secondary" | "destructive" | "outline"> = {
+  pending: "outline",
+  in_review: "secondary",
+  approved: "default",
+  needs_revision: "outline",
+  rejected: "destructive",
+};
+
 const APPLICANT_TYPE_LABELS: Record<ApplicantType, string> = {
   new: "New Applicant",
   spes_baby: "SPES Baby",
-};
-
-const APPLICANT_TYPE_COLORS: Record<ApplicantType, string> = {
-  new: "bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300",
-  spes_baby: "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300",
 };
 
 const STATUS_OPTIONS: ApplicationStatus[] = [
@@ -136,78 +141,101 @@ const Applications = () => {
   const totalPages = Math.ceil(total / pageSize);
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Applications</h1>
-        <p className="text-muted-foreground">Review and manage SPES applications</p>
-      </div>
+    <div className="flex flex-col gap-6">
+      <PageHeader
+        title="Applications"
+        description="Review and manage SPES applications"
+      />
 
-      <Card className="p-4">
-        <div className="flex flex-col gap-4 sm:flex-row">
-          <form onSubmit={handleSearch} className="flex-1">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                placeholder="Search by name or email..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9"
-              />
-            </div>
-          </form>
+      {/* Application Period Toggle */}
+      <ApplicationPeriodSettings />
 
-          <Select
-            value={yearFilter}
-            onValueChange={(value) => {
-              setYearFilter(value);
-              setPage(1);
-            }}
-          >
-            <SelectTrigger className="w-full sm:w-[180px]">
-              <SelectValue placeholder="Filter by year" />
-            </SelectTrigger>
-            <SelectContent>
-              {yearOptions.map((year) => (
-                <SelectItem key={year} value={String(year)}>
-                  {year === currentYear ? `This Year (${year})` : String(year)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+      {/* Filters */}
+      <Card>
+        <CardContent className="pt-4">
+          <div className="flex flex-col gap-4 sm:flex-row">
+            <form onSubmit={handleSearch} className="flex-1">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  placeholder="Search by name or email..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
+            </form>
 
-          <Select
-            value={statusFilter}
-            onValueChange={(value) => {
-              setStatusFilter(value);
-              setPage(1);
-            }}
-          >
-            <SelectTrigger className="w-full sm:w-[180px]">
-              <SelectValue placeholder="Filter by status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Statuses</SelectItem>
-              {STATUS_OPTIONS.map((status) => (
-                <SelectItem key={status} value={status}>
-                  {STATUS_LABELS[status]}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+            <Select
+              value={yearFilter}
+              onValueChange={(value) => {
+                setYearFilter(value);
+                setPage(1);
+              }}
+            >
+              <SelectTrigger className="w-full sm:w-[180px]">
+                <SelectValue placeholder="Filter by year" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  {yearOptions.map((year) => (
+                    <SelectItem key={year} value={String(year)}>
+                      {year === currentYear ? `This Year (${year})` : String(year)}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+
+            <Select
+              value={statusFilter}
+              onValueChange={(value) => {
+                setStatusFilter(value);
+                setPage(1);
+              }}
+            >
+              <SelectTrigger className="w-full sm:w-[180px]">
+                <SelectValue placeholder="Filter by status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  <SelectItem value="all">All Statuses</SelectItem>
+                  {STATUS_OPTIONS.map((status) => (
+                    <SelectItem key={status} value={status}>
+                      {STATUS_LABELS[status]}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent>
       </Card>
 
+      {/* Applications Table */}
       <Card>
         {loading ? (
-          <div className="p-6">
+          <CardContent>
             <ApplicationsListSkeleton />
-          </div>
+          </CardContent>
         ) : error ? (
-          <div className="flex items-center justify-center py-12 text-red-500">{error}</div>
+          <CardContent className="flex items-center justify-center py-12 text-destructive">
+            {error}
+          </CardContent>
         ) : applications.length === 0 ? (
-          <div className="flex items-center justify-center py-12 text-muted-foreground">
-            No applications found
-          </div>
+          <CardContent>
+            <Empty>
+              <EmptyHeader>
+                <EmptyMedia variant="icon">
+                  <FileText />
+                </EmptyMedia>
+                <EmptyTitle>No applications found</EmptyTitle>
+                <EmptyDescription>
+                  Try adjusting your filters or search query.
+                </EmptyDescription>
+              </EmptyHeader>
+            </Empty>
+          </CardContent>
         ) : (
           <>
             <Table>
@@ -230,16 +258,13 @@ const Applications = () => {
                     </TableCell>
                     <TableCell>{app.applicant.email}</TableCell>
                     <TableCell>
-                      <Badge
-                        variant="secondary"
-                        className={APPLICANT_TYPE_COLORS[app.applicantType]}
-                      >
+                      <Badge variant={app.applicantType === "spes_baby" ? "secondary" : "outline"}>
                         {APPLICANT_TYPE_LABELS[app.applicantType]}
                       </Badge>
                     </TableCell>
                     <TableCell>
                       {app.availmentYears.length > 0 ? (
-                        <div className="space-y-2">
+                        <div className="flex flex-col gap-2">
                           <Button
                             type="button"
                             variant="outline"
@@ -252,9 +277,9 @@ const Applications = () => {
                           >
                             View History
                             {expandedAvailmentSubmissionId === app.submissionId ? (
-                              <ChevronUp className="ml-1 h-4 w-4" />
+                              <ChevronUp data-icon="inline-end" />
                             ) : (
-                              <ChevronDown className="ml-1 h-4 w-4" />
+                              <ChevronDown data-icon="inline-end" />
                             )}
                           </Button>
                           {expandedAvailmentSubmissionId === app.submissionId && (
@@ -271,14 +296,11 @@ const Applications = () => {
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-wrap items-center gap-2">
-                        <Badge variant="secondary" className={STATUS_COLORS[app.status]}>
+                        <Badge variant={STATUS_BADGE_VARIANT[app.status]}>
                           {STATUS_LABELS[app.status]}
                         </Badge>
                         {app.resubmittedAfterRevision && (
-                          <Badge
-                            variant="outline"
-                            className="border-emerald-500 text-emerald-700 dark:text-emerald-300"
-                          >
+                          <Badge variant="outline">
                             Resubmitted
                           </Badge>
                         )}
@@ -290,7 +312,7 @@ const Applications = () => {
                         size="sm"
                         onClick={() => router.push(`/protected/admin/applications/${app.submissionId}`)}
                       >
-                        <Eye className="mr-1 h-4 w-4" />
+                        <Eye data-icon="inline-start" />
                         {app.hasReview ? "Modify" : "Review"}
                       </Button>
                     </TableCell>
@@ -312,7 +334,7 @@ const Applications = () => {
                     onClick={() => setPage((p) => Math.max(1, p - 1))}
                     disabled={page === 1}
                   >
-                    <ChevronLeft className="h-4 w-4" />
+                    <ChevronLeft />
                   </Button>
                   <Button
                     variant="outline"
@@ -320,7 +342,7 @@ const Applications = () => {
                     onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                     disabled={page === totalPages}
                   >
-                    <ChevronRight className="h-4 w-4" />
+                    <ChevronRight />
                   </Button>
                 </div>
               </div>

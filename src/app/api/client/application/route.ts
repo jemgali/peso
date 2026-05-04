@@ -40,6 +40,38 @@ export async function POST(
 
     const userId = session.user.id;
 
+    // Check application period
+    const currentYear = new Date().getFullYear();
+    const applicationPeriod = await prisma.spesApplicationPeriod.findUnique({
+      where: { year: currentYear },
+    });
+
+    // Auto-close check
+    const now = new Date();
+    const isPeriodOpen = applicationPeriod?.isOpen &&
+      (!applicationPeriod.closeDate || new Date(applicationPeriod.closeDate) > now);
+
+    if (!isPeriodOpen) {
+      // Check if user has a needs_revision submission (exception to period closure)
+      const revisionSubmission = await prisma.applicationSubmission.findFirst({
+        where: {
+          profile: { userId },
+          status: "needs_revision",
+        },
+      });
+
+      if (!revisionSubmission) {
+        return NextResponse.json(
+          {
+            success: false,
+            message: "Applications closed",
+            error: `The SPES application period for ${currentYear} is currently closed.`,
+          },
+          { status: 403 }
+        );
+      }
+    }
+
     // Parse and validate request body
     const body = await request.json();
     const validationResult = spesApplicationSchema.safeParse(body);

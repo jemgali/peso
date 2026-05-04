@@ -12,6 +12,7 @@ import {
 function toBatchListItem(batch: {
   batchId: string
   batchName: string
+  batchYear: number
   startDate: Date
   officeName: string | null
   createdAt: Date
@@ -20,6 +21,7 @@ function toBatchListItem(batch: {
   return {
     batchId: batch.batchId,
     batchName: batch.batchName,
+    batchYear: batch.batchYear,
     startDate: batch.startDate.toISOString().slice(0, 10),
     officeName: batch.officeName,
     granteeCount: batch._count.workflows,
@@ -97,6 +99,7 @@ export async function POST(request: Request): Promise<NextResponse<CreateBatchRe
     data: {
       batchId: crypto.randomUUID(),
       batchName: parsed.data.batchName.trim(),
+      batchYear: parsed.data.batchYear,
       startDate: new Date(parsed.data.startDate),
       createdById: adminUserId,
     },
@@ -108,6 +111,40 @@ export async function POST(request: Request): Promise<NextResponse<CreateBatchRe
       },
     },
   })
+
+  // Notify all grantees without a batch assignment
+  const unassignedGrantees = await prisma.spesWorkflow.findMany({
+    where: {
+      selectionStatus: "GRANTEE",
+      batchId: null,
+    },
+    select: {
+      submission: {
+        select: {
+          profile: {
+            select: { userId: true },
+          },
+        },
+      },
+    },
+  })
+
+  const notificationData = unassignedGrantees
+    .map((w) => w.submission.profile.userId)
+    .filter((uid): uid is string => !!uid)
+    .map((uid) => ({
+      notificationId: crypto.randomUUID(),
+      userId: uid,
+      type: "batch_available",
+      title: "Batches Available",
+      message: `A new batch "${createdBatch.batchName}" is now available for selection. Please select your preferred batch from your dashboard.`,
+      link: "/protected/client",
+      isRead: false,
+    }))
+
+  if (notificationData.length > 0) {
+    await prisma.notification.createMany({ data: notificationData })
+  }
 
   return NextResponse.json(
     {

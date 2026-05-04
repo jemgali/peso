@@ -282,6 +282,44 @@ const Page = async () => {
     );
   }
 
+  // Check if application period is open
+  const now = new Date();
+  let applicationPeriod = await prisma.spesApplicationPeriod.findUnique({
+    where: { year: currentYear },
+  });
+
+  // Auto-close if close date has passed
+  if (applicationPeriod?.isOpen && applicationPeriod.closeDate && new Date(applicationPeriod.closeDate) <= now) {
+    applicationPeriod = await prisma.spesApplicationPeriod.update({
+      where: { year: currentYear },
+      data: { isOpen: false },
+    });
+  }
+
+  const isRevisionStatus = latestSubmission?.status === "needs_revision";
+  const isPeriodClosed = applicationPeriod ? !applicationPeriod.isOpen : true; // Default closed if no period record
+
+  // Block new submissions if period is closed (revision users can still submit)
+  if (isPeriodClosed && !isRevisionStatus) {
+    return (
+      <div className="flex flex-col gap-6">
+        <PageHeader
+          title="Application Form"
+          description="SPES application submission"
+        />
+        <div className="rounded-lg border border-dashed p-8 text-center">
+          <h2 className="text-lg font-semibold text-muted-foreground mb-2">
+            Applications Are Over
+          </h2>
+          <p className="text-sm text-muted-foreground max-w-md mx-auto">
+            The SPES application period for {currentYear} is currently closed.
+            Please check back when applications reopen or contact the PESO office for more information.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
@@ -290,6 +328,7 @@ const Page = async () => {
       />
       <ApplicationForm 
         userEmail={userEmail} 
+        userId={userId}
         defaultValues={defaultValues} 
         revisionFeedback={revisionFeedback} 
         initialApplicationType={

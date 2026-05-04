@@ -84,6 +84,7 @@ model User {
   createdSpesBatches      SpesBatch[]              @relation("SpesBatchCreatedBy")
   selectedSpesWorkflows   SpesWorkflow[]           @relation("SpesSelectedBy")
   spesStageChanges        SpesStageHistory[]       @relation("SpesStageChangedBy")
+  applicationPeriodUpdates SpesApplicationPeriod[] @relation("SpesApplicationPeriodUpdatedBy")
 
   // Other things
   @@unique([email])
@@ -439,6 +440,7 @@ model SpesBatch {
   batchId     String         @id @map("batch_id")
   // Batch details
   batchName   String         @map("batch_name")
+  batchYear   Int            @map("batch_year")
   startDate   DateTime       @map("start_date") @db.Date
   officeName  String?        @map("office_name")
   // Audit fields
@@ -449,6 +451,8 @@ model SpesBatch {
   // Relationships
   workflows   SpesWorkflow[]
 
+  @@unique([batchName, batchYear])
+  @@index([batchYear])
   @@index([startDate])
   @@map("spes_batch")
   @@schema("public")
@@ -697,5 +701,29 @@ model ScheduleEventRecipient {
   @@id([eventId, userId])
   @@index([userId])
   @@map("schedule_event_recipient")
+  @@schema("public")
+}
+
+// ----- SPES APPLICATION PERIOD -----
+
+// Controls when SPES applications are open for a given year
+model SpesApplicationPeriod {
+  // Primary Key
+  periodId    String    @id @map("period_id")
+  // Year (unique per year)
+  year        Int       @unique @map("year")
+  // Toggle state
+  isOpen      Boolean   @default(false) @map("is_open")
+  // Optional auto-close date
+  openDate    DateTime? @map("open_date")
+  closeDate   DateTime? @map("close_date")
+  // Audit fields
+  updatedById String?   @map("updated_by_id")
+  updatedBy   User?     @relation("SpesApplicationPeriodUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  @@index([year])
+  @@map("spes_application_period")
   @@schema("public")
 }

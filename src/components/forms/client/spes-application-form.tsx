@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/ui/button";
 import { Spinner } from "@/ui/spinner";
+import { useFormPersistence } from "@/hooks/use-form-persistence";
 import {
   spesApplicationSchema,
   validateSection,
@@ -138,7 +139,7 @@ const TOUCHED_FIELDS: Record<string, string[]> = {
     "profileMunicipality",
     "profileProvince",
   ],
-  family: ["fatherName", "motherMaidenName", "siblings"],
+  family: ["fatherName", "fatherOccupation", "motherMaidenName", "motherOccupation", "siblings"],
   guardian: [],
   benefactor: ["benefactorName", "benefactorRelationship"],
   education: ["gradeYear", "schoolName", "trackCourse", "schoolYear"],
@@ -197,6 +198,7 @@ export interface SPESApplicationFormProps {
   onValidationChange?: (stepStatuses: Record<string, StepStatus>) => void;
   onMount?: (goToStep: (stepIndex: number) => Promise<void>) => void;
   userEmail?: string;
+  userId?: string;
   defaultValues?: Record<string, unknown>;
   applicationType?: "new" | "spes-baby";
   revisionFeedback?: Record<string, any>;
@@ -208,6 +210,7 @@ const SPESApplicationForm: React.FC<SPESApplicationFormProps> = ({
   onValidationChange,
   onMount,
   userEmail,
+  userId,
   defaultValues: externalDefaults,
   applicationType,
   revisionFeedback,
@@ -298,6 +301,15 @@ const SPESApplicationForm: React.FC<SPESApplicationFormProps> = ({
       ...(externalDefaults as Partial<SPESApplicationFormValues>),
     },
     mode: "onBlur",
+  });
+
+  // Auto-save form state to localStorage for persistence across refreshes
+  const { clearPersistedData } = useFormPersistence<SPESApplicationFormValues>({
+    key: `spes-form-${userId || "anonymous"}`,
+    watch,
+    setValue,
+    defaultValues: externalDefaults,
+    excludeFields: ["documents"],
   });
 
   useEffect(() => {
@@ -508,6 +520,8 @@ const SPESApplicationForm: React.FC<SPESApplicationFormProps> = ({
       }
 
       toast.success("Application submitted successfully!");
+      // Clear persisted form data on successful submission
+      clearPersistedData();
       // Redirect to dashboard after successful submission
       router.push("/protected/client");
     } catch (error) {
@@ -610,6 +624,17 @@ const SPESApplicationForm: React.FC<SPESApplicationFormProps> = ({
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="w-full">
+      {/* SPES Baby returning grantee banner */}
+      {applicationType === "spes-baby" && (
+        <div className="mb-6 p-4 rounded-lg bg-blue-50 border border-blue-200 dark:bg-blue-950/20 dark:border-blue-900/50">
+          <h3 className="text-sm font-semibold text-blue-800 dark:text-blue-400">
+            🔄 Returning SPES Grantee — Review &amp; Update
+          </h3>
+          <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
+            Your previous application data has been pre-filled. Please review and update any information that has changed before submitting.
+          </p>
+        </div>
+      )}
       {/* Current Section Content */}
       <div className="min-h-100">
         {currentSectionFeedback.length > 0 && currentStep !== SECTION_IDS.length - 1 && (

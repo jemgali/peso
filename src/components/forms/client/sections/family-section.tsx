@@ -83,11 +83,12 @@ const FamilySection: React.FC<FormSectionWithFieldArrayProps> = ({
 
               <TextField
                 name="fatherOccupation"
-                label="Occupation (Optional)"
+                label="Occupation"
                 register={register}
                 error={errors.fatherOccupation?.message}
                 disabled={isPending}
                 placeholder="Occupation"
+                required
                 onBlur={autoCapitalizeBlur("fatherOccupation")}
               />
 
@@ -124,11 +125,12 @@ const FamilySection: React.FC<FormSectionWithFieldArrayProps> = ({
 
               <TextField
                 name="motherOccupation"
-                label="Occupation (Optional)"
+                label="Occupation"
                 register={register}
                 error={errors.motherOccupation?.message}
                 disabled={isPending}
                 placeholder="Occupation"
+                required
                 onBlur={autoCapitalizeBlur("motherOccupation")}
               />
 

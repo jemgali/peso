@@ -87,10 +87,18 @@ export default function BatchSelection() {
     )
   }
 
-  // If there are no batches returned and we are not loading, it means this user doesn't need to see this component.
-  // We can render nothing.
+  // If there are no batches returned and we are not loading, show a message to grantees.
   if (batches.length === 0 && !currentBatchId) {
-    return null
+    return (
+      <Card className="border-dashed">
+        <CardHeader>
+          <CardTitle>Batch Selection</CardTitle>
+          <CardDescription>
+            No batches are available for selection yet. You will be notified when batches are created by the admin.
+          </CardDescription>
+        </CardHeader>
+      </Card>
+    )
   }
 
   const assignedBatch = currentBatchId ? batches.find((b) => b.batchId === currentBatchId) : null

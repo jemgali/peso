@@ -65,6 +65,11 @@ export const createBatchSchema = z.object({
     .string()
     .min(1, "Batch name is required")
     .max(120, "Batch name is too long"),
+  batchYear: z.coerce
+    .number()
+    .int()
+    .min(2020, "Batch year must be 2020 or later")
+    .max(2099, "Batch year must be before 2100"),
   startDate: z.string().refine((value) => !Number.isNaN(Date.parse(value)), {
     message: "Invalid start date",
   }),
@@ -208,6 +213,7 @@ export interface ExamSettingsResponse {
 export interface BatchListItem {
   batchId: string
   batchName: string
+  batchYear: number
   startDate: string
   officeName: string | null
   granteeCount: number

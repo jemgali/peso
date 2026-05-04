@@ -89,10 +89,10 @@ export const siblingSchema = z.object({
 
 export const familySchema = z.object({
   fatherName: z.string().min(1, "Father's name is required"),
-  fatherOccupation: z.string().optional(),
+  fatherOccupation: z.string().min(1, "Father's occupation is required"),
   fatherContact: optionalContactSchema,
   motherMaidenName: z.string().min(1, "Mother's maiden name is required"),
-  motherOccupation: z.string().optional(),
+  motherOccupation: z.string().min(1, "Mother's occupation is required"),
   motherContact: optionalContactSchema,
   numberOfSiblings: z.preprocess(
     (v) => (v === "" || v === undefined ? undefined : Number(v)),
@@ -241,7 +241,7 @@ export const sectionRequiredFields: Record<string, string[]> = {
     "profileMunicipality",
     "profileProvince",
   ],
-  family: ["fatherName", "motherMaidenName"],
+  family: ["fatherName", "fatherOccupation", "motherMaidenName", "motherOccupation"],
   guardian: [],
   benefactor: ["benefactorName", "benefactorRelationship"],
   education: ["gradeYear", "schoolName", "trackCourse", "schoolYear"],

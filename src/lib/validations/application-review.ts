@@ -35,6 +35,7 @@ export const NOTIFICATION_TYPES = [
   "application_approved",
   "application_revision",
   "application_rejected",
+  "batch_available",
 ] as const;
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
 

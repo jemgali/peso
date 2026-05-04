@@ -41,13 +41,10 @@ export async function GET(req: Request) {
 
     const currentYear = new Date().getFullYear()
 
-    // Get batches that started this year
+    // Get batches for current year
     const batches = await db.spesBatch.findMany({
       where: {
-        startDate: {
-          gte: new Date(currentYear, 0, 1),
-          lt: new Date(currentYear + 1, 0, 1),
-        },
+        batchYear: currentYear,
       },
       orderBy: {
         startDate: "asc",

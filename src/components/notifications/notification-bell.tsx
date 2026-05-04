@@ -12,6 +12,7 @@ const NOTIFICATION_ICONS: Record<NotificationType, { icon: string; color: string
   application_approved: { icon: "🎉", color: "text-green-600" },
   application_revision: { icon: "⚠️", color: "text-orange-600" },
   application_rejected: { icon: "❌", color: "text-red-600" },
+  batch_available: { icon: "📋", color: "text-blue-600" },
 };
 
 interface NotificationBellProps {

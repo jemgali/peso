@@ -10,6 +10,7 @@ import {
   CircleAlert,
   CircleCheck,
   CircleX,
+  ClipboardList,
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -51,6 +52,7 @@ function getNotificationIcon(type: string) {
   if (type.includes("rejected")) return CircleX
   if (type.includes("revision")) return CircleAlert
   if (type.includes("schedule")) return CalendarDays
+  if (type.includes("batch")) return ClipboardList
   return Bell
 }
 

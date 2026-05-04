@@ -31,6 +31,7 @@ const initialStepStatuses: Record<string, StepStatus> = SECTION_IDS.reduce(
 
 interface ApplicationFormProps {
   userEmail?: string;
+  userId?: string;
   defaultValues?: Record<string, unknown>;
   revisionFeedback?: Record<string, any>;
   initialApplicationType?: ApplicationType;
@@ -38,6 +39,7 @@ interface ApplicationFormProps {
 
 const ApplicationForm: React.FC<ApplicationFormProps> = ({
   userEmail,
+  userId,
   defaultValues,
   revisionFeedback,
   initialApplicationType,
@@ -103,6 +105,7 @@ const ApplicationForm: React.FC<ApplicationFormProps> = ({
             onValidationChange={handleValidationChange}
             onMount={handleFormMount}
             userEmail={userEmail}
+            userId={userId}
             defaultValues={defaultValues}
             applicationType={applicationType}
             revisionFeedback={revisionFeedback}
