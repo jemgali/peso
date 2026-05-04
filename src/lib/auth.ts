@@ -77,21 +77,10 @@ export const auth = betterAuth({
   databaseHooks: {
     user: {
       create: {
-        before: async (user, ctx) => {
+        before: async (user) => {
           // Normalize auth defaults: app uses "client" instead of generic "user".
           const normalizedRole =
             !user.role || user.role === "user" ? "client" : user.role;
-
-          // For OAuth signups (callback path), set emailVerified to false
-          if (ctx?.path?.startsWith("/callback")) {
-            return {
-              data: {
-                ...user,
-                role: normalizedRole,
-                emailVerified: false,
-              },
-            };
-          }
           return {
             data: {
               ...user,
@@ -121,8 +110,12 @@ export const auth = betterAuth({
       },
       update: {
         before: async (user) => {
-          // Ensure emailVerified is a boolean even if better-auth tries to set a Date
-          if (user.emailVerified !== undefined && user.emailVerified !== null) {
+          // Only convert if it's a truthy non-boolean (like a Date from better-auth)
+          if (
+            user.emailVerified !== undefined &&
+            user.emailVerified !== null &&
+            typeof user.emailVerified !== "boolean"
+          ) {
             return {
               data: {
                 ...user,
