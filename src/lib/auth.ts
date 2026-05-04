@@ -77,10 +77,23 @@ export const auth = betterAuth({
   databaseHooks: {
     user: {
       create: {
-        before: async (user) => {
+        before: async (user, ctx) => {
           // Normalize auth defaults: app uses "client" instead of generic "user".
           const normalizedRole =
             !user.role || user.role === "user" ? "client" : user.role;
+
+          // For OAuth signups (callback path), force emailVerified to false 
+          // so they must go through our verification flow.
+          if (ctx?.path?.startsWith("/callback")) {
+            return {
+              data: {
+                ...user,
+                role: normalizedRole,
+                emailVerified: false,
+              },
+            };
+          }
+
           return {
             data: {
               ...user,
@@ -134,44 +147,19 @@ export const auth = betterAuth({
       if (ctx.path.startsWith("/callback")) {
         const newSession = ctx.context.newSession;
         if (newSession && !newSession.user.emailVerified) {
-          // Generate verification token and send email
-          const token = crypto.randomUUID();
-          const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
-
-          // Store verification token in the verification table
-          await prisma.verification.create({
-            data: {
-              id: crypto.randomUUID(),
-              identifier: newSession.user.email,
-              value: token,
-              expiresAt,
+          // Use the built-in better-auth API to send verification email
+          // This ensures the token is generated and stored correctly by the system.
+          await ctx.context.api.sendVerificationEmail({
+            body: {
+              email: newSession.user.email,
+              callbackURL: "/auth/verified",
             },
           });
 
-          // Build verification URL with both token and email (identifier)
-          const baseUrl =
-            process.env.BETTER_AUTH_URL || "http://localhost:3000";
-          const verifyUrl = `${baseUrl}/api/auth/verify-email?token=${token}&email=${encodeURIComponent(newSession.user.email)}&callbackURL=/auth/verified`;
-
-          // Send verification email
-          await resend.emails.send({
-            from: "PESO <noreply@jemgali.tech>",
-            to: newSession.user.email,
-            subject: "Verify your email address",
-            html: `
-              <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e5e7eb; border-radius: 8px;">
-                <h1 style="font-size: 24px; font-weight: bold; margin-bottom: 16px; color: #1f2937;">Verify your email</h1>
-                <p style="color: #4b5563; margin-bottom: 24px;">Hi ${newSession.user.name},</p>
-                <p style="color: #4b5563; margin-bottom: 24px;">Please click the button below to verify your email address and activate your PESO account.</p>
-                <a href="${verifyUrl}" style="display: inline-block; background-color: #2563eb; color: white; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: 500;">Verify Email Address</a>
-                <p style="color: #9ca3af; font-size: 12px; margin-top: 32px;">If the button above doesn't work, copy and paste this link into your browser:</p>
-                <p style="color: #9ca3af; font-size: 12px; word-break: break-all;">${verifyUrl}</p>
-              </div>
-            `,
-          });
-
-          // Redirect to verify-email page instead of callback URL
-          return ctx.redirect(`/auth/verify-email?email=${encodeURIComponent(newSession.user.email)}`);
+          // Redirect to verify-email page
+          return ctx.redirect(
+            `/auth/verify-email?email=${encodeURIComponent(newSession.user.email)}`
+          );
         }
       }
     }),
