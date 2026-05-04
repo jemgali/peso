@@ -516,7 +516,8 @@ const SPESApplicationForm: React.FC<SPESApplicationFormProps> = ({
       });
 
       if (!response.ok) {
-        throw new Error("Failed to submit application");
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || errorData.message || "Failed to submit application");
       }
 
       toast.success("Application submitted successfully!");
@@ -525,6 +526,7 @@ const SPESApplicationForm: React.FC<SPESApplicationFormProps> = ({
       // Redirect to dashboard after successful submission
       router.push("/protected/client");
     } catch (error) {
+      console.error("Submission error:", error);
       toast.error(
         error instanceof Error ? error.message : "Failed to submit application",
       );

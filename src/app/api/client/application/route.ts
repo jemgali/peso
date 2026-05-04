@@ -1,26 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
-import { PrismaClient } from "@/generated/prisma/client";
-import { Pool } from "pg";
-import { PrismaPg } from "@prisma/adapter-pg";
+
 import {
   spesApplicationSchema,
   type SPESApplicationResponse,
 } from "@/lib/validations/spes-application";
-import { randomUUID } from "crypto";
 
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-});
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const adapter = new PrismaPg(pool as any);
-const prisma = new PrismaClient({ adapter });
+import { prisma } from "@/lib/prisma";
 
 export async function POST(
   request: NextRequest
 ): Promise<NextResponse<SPESApplicationResponse>> {
+  let userId: string | undefined;
   try {
     // Get the current authenticated user session
     const session = await auth.api.getSession({
@@ -38,7 +31,9 @@ export async function POST(
       );
     }
 
-    const userId = session.user.id;
+    userId = session.user.id;
+    // We already checked if session.user exists, so userId is guaranteed to be a string here.
+    const currentUserId = userId as string;
 
     // Check application period
     const currentYear = new Date().getFullYear();
@@ -55,7 +50,7 @@ export async function POST(
       // Check if user has a needs_revision submission (exception to period closure)
       const revisionSubmission = await prisma.applicationSubmission.findFirst({
         where: {
-          profile: { userId },
+          profile: { userId: currentUserId },
           status: "needs_revision",
         },
       });
@@ -127,7 +122,7 @@ export async function POST(
         data.applicationYear || new Date().getFullYear();
       const latestGranteeSubmission = await tx.applicationSubmission.findFirst({
         where: {
-          profile: { userId },
+          profile: { userId: currentUserId },
           spesWorkflow: { selectionStatus: "GRANTEE" },
         },
         orderBy: {
@@ -154,7 +149,7 @@ export async function POST(
       if (profile) {
         // Update existing profile
         profile = await tx.profileUser.update({
-          where: { userId },
+          where: { userId: currentUserId },
           data: {
             profileLastName: data.profileLastName,
             profileFirstName: data.profileFirstName,
@@ -167,8 +162,8 @@ export async function POST(
         // Create new profile
         profile = await tx.profileUser.create({
           data: {
-            profileId: randomUUID(),
-            userId,
+            profileId: crypto.randomUUID(),
+            userId: currentUserId,
             profileLastName: data.profileLastName,
             profileFirstName: data.profileFirstName,
             profileMiddleName: data.profileMiddleName || null,
@@ -184,9 +179,15 @@ export async function POST(
       });
 
       // Convert birthdate string to Date object if provided
-      const birthdate = data.profileBirthdate
+      let birthdate = data.profileBirthdate
         ? new Date(data.profileBirthdate)
         : null;
+
+      // Validate birthdate to prevent Prisma errors with "Invalid Date"
+      if (birthdate && isNaN(birthdate.getTime())) {
+        console.warn(`Invalid birthdate provided for user ${userId}: ${data.profileBirthdate}`);
+        birthdate = null;
+      }
 
       if (personal) {
         // Update existing personal details
@@ -211,7 +212,7 @@ export async function POST(
         // Create new personal details
         personal = await tx.profilePersonal.create({
           data: {
-            personalId: randomUUID(),
+            personalId: crypto.randomUUID(),
             profileId: profile.profileId,
             profileBirthdate: birthdate,
             profileAge: data.profileAge || null,
@@ -247,7 +248,7 @@ export async function POST(
       } else {
         address = await tx.profileAddress.create({
           data: {
-            addressId: randomUUID(),
+            addressId: crypto.randomUUID(),
             profileId: profile.profileId,
             profileHouseStreet: data.profileHouseStreet || null,
             profileBarangay: data.profileBarangay || null,
@@ -279,7 +280,7 @@ export async function POST(
       } else {
         family = await tx.profileFamily.create({
           data: {
-            familyId: randomUUID(),
+            familyId: crypto.randomUUID(),
             profileId: profile.profileId,
             fatherName: data.fatherName || null,
             fatherOccupation: data.fatherOccupation || null,
@@ -301,7 +302,7 @@ export async function POST(
       const siblingsToPersist = (data.siblings || [])
         .filter((s) => s.name && s.age !== undefined && s.age !== null)
         .map((sibling, index) => ({
-          siblingId: randomUUID(),
+          siblingId: crypto.randomUUID(),
           profileId: profile.profileId,
           siblingName: sibling.name,
           siblingAge: Number(sibling.age),
@@ -336,7 +337,7 @@ export async function POST(
       } else {
         guardian = await tx.profileGuardian.create({
           data: {
-            guardianId: randomUUID(),
+            guardianId: crypto.randomUUID(),
             profileId: profile.profileId,
             guardianName: data.guardianName || null,
             guardianContact: data.guardianContact || null,
@@ -364,7 +365,7 @@ export async function POST(
       } else {
         benefactor = await tx.profileBenefactor.create({
           data: {
-            benefactorId: randomUUID(),
+            benefactorId: crypto.randomUUID(),
             profileId: profile.profileId,
             benefactorName: data.benefactorName || null,
             benefactorRelationship: data.benefactorRelationship || null,
@@ -390,7 +391,7 @@ export async function POST(
       } else {
         education = await tx.profileEducation.create({
           data: {
-            educationId: randomUUID(),
+            educationId: crypto.randomUUID(),
             profileId: profile.profileId,
             gradeYear: data.gradeYear || null,
             schoolName: data.schoolName || null,
@@ -415,7 +416,7 @@ export async function POST(
       } else {
         skills = await tx.profileSkills.create({
           data: {
-            skillsId: randomUUID(),
+            skillsId: crypto.randomUUID(),
             profileId: profile.profileId,
             skills: skillsList as string[],
           },
@@ -447,7 +448,7 @@ export async function POST(
       } else {
         spes = await tx.profileSPES.create({
           data: {
-            spesId: randomUUID(),
+            spesId: crypto.randomUUID(),
             profileId: profile.profileId,
             isFourPsBeneficiary: data.isFourPsBeneficiary || false,
             applicationYear: data.applicationYear || null,
@@ -464,7 +465,7 @@ export async function POST(
       if (applicantType === "SPES_BABY" && normalizedSpesAvailments.length > 0) {
         await tx.profileSPESAvailment.createMany({
           data: normalizedSpesAvailments.map((availment) => ({
-            availmentId: randomUUID(),
+            availmentId: crypto.randomUUID(),
             profileId: profile.profileId,
             yearOfAvailment: availment.yearOfAvailment,
             assignedOffice: availment.assignedOffice,
@@ -508,7 +509,7 @@ export async function POST(
         // First-time submission
         submission = await tx.applicationSubmission.create({
           data: {
-            submissionId: randomUUID(),
+            submissionId: crypto.randomUUID(),
             profileId: profile.profileId,
             status: "pending",
             applicantType,
@@ -550,7 +551,10 @@ export async function POST(
       { status: 200 }
     );
   } catch (error) {
-    console.error("Error submitting application:", error);
+    console.error(`Error submitting application for user ${userId}:`, error);
+    if (error instanceof Error) {
+      console.dir(error, { depth: null });
+    }
 
     return NextResponse.json(
       {

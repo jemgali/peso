@@ -3,21 +3,14 @@ import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { createAuthMiddleware } from "better-auth/api";
 // If your Prisma file is located elsewhere, you can change the path
-import { PrismaClient } from "@/generated/prisma/client";
-import { Pool } from "pg";
-import { PrismaPg } from "@prisma/adapter-pg";
 import { randomInt } from "node:crypto";
+
 import { nextCookies } from "better-auth/next-js";
 import { admin, emailOTP } from "better-auth/plugins";
 import { hashPassword, verifyPassword } from "./password";
 import { Resend } from "resend";
 
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-});
-
-const adapter = new PrismaPg(pool as any);
-const prisma = new PrismaClient({ adapter });
+import { prisma, pool } from "@/lib/prisma";
 const resend = new Resend(process.env.RESEND_API_KEY);
 const OTP_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
