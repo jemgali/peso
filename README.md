@@ -40,6 +40,9 @@ BETTER_AUTH_URL="http://localhost:3000"
 
 # Resend (used for email verification + /api/send test route)
 RESEND_API_KEY="re_..."
+
+# UploadThing token (required for file upload routes + signed file access)
+UPLOADTHING_TOKEN="..."
 ```
 
 ### Optional (Google OAuth)

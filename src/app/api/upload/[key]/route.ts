@@ -1,18 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
-import { PrismaClient, Prisma } from "@/generated/prisma/client";
-import { Pool } from "pg";
-import { PrismaPg } from "@prisma/adapter-pg";
-import { deleteFile } from "@/lib/storage";
-
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-});
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const adapter = new PrismaPg(pool as any);
-const prisma = new PrismaClient({ adapter });
+import { Prisma } from "@/generated/prisma/client";
+import { prisma } from "@/lib/prisma";
+import { deleteManagedFileByKey } from "@/lib/upload-storage";
 
 interface RouteParams {
   params: Promise<{ key: string }>;
@@ -25,7 +16,7 @@ export interface DeleteResponse {
 }
 
 export async function DELETE(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: RouteParams
 ): Promise<NextResponse<DeleteResponse>> {
   try {
@@ -51,8 +42,30 @@ export async function DELETE(
     // Decode the key (it's URL encoded)
     const decodedKey = decodeURIComponent(key);
 
-    // Verify the file belongs to this user (key should start with documents/{userId}/)
-    if (!decodedKey.startsWith(`documents/${userId}/`)) {
+    const profile = await prisma.profileUser.findUnique({
+      where: { userId },
+      include: { documents: true },
+    });
+
+    if (!profile?.documents) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "File not found",
+          error: "Document record was not found",
+        },
+        { status: 404 }
+      );
+    }
+
+    const existingDocuments =
+      (profile.documents.documents as Record<string, unknown>) || {};
+    const matchingEntry = Object.entries(existingDocuments).find(([, value]) => {
+      if (!value || typeof value !== "object") return false;
+      return (value as { key?: string }).key === decodedKey;
+    });
+
+    if (!matchingEntry) {
       return NextResponse.json(
         {
           success: false,
@@ -63,29 +76,17 @@ export async function DELETE(
       );
     }
 
-    // Extract document type from key
-    const keyParts = decodedKey.split("/");
-    const documentType = keyParts[2]; // documents/{userId}/{documentType}/{filename}
+    const [documentType] = matchingEntry;
 
-    // Delete from local storage
-    await deleteFile(decodedKey);
+    await deleteManagedFileByKey(decodedKey);
 
-    // Update profile documents to remove this file
-    const profile = await prisma.profileUser.findUnique({
-      where: { userId },
-      include: { documents: true },
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { [documentType]: _, ...remainingDocuments } = existingDocuments;
+
+    await prisma.profileDocuments.update({
+      where: { profileId: profile.profileId },
+      data: { documents: remainingDocuments as Prisma.InputJsonValue },
     });
-
-    if (profile?.documents) {
-      const existingDocuments = (profile.documents.documents as Record<string, unknown>) || {};
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { [documentType]: _, ...remainingDocuments } = existingDocuments;
-      
-      await prisma.profileDocuments.update({
-        where: { profileId: profile.profileId },
-        data: { documents: remainingDocuments as Prisma.InputJsonValue },
-      });
-    }
 
     return NextResponse.json({
       success: true,

@@ -10,10 +10,11 @@ import { Textarea } from "@/components/ui/textarea"
 import { Empty, EmptyHeader, EmptyMedia, EmptyTitle, EmptyDescription } from "@/components/ui/empty"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { toast } from "sonner"
-import { ClipboardListIcon, ChevronDown, ChevronUp, FileWarning } from "lucide-react"
-import { ROUTES } from "@/lib/constants/routes"
+import { ClipboardListIcon, ChevronDown, ChevronUp } from "lucide-react"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import type { SpesGranteeWithRemarks, GranteeRemarksListResponse, GranteeRemarkItem } from "@/lib/validations/spes-remarks"
+import type { SpesGranteeWithRemarks, GranteeRemarksListResponse } from "@/lib/validations/spes-remarks"
+import { useUploadThing } from "@/lib/uploadthing"
+import type { RemarkUploadServerData } from "@/app/api/uploadthing/core"
 
 export default function RemarksContent() {
   const [grantees, setGrantees] = useState<SpesGranteeWithRemarks[]>([])
@@ -41,6 +42,7 @@ export default function RemarksContent() {
   const [remarksText, setRemarksText] = useState("")
   const [ratedBy, setRatedBy] = useState("")
   const [uploadFile, setUploadFile] = useState<File | null>(null)
+  const { startUpload: startRemarkAttachmentUpload } = useUploadThing("spesRemarkAttachment")
 
   const loadGrantees = useCallback(async () => {
     setLoading(true)
@@ -122,17 +124,14 @@ export default function RemarksContent() {
     try {
       let documentUrl = null
       if (uploadFile) {
-        const formData = new FormData()
-        formData.append("file", uploadFile)
-        const uploadRes = await fetch("/api/upload", {
-          method: "POST",
-          body: formData,
-        })
-        const uploadData = await uploadRes.json()
-        if (!uploadRes.ok || !uploadData.url) {
-          throw new Error(uploadData.error || "Failed to upload document")
+        const uploadResult = await startRemarkAttachmentUpload([uploadFile])
+        const uploaded = uploadResult?.[0]?.serverData as RemarkUploadServerData | null
+
+        if (!uploaded?.url) {
+          throw new Error("Failed to upload document")
         }
-        documentUrl = uploadData.url
+
+        documentUrl = uploaded.url
       }
 
       const response = await fetch("/api/admin/spes/remarks", {

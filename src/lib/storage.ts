@@ -1,5 +1,6 @@
 import fs from "fs/promises";
 import path from "path";
+import { DOCUMENT_TYPES, type DocumentType, buildProtectedUploadUrl } from "@/lib/upload-documents";
 
 // Local filesystem storage configuration
 const UPLOAD_DIR = process.env.UPLOAD_DIR || path.join(process.cwd(), "uploads");
@@ -14,24 +15,8 @@ export type AllowedFileType = (typeof ALLOWED_FILE_TYPES)[number];
 // Maximum file size (10MB)
 export const MAX_FILE_SIZE = 10 * 1024 * 1024;
 
-// Document types that can be uploaded
-export const DOCUMENT_TYPES = [
-  "psaCertificate",
-  "proofOfEnrollment",
-  "grades",
-  "affidavitLowIncome",
-  "barangayCertLowIncome",
-  "barangayCertResidency",
-  "outOfSchoolYouthCertificate",
-  "certificateOfGuardianship",
-  "incomeTaxReturn",
-  "certificateOfMarriage",
-  "affidavitSoloParent",
-  "affidavitDiscrepancy",
-  "deathCertificate",
-] as const;
-
-export type DocumentType = (typeof DOCUMENT_TYPES)[number];
+export { DOCUMENT_TYPES };
+export type { DocumentType };
 
 // Generate a unique file key for storage
 export function generateFileKey(
@@ -76,7 +61,7 @@ export async function saveFile(
   await fs.writeFile(filePath, buffer);
 
   // Return the API-served URL
-  const url = `/api/upload/file/${encodeURIComponent(key)}`;
+  const url = buildProtectedUploadUrl(key);
 
   return { key, url };
 }

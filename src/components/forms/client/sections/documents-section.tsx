@@ -17,6 +17,12 @@ import {
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import type { FormSectionProps } from "./types";
+import { useUploadThing } from "@/lib/uploadthing";
+import {
+  isDocumentType,
+  type DocumentType,
+} from "@/lib/upload-documents";
+import type { ApplicantUploadServerData } from "@/app/api/uploadthing/core";
 
 interface UploadedDocument {
   key: string;
@@ -196,6 +202,7 @@ const DocumentsSection: React.FC<FormSectionProps> = ({
   const [previewMode, setPreviewMode] = useState<PreviewMode>("auto");
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
   const localPreviewUrlsRef = useRef<Record<string, string>>({});
+  const { startUpload } = useUploadThing("spesApplicantDocument");
 
   // Fetch existing documents on mount
   useEffect(() => {
@@ -300,19 +307,17 @@ const DocumentsSection: React.FC<FormSectionProps> = ({
     setUploading((prev) => ({ ...prev, [documentId]: true }));
 
     try {
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("documentType", documentId);
+      if (!isDocumentType(documentId)) {
+        throw new Error("Unsupported document type");
+      }
 
-      const response = await fetch("/api/upload", {
-        method: "POST",
-        body: formData,
+      const result = await startUpload([file], {
+        documentType: documentId as DocumentType,
       });
+      const uploadData = result?.[0]?.serverData as ApplicantUploadServerData | null;
 
-      const result = await response.json();
-
-      if (!response.ok || !result.success) {
-        throw new Error(result.error || "Upload failed");
+      if (!uploadData) {
+        throw new Error("Upload failed");
       }
 
       // Update local state
@@ -320,12 +325,12 @@ const DocumentsSection: React.FC<FormSectionProps> = ({
         const newDocs = {
           ...prev,
           [documentId]: {
-            key: result.data.key,
-            url: result.data.url,
-            fileName: file.name,
-            fileType: file.type,
-            fileSize: file.size,
-            uploadedAt: new Date().toISOString(),
+            key: uploadData.key,
+            url: uploadData.url,
+            fileName: uploadData.fileName,
+            fileType: uploadData.fileType,
+            fileSize: uploadData.fileSize,
+            uploadedAt: uploadData.uploadedAt,
           },
         };
         if (setValue) {

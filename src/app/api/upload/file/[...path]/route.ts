@@ -2,13 +2,18 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { readFile, fileExists, getMimeType } from "@/lib/storage";
+import { prisma } from "@/lib/prisma";
+import {
+  getSignedManagedFileUrl,
+  isLegacyLocalStorageKey,
+} from "@/lib/upload-storage";
 
 interface RouteParams {
   params: Promise<{ path: string[] }>;
 }
 
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: RouteParams
 ): Promise<NextResponse> {
   try {
@@ -27,39 +32,61 @@ export async function GET(
     const { path } = await params;
     const key = decodeURIComponent(path.join("/"));
 
-    // Verify the file belongs to this user (key format: documents/{userId}/...)
-    // Allow admin access as well
     const userId = session.user.id;
-    const userRole = (session.user as Record<string, unknown>).role as string | undefined;
-    const isOwner = key.startsWith(`documents/${userId}/`);
+    const userRole = (session.user as Record<string, unknown>).role as
+      | string
+      | undefined;
     const isAdmin = userRole === "admin";
 
-    if (!isOwner && !isAdmin) {
-      return NextResponse.json(
-        { success: false, error: "Forbidden" },
-        { status: 403 }
-      );
+    if (!isAdmin) {
+      const profile = await prisma.profileUser.findUnique({
+        where: { userId },
+        include: { documents: true },
+      });
+
+      const documents =
+        (profile?.documents?.documents as Record<string, unknown>) || {};
+      const isOwner = Object.values(documents).some((value) => {
+        if (!value || typeof value !== "object") return false;
+        return (value as { key?: string }).key === key;
+      });
+
+      if (!isOwner) {
+        return NextResponse.json(
+          { success: false, error: "Forbidden" },
+          { status: 403 }
+        );
+      }
     }
 
-    // Check file exists
-    const exists = await fileExists(key);
-    if (!exists) {
-      return NextResponse.json(
-        { success: false, error: "File not found" },
-        { status: 404 }
-      );
+    if (isLegacyLocalStorageKey(key)) {
+      const exists = await fileExists(key);
+      if (!exists) {
+        return NextResponse.json(
+          { success: false, error: "File not found" },
+          { status: 404 }
+        );
+      }
+
+      const buffer = await readFile(key);
+      const mimeType = getMimeType(key);
+
+      return new NextResponse(new Uint8Array(buffer), {
+        status: 200,
+        headers: {
+          "Content-Type": mimeType,
+          "Content-Length": buffer.length.toString(),
+          "Cache-Control": "private, max-age=3600",
+        },
+      });
     }
 
-    // Read and serve the file
-    const buffer = await readFile(key);
-    const mimeType = getMimeType(key);
-
-    return new NextResponse(new Uint8Array(buffer), {
-      status: 200,
+    const signedUrl = await getSignedManagedFileUrl(key);
+    return new NextResponse(null, {
+      status: 302,
       headers: {
-        "Content-Type": mimeType,
-        "Content-Length": buffer.length.toString(),
-        "Cache-Control": "private, max-age=3600",
+        Location: signedUrl,
+        "Cache-Control": "private, no-store",
       },
     });
   } catch (error) {
