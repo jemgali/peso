@@ -5,6 +5,8 @@ import { createId } from "@paralleldrive/cuid2"
 import { headers } from "next/headers"
 import { auth } from "@/lib/auth"
 
+import { Prisma } from "@/generated/prisma/client"
+
 async function requireAdminApi() {
   const headersList = await headers()
   const session = await auth.api.getSession({ headers: headersList })
@@ -20,7 +22,7 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url)
     const search = searchParams.get("search")?.trim()
 
-    const whereClause: any = {
+    const whereClause: Prisma.SpesWorkflowWhereInput = {
       selectionStatus: "GRANTEE",
     }
 

@@ -13,10 +13,26 @@ export async function requireUser() {
     redirect("/auth/sign-in");
   }
 
+  let isVerified = session.user.emailVerified;
+
+  // Bypass better-auth cache: if session says not verified, double-check the DB
+  if (!isVerified) {
+    const { prisma } = await import('@/lib/prisma');
+    const dbUser = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { emailVerified: true }
+    });
+    
+    if (dbUser?.emailVerified) {
+      isVerified = true;
+    }
+  }
+
   // Require email verification
-  if (!session.user.emailVerified) {
+  if (!isVerified) {
     redirect("/auth/verify-email");
   }
 
-  return session.user;
+  return { ...session.user, emailVerified: isVerified };
+
 }

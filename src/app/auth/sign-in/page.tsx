@@ -10,7 +10,20 @@ const Page = async () => {
   })
 
   if (session?.user) {
-    if (session.user.emailVerified) {
+    let isVerified = session.user.emailVerified;
+
+    if (!isVerified) {
+      const { prisma } = await import('@/lib/prisma');
+      const dbUser = await prisma.user.findUnique({
+        where: { id: session.user.id },
+        select: { emailVerified: true }
+      });
+      if (dbUser?.emailVerified) {
+        isVerified = true;
+      }
+    }
+
+    if (isVerified) {
       redirect("/protected")
     }
 
