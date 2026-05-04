@@ -13,6 +13,17 @@ const VerifiedContent = () => {
   const [countdown, setCountdown] = useState(3)
 
   useEffect(() => {
+    // Force session refresh when the page loads
+    const refreshSession = async () => {
+      // Use query options to bypass cache as suggested by the TS error
+      await authClient.getSession({
+        query: {
+          disableCookieCache: true
+        }
+      })
+    }
+    refreshSession()
+
     // If we have a session and the user is verified, redirect to protected
     if (session?.user?.emailVerified) {
       const timer = setInterval(() => {
@@ -55,26 +66,15 @@ const VerifiedContent = () => {
             <Loader2 className="h-4 w-4 animate-spin" />
             <span>Checking session...</span>
           </div>
-        ) : session?.user?.emailVerified ? (
+        ) : (
           <div className="space-y-4">
-            <p className="text-sm font-medium text-green-600 dark:text-green-400">
-              Redirecting to dashboard in {countdown}s...
+            <p className="text-sm text-green-600 dark:text-green-400">
+              Verification complete. You can now access your dashboard.
             </p>
             <Button asChild className="w-full group" size="lg">
               <Link href="/protected">
                 Go to Dashboard
                 <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
-              </Link>
-            </Button>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            <p className="text-sm text-yellow-600 dark:text-yellow-400">
-              Verification complete. Please sign in to continue.
-            </p>
-            <Button asChild className="w-full" size="lg">
-              <Link href="/auth/sign-in">
-                Back to Sign In
               </Link>
             </Button>
           </div>

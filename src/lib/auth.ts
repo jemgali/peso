@@ -155,10 +155,10 @@ export const auth = betterAuth({
             },
           });
 
-          // Build verification URL
+          // Build verification URL with both token and email (identifier)
           const baseUrl =
             process.env.BETTER_AUTH_URL || "http://localhost:3000";
-          const verifyUrl = `${baseUrl}/api/auth/verify-email?token=${token}&callbackURL=/auth/verified`;
+          const verifyUrl = `${baseUrl}/api/auth/verify-email?token=${token}&email=${encodeURIComponent(newSession.user.email)}&callbackURL=/auth/verified`;
 
           // Send verification email
           await resend.emails.send({
@@ -166,12 +166,13 @@ export const auth = betterAuth({
             to: newSession.user.email,
             subject: "Verify your email address",
             html: `
-              <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e5e7eb; rounded: 8px;">
-                <h1 style="font-size: 24px; font-weight: bold; margin-bottom: 16px;">Verify your email</h1>
+              <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e5e7eb; border-radius: 8px;">
+                <h1 style="font-size: 24px; font-weight: bold; margin-bottom: 16px; color: #1f2937;">Verify your email</h1>
                 <p style="color: #4b5563; margin-bottom: 24px;">Hi ${newSession.user.name},</p>
                 <p style="color: #4b5563; margin-bottom: 24px;">Please click the button below to verify your email address and activate your PESO account.</p>
                 <a href="${verifyUrl}" style="display: inline-block; background-color: #2563eb; color: white; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: 500;">Verify Email Address</a>
-                <p style="color: #9ca3af; font-size: 12px; margin-top: 32px;">If you didn't create an account, you can safely ignore this email.</p>
+                <p style="color: #9ca3af; font-size: 12px; margin-top: 32px;">If the button above doesn't work, copy and paste this link into your browser:</p>
+                <p style="color: #9ca3af; font-size: 12px; word-break: break-all;">${verifyUrl}</p>
               </div>
             `,
           });
