@@ -102,7 +102,7 @@ export const auth = betterAuth({
           };
         },
         after: async (user) => {
-          // Auto-create ProfileUser in public schema with email + role
+          // 1. Auto-create ProfileUser in public schema
           try {
             const existing = await prisma.profileUser.findUnique({
               where: { userId: user.id },
@@ -118,6 +118,23 @@ export const auth = betterAuth({
             }
           } catch (error) {
             console.error("Failed to auto-create ProfileUser:", error);
+          }
+
+          // 2. If user is unverified (OAuth case), trigger verification email
+          if (!user.emailVerified) {
+            try {
+              // Note: Since we are in an adapter hook, we use our exported auth instance 
+              // or ctx.api if available. Here we'll use the auth.api directly.
+              const { auth } = await import("./auth");
+              await auth.api.sendVerificationEmail({
+                body: {
+                  email: user.email,
+                  callbackURL: "/auth/verified",
+                },
+              });
+            } catch (error) {
+              console.error("Failed to send automatic verification email:", error);
+            }
           }
         },
       },
@@ -139,30 +156,6 @@ export const auth = betterAuth({
         },
       },
     },
-  },
-
-  hooks: {
-    after: createAuthMiddleware(async (ctx) => {
-      // After OAuth callback, if a new user was created, send verification email
-      if (ctx.path.startsWith("/callback")) {
-        const newSession = ctx.context.newSession;
-        if (newSession && !newSession.user.emailVerified) {
-          // Use the built-in better-auth API to send verification email
-          // This ensures the token is generated and stored correctly by the system.
-          await ctx.context.api.sendVerificationEmail({
-            body: {
-              email: newSession.user.email,
-              callbackURL: "/auth/verified",
-            },
-          });
-
-          // Redirect to verify-email page
-          return ctx.redirect(
-            `/auth/verify-email?email=${encodeURIComponent(newSession.user.email)}`
-          );
-        }
-      }
-    }),
   },
 
   plugins: [
