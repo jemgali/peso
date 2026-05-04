@@ -30,7 +30,8 @@ const VerifiedContent = () => {
         setCountdown((prev) => {
           if (prev <= 1) {
             clearInterval(timer)
-            router.push('/protected')
+            // Force hard navigation to clear Next.js Router Cache
+            window.location.href = '/protected'
             return 0
           }
           return prev - 1
@@ -39,7 +40,7 @@ const VerifiedContent = () => {
 
       return () => clearInterval(timer)
     }
-  }, [session, router])
+  }, [session])
 
   return (
     <div className="flex flex-col items-center justify-center space-y-6 text-center w-full max-w-sm mx-auto mt-12 md:mt-24 animate-in fade-in slide-in-from-bottom-4 duration-500 bg-background p-8 rounded-2xl shadow-2xl border border-border">
@@ -72,10 +73,10 @@ const VerifiedContent = () => {
               Verification complete. You can now access your dashboard.
             </p>
             <Button asChild className="w-full group" size="lg">
-              <Link href="/protected">
+              <a href="/protected">
                 Go to Dashboard
                 <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
-              </Link>
+              </a>
             </Button>
           </div>
         )}
