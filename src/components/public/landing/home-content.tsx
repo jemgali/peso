@@ -1,10 +1,19 @@
 import React from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { headers } from "next/headers";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
+import { auth } from "@/lib/auth";
 
-const HomeContent = () => {
+const HomeContent = async () => {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+  const applyNowHref = session?.user
+    ? "/protected/client/application"
+    : "/auth/sign-up";
+
   return (
     <section id="home" className="scroll-mt-20 py-16 md:py-24">
       <div className="container mx-auto px-4">
@@ -37,7 +46,7 @@ const HomeContent = () => {
 
             <div className="flex flex-col items-center gap-3 sm:flex-row md:justify-start">
               <Button size="lg" asChild>
-                <Link href="/auth/sign-up">
+                <Link href={applyNowHref}>
                   Apply Now
                   <ArrowRight data-icon="inline-end" />
                 </Link>

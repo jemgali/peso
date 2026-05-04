@@ -2,11 +2,12 @@
 
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { UserCircle, Loader2 } from "lucide-react";
+import { Home, LayoutDashboard, Loader2, LogOut, UserCircle } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuTrigger,
@@ -84,7 +85,7 @@ const UserProfile = () => {
     return (
       <Button
         variant="ghost"
-        className="rounded-full w-10 h-10 p-0 flex items-center justify-center"
+        className="flex size-10 items-center justify-center rounded-full p-0"
       >
         <Loader2 className="h-5 w-5 animate-spin text-white/70" />
       </Button>
@@ -119,7 +120,7 @@ const UserProfile = () => {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56 mt-2">
         <DropdownMenuLabel className="font-normal">
-          <div className="flex flex-col space-y-1">
+          <div className="flex flex-col gap-1">
             <p className="text-sm font-medium leading-none truncate">
               {displayName || "Account"}
             </p>
@@ -129,19 +130,33 @@ const UserProfile = () => {
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuItem
-          onSelect={() => router.push(dashboardRoute)}
-          className="cursor-pointer w-full"
-        >
-          Dashboard
-        </DropdownMenuItem>
+        <DropdownMenuGroup>
+          <DropdownMenuItem
+            onSelect={() => router.push("/")}
+            className="cursor-pointer w-full"
+          >
+            <Home data-icon="inline-start" />
+            Back to Home
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onSelect={() => router.push(dashboardRoute)}
+            className="cursor-pointer w-full"
+          >
+            <LayoutDashboard data-icon="inline-start" />
+            Dashboard
+          </DropdownMenuItem>
+        </DropdownMenuGroup>
         <DropdownMenuSeparator />
-        <DropdownMenuItem
-          onSelect={handleLogout}
-          className="cursor-pointer w-full text-red-600 focus:text-red-600 focus:bg-red-50"
-        >
+        <DropdownMenuGroup>
+          <DropdownMenuItem
+            onSelect={handleLogout}
+            className="cursor-pointer w-full"
+            variant="destructive"
+          >
+            <LogOut data-icon="inline-start" />
           Logout
-        </DropdownMenuItem>
+          </DropdownMenuItem>
+        </DropdownMenuGroup>
       </DropdownMenuContent>
     </DropdownMenu>
   );

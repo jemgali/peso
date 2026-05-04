@@ -2,6 +2,7 @@
 
 import React, { useState } from "react"
 import Link from "next/link"
+import { useSearchParams } from "next/navigation"
 import { Button } from "@/ui/button"
 import { Mail, RefreshCw } from "lucide-react"
 import { authClient } from "@/lib/auth-client"
@@ -10,12 +11,22 @@ import { Spinner } from "@/ui/spinner"
 
 export default function VerifyEmailPage() {
   const [isResending, setIsResending] = useState(false)
+  const searchParams = useSearchParams()
+  const { data: session } = authClient.useSession()
+
+  const emailFromQuery = searchParams.get("email")?.trim()
+  const targetEmail = emailFromQuery || session?.user?.email || ""
 
   const handleResendEmail = async () => {
+    if (!targetEmail) {
+      toast.error("Unable to determine your email. Please sign up again.")
+      return
+    }
+
     setIsResending(true)
     try {
       await authClient.sendVerificationEmail({
-        email: "", // Will use current session email
+        email: targetEmail,
         callbackURL: "/auth/verified",
       })
       toast.success("Verification email sent! Please check your inbox.")
@@ -40,7 +51,7 @@ export default function VerifyEmailPage() {
           Verify Your Email
         </h1>
         <p className="text-muted-foreground text-sm">
-          We&apos;ve sent a verification link to your email address. Please check your inbox and click the link to verify your account.
+          We&apos;ve sent a verification link to your email address{targetEmail ? ` (${targetEmail})` : ""}. Please check your inbox and click the link to verify your account.
         </p>
       </div>
 
@@ -67,8 +78,8 @@ export default function VerifyEmailPage() {
         </Button>
         
         <Button asChild variant="ghost" className="w-full" size="lg">
-          <Link href="/auth/sign-in">
-            Back to Sign In
+          <Link href="/auth/sign-up">
+            Back to Sign Up
           </Link>
         </Button>
       </div>

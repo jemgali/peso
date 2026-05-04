@@ -1,4 +1,4 @@
-export const ADMIN_SERVICES = ["spes", "gip", "dilp"] as const
+export const ADMIN_SERVICES = ["spes"] as const
 
 export type AdminService = (typeof ADMIN_SERVICES)[number]
 
@@ -10,7 +10,5 @@ export function isAdminService(value: string | undefined | null): value is Admin
 
 export function getAdminServiceLabel(service: AdminService): string {
   if (service === "spes") return "SPES"
-  if (service === "gip") return "GIP"
-  return "DILP"
+  return service
 }
-

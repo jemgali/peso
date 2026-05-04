@@ -56,7 +56,7 @@ const SignUpForm = () => {
             onSuccess: () => {
                 toast.success("Account created successfully.\nPlease check your email to verify your account.")
                 setIsPending(false)
-                router.push('/auth/sign-in')
+                router.push(`/auth/verify-email?email=${encodeURIComponent(data.email)}`)
             },
             onError: (ctx) => {
                 toast.error(ctx.error.message || "Failed to create account.")
@@ -68,7 +68,7 @@ const SignUpForm = () => {
     const handleGoogleSignUp = async () => {
         await authClient.signIn.social({
             provider: "google",
-            callbackURL: "/auth/verify-email",
+            callbackURL: "/protected",
         }, {
             onRequest: () => {
                 setIsGooglePending(true)

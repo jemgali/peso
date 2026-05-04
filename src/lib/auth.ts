@@ -6,8 +6,9 @@ import { createAuthMiddleware } from "better-auth/api";
 import { PrismaClient } from "@/generated/prisma/client";
 import { Pool } from "pg";
 import { PrismaPg } from "@prisma/adapter-pg";
+import { randomInt } from "node:crypto";
 import { nextCookies } from "better-auth/next-js";
-import { admin } from "better-auth/plugins";
+import { admin, emailOTP } from "better-auth/plugins";
 import { hashPassword, verifyPassword } from "./password";
 import { Resend } from "resend";
 
@@ -18,6 +19,13 @@ const pool = new Pool({
 const adapter = new PrismaPg(pool as any);
 const prisma = new PrismaClient({ adapter });
 const resend = new Resend(process.env.RESEND_API_KEY);
+const OTP_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+
+function generateAlphanumericOtp(length = 8): string {
+  return Array.from({ length }, () =>
+    OTP_CHARS[randomInt(0, OTP_CHARS.length)]
+  ).join("");
+}
 
 export const auth = betterAuth({
   baseURL: process.env.BETTER_AUTH_URL,
@@ -153,5 +161,25 @@ export const auth = betterAuth({
     }),
   },
 
-  plugins: [nextCookies() as any, admin()],
+  plugins: [
+    nextCookies() as any,
+    admin(),
+    emailOTP({
+      otpLength: 8,
+      expiresIn: 15 * 60,
+      generateOTP: () => generateAlphanumericOtp(8),
+      sendVerificationOTP: async ({ email, otp, type }) => {
+        if (type !== "forget-password") {
+          return;
+        }
+
+        await resend.emails.send({
+          from: "PESO <noreply@jemgali.tech>",
+          to: email,
+          subject: "Your PESO password reset code",
+          html: `<p>You requested to reset your PESO password.</p><p>Your verification code is:</p><p style="font-size:20px;font-weight:700;letter-spacing:2px;">${otp}</p><p>This code expires in 15 minutes.</p>`,
+        });
+      },
+    }),
+  ],
 });

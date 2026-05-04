@@ -55,9 +55,19 @@ const SignInForm = () => {
             onSuccess: () => {
                 toast.success("Successfully signed in.")
                 setIsPending(false)
-                window.location.href = "/"
+                window.location.href = "/protected"
             },
             onError: (ctx) => {
+                const errorCode = typeof ctx.error === "object" && ctx.error !== null && "code" in ctx.error
+                    ? ctx.error.code
+                    : undefined
+                if (errorCode === "EMAIL_NOT_VERIFIED") {
+                    toast.error("Please verify your email first.")
+                    setIsPending(false)
+                    window.location.href = `/auth/verify-email?email=${encodeURIComponent(data.email)}`
+                    return
+                }
+
                 toast.error(ctx.error.message || "Invalid email or password.")
                 setIsPending(false)
             }
@@ -67,7 +77,7 @@ const SignInForm = () => {
     const handleGoogleSignIn = async () => {
         await authClient.signIn.social({
             provider: "google",
-            callbackURL: "/",
+            callbackURL: "/protected",
         }, {
             onRequest: () => {
                 setIsGooglePending(true)

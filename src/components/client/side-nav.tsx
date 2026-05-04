@@ -16,10 +16,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 
 const SideNav = () => {
   const checkActive = useActivePath()
-  const isApplicationSection =
-    checkActive("/protected/client/application") ||
-    checkActive("/protected/client/application/gip") ||
-    checkActive("/protected/client/application/dilp")
+  const isApplicationSection = checkActive("/protected/client/application")
 
   return (
     <SidebarMenu>
@@ -62,22 +59,6 @@ const SideNav = () => {
                   isActive={checkActive("/protected/client/application")}
                 >
                   <Link href="/protected/client/application">SPES</Link>
-                </SidebarMenuSubButton>
-              </SidebarMenuSubItem>
-              <SidebarMenuSubItem>
-                <SidebarMenuSubButton
-                  asChild
-                  isActive={checkActive("/protected/client/application/gip")}
-                >
-                  <Link href="/protected/client/application/gip">GIP</Link>
-                </SidebarMenuSubButton>
-              </SidebarMenuSubItem>
-              <SidebarMenuSubItem>
-                <SidebarMenuSubButton
-                  asChild
-                  isActive={checkActive("/protected/client/application/dilp")}
-                >
-                  <Link href="/protected/client/application/dilp">DILP</Link>
                 </SidebarMenuSubButton>
               </SidebarMenuSubItem>
             </SidebarMenuSub>

@@ -27,8 +27,6 @@ export const ROUTES = {
     DASHBOARD: "/protected/client",
     APPLICATION: "/protected/client/application",
     APPLICATION_SPES: "/protected/client/application",
-    APPLICATION_GIP: "/protected/client/application/gip",
-    APPLICATION_DILP: "/protected/client/application/dilp",
     DOCUMENTS: "/protected/client/application/documents",
   },
 

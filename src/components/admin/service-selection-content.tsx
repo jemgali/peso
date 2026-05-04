@@ -1,18 +1,13 @@
 "use client"
 
 import React, { useState } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
-import { Briefcase, GraduationCap, Hammer, Info } from "lucide-react"
+import { useRouter } from "next/navigation"
+import { GraduationCap } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Spinner } from "@/components/ui/spinner"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { toast } from "sonner"
-import {
-  getAdminServiceLabel,
-  isAdminService,
-  type AdminService,
-} from "@/lib/constants/admin-service"
+import { type AdminService } from "@/lib/constants/admin-service"
 
 const SERVICE_OPTIONS: Array<{
   value: AdminService
@@ -26,28 +21,11 @@ const SERVICE_OPTIONS: Array<{
     description: "Special Program for Employment of Students",
     icon: GraduationCap,
   },
-  {
-    value: "gip",
-    title: "GIP",
-    description: "Government Internship Program",
-    icon: Briefcase,
-  },
-  {
-    value: "dilp",
-    title: "DILP",
-    description: "DOLE Integrated Livelihood Program",
-    icon: Hammer,
-  },
 ]
 
 export default function ServiceSelectionContent() {
   const router = useRouter()
-  const searchParams = useSearchParams()
   const [isPending, setIsPending] = useState(false)
-  const status = searchParams.get("status")
-  const workspace = searchParams.get("workspace")
-  const selectedWorkspace = isAdminService(workspace) ? workspace : null
-  const showComingSoonNotice = status === "coming-soon" && !!selectedWorkspace
 
   const handleSelect = async (service: AdminService) => {
     setIsPending(true)
@@ -64,13 +42,7 @@ export default function ServiceSelectionContent() {
         throw new Error(data.error || "Failed to save service context")
       }
 
-      if (service === "spes") {
-        router.push("/protected/admin/applications")
-        return
-      }
-
-      setIsPending(false)
-      router.push(`/protected/admin/programs?status=coming-soon&workspace=${service}`)
+      router.push("/protected/admin/applications")
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to select service")
       setIsPending(false)
@@ -86,17 +58,7 @@ export default function ServiceSelectionContent() {
         </p>
       </div>
 
-      {showComingSoonNotice && (
-        <Alert>
-          <Info className="h-4 w-4" />
-          <AlertTitle>{getAdminServiceLabel(selectedWorkspace)} workspace</AlertTitle>
-          <AlertDescription>
-            This admin workflow is not implemented yet. You can still switch to another program/service.
-          </AlertDescription>
-        </Alert>
-      )}
-
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-1">
         {SERVICE_OPTIONS.map((option) => (
           <Card key={option.value} className="flex flex-col">
             <CardHeader className="items-center text-center">
