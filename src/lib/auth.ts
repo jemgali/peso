@@ -119,6 +119,19 @@ export const auth = betterAuth({
           }
         },
       },
+      update: {
+        before: async (user) => {
+          // Ensure emailVerified is a boolean even if better-auth tries to set a Date
+          if (user.emailVerified !== undefined && user.emailVerified !== null) {
+            return {
+              data: {
+                ...user,
+                emailVerified: !!user.emailVerified,
+              },
+            };
+          }
+        },
+      },
     },
   },
 
@@ -132,7 +145,7 @@ export const auth = betterAuth({
           const token = crypto.randomUUID();
           const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
-          // Store verification token
+          // Store verification token in the verification table
           await prisma.verification.create({
             data: {
               id: crypto.randomUUID(),
@@ -152,11 +165,19 @@ export const auth = betterAuth({
             from: "PESO <noreply@jemgali.tech>",
             to: newSession.user.email,
             subject: "Verify your email address",
-            html: `<p>Hi ${newSession.user.name},</p><p>Please click <a href="${verifyUrl}">here</a> to verify your email address.</p>`,
+            html: `
+              <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e5e7eb; rounded: 8px;">
+                <h1 style="font-size: 24px; font-weight: bold; margin-bottom: 16px;">Verify your email</h1>
+                <p style="color: #4b5563; margin-bottom: 24px;">Hi ${newSession.user.name},</p>
+                <p style="color: #4b5563; margin-bottom: 24px;">Please click the button below to verify your email address and activate your PESO account.</p>
+                <a href="${verifyUrl}" style="display: inline-block; background-color: #2563eb; color: white; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: 500;">Verify Email Address</a>
+                <p style="color: #9ca3af; font-size: 12px; margin-top: 32px;">If you didn't create an account, you can safely ignore this email.</p>
+              </div>
+            `,
           });
 
           // Redirect to verify-email page instead of callback URL
-          return ctx.redirect("/auth/verify-email");
+          return ctx.redirect(`/auth/verify-email?email=${encodeURIComponent(newSession.user.email)}`);
         }
       }
     }),
