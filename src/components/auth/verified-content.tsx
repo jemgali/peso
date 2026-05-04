@@ -25,7 +25,7 @@ const VerifiedContent = () => {
       {/* Call to Action */}
       <Button asChild className="w-full mt-4" size="lg">
         <Link href="/auth/sign-in">
-          Continue to Sign In
+          Back to Sign In
         </Link>
       </Button>
 
