@@ -141,41 +141,25 @@ export async function POST(
         ? "SPES_BABY"
         : computedApplicantType;
 
-      // Check if profile already exists for this user
-      let profile = await tx.profileUser.findUnique({
-        where: { userId },
-      });
-
-      if (profile) {
-        // Update existing profile
-        profile = await tx.profileUser.update({
-          where: { userId: currentUserId },
-          data: {
-            profileLastName: data.profileLastName,
-            profileFirstName: data.profileFirstName,
-            profileMiddleName: data.profileMiddleName || null,
-            profileSuffix: data.profileSuffix || null,
-            profileEmail: data.profileEmail || null,
-          },
-        });
-      } else {
-        // Create new profile
-        profile = await tx.profileUser.create({
-          data: {
-            profileId: crypto.randomUUID(),
-            userId: currentUserId,
-            profileLastName: data.profileLastName,
-            profileFirstName: data.profileFirstName,
-            profileMiddleName: data.profileMiddleName || null,
-            profileSuffix: data.profileSuffix || null,
-            profileEmail: data.profileEmail || null,
-          },
-        });
-      }
-
-      // Check if personal details already exist
-      let personal = await tx.profilePersonal.findUnique({
-        where: { profileId: profile.profileId },
+      // Handle profile
+      const profile = await tx.profileUser.upsert({
+        where: { userId: currentUserId },
+        update: {
+          profileLastName: data.profileLastName,
+          profileFirstName: data.profileFirstName,
+          profileMiddleName: data.profileMiddleName || null,
+          profileSuffix: data.profileSuffix || null,
+          profileEmail: data.profileEmail || null,
+        },
+        create: {
+          profileId: crypto.randomUUID(),
+          userId: currentUserId,
+          profileLastName: data.profileLastName,
+          profileFirstName: data.profileFirstName,
+          profileMiddleName: data.profileMiddleName || null,
+          profileSuffix: data.profileSuffix || null,
+          profileEmail: data.profileEmail || null,
+        },
       });
 
       // Convert birthdate string to Date object if provided
@@ -185,114 +169,90 @@ export async function POST(
 
       // Validate birthdate to prevent Prisma errors with "Invalid Date"
       if (birthdate && isNaN(birthdate.getTime())) {
-        console.warn(`Invalid birthdate provided for user ${userId}: ${data.profileBirthdate}`);
+        console.warn(`Invalid birthdate provided for user ${currentUserId}: ${data.profileBirthdate}`);
         birthdate = null;
       }
 
-      if (personal) {
-        // Update existing personal details
-        personal = await tx.profilePersonal.update({
-          where: { profileId: profile.profileId },
-          data: {
-            profileBirthdate: birthdate,
-            profileAge: data.profileAge || null,
-            profilePlaceOfBirth: data.profilePlaceOfBirth || null,
-            profileSex: data.profileSex || null,
-            profileHeight: data.profileHeight || null,
-            profileCivilStatus: data.profileCivilStatus || null,
-            profileReligion: data.profileReligion || null,
-            profileLanguageDialect: languageDialects as string[],
-            profileContact: data.profileContact || null,
-            profileFacebook: data.profileFacebook || null,
-            profileDisability: data.profileDisability || null,
-            profilePwdId: data.profilePwdId || null,
-          },
-        });
-      } else {
-        // Create new personal details
-        personal = await tx.profilePersonal.create({
-          data: {
-            personalId: crypto.randomUUID(),
-            profileId: profile.profileId,
-            profileBirthdate: birthdate,
-            profileAge: data.profileAge || null,
-            profilePlaceOfBirth: data.profilePlaceOfBirth || null,
-            profileSex: data.profileSex || null,
-            profileHeight: data.profileHeight || null,
-            profileCivilStatus: data.profileCivilStatus || null,
-            profileReligion: data.profileReligion || null,
-            profileLanguageDialect: languageDialects as string[],
-            profileContact: data.profileContact || null,
-            profileFacebook: data.profileFacebook || null,
-            profileDisability: data.profileDisability || null,
-            profilePwdId: data.profilePwdId || null,
-          },
-        });
-      }
+      // Handle personal details
+      const personal = await tx.profilePersonal.upsert({
+        where: { profileId: profile.profileId },
+        update: {
+          profileBirthdate: birthdate,
+          profileAge: data.profileAge || null,
+          profilePlaceOfBirth: data.profilePlaceOfBirth || null,
+          profileSex: data.profileSex || null,
+          profileHeight: data.profileHeight || null,
+          profileCivilStatus: data.profileCivilStatus || null,
+          profileReligion: data.profileReligion || null,
+          profileLanguageDialect: languageDialects as string[],
+          profileContact: data.profileContact || null,
+          profileFacebook: data.profileFacebook || null,
+          profileDisability: data.profileDisability || null,
+          profilePwdId: data.profilePwdId || null,
+        },
+        create: {
+          personalId: crypto.randomUUID(),
+          profileId: profile.profileId,
+          profileBirthdate: birthdate,
+          profileAge: data.profileAge || null,
+          profilePlaceOfBirth: data.profilePlaceOfBirth || null,
+          profileSex: data.profileSex || null,
+          profileHeight: data.profileHeight || null,
+          profileCivilStatus: data.profileCivilStatus || null,
+          profileReligion: data.profileReligion || null,
+          profileLanguageDialect: languageDialects as string[],
+          profileContact: data.profileContact || null,
+          profileFacebook: data.profileFacebook || null,
+          profileDisability: data.profileDisability || null,
+          profilePwdId: data.profilePwdId || null,
+        },
+      });
 
       // Handle address
-      let address = await tx.profileAddress.findUnique({
+      const address = await tx.profileAddress.upsert({
         where: { profileId: profile.profileId },
+        update: {
+          profileHouseStreet: data.profileHouseStreet || null,
+          profileBarangay: data.profileBarangay || null,
+          profileMunicipality: data.profileMunicipality || null,
+          profileProvince: data.profileProvince || null,
+        },
+        create: {
+          addressId: crypto.randomUUID(),
+          profileId: profile.profileId,
+          profileHouseStreet: data.profileHouseStreet || null,
+          profileBarangay: data.profileBarangay || null,
+          profileMunicipality: data.profileMunicipality || null,
+          profileProvince: data.profileProvince || null,
+        },
       });
-
-      if (address) {
-        address = await tx.profileAddress.update({
-          where: { profileId: profile.profileId },
-          data: {
-            profileHouseStreet: data.profileHouseStreet || null,
-            profileBarangay: data.profileBarangay || null,
-            profileMunicipality: data.profileMunicipality || null,
-            profileProvince: data.profileProvince || null,
-          },
-        });
-      } else {
-        address = await tx.profileAddress.create({
-          data: {
-            addressId: crypto.randomUUID(),
-            profileId: profile.profileId,
-            profileHouseStreet: data.profileHouseStreet || null,
-            profileBarangay: data.profileBarangay || null,
-            profileMunicipality: data.profileMunicipality || null,
-            profileProvince: data.profileProvince || null,
-          },
-        });
-      }
 
       // Handle family
-      let family = await tx.profileFamily.findUnique({
+      const family = await tx.profileFamily.upsert({
         where: { profileId: profile.profileId },
+        update: {
+          fatherName: data.fatherName || null,
+          fatherOccupation: data.fatherOccupation || null,
+          fatherContact: data.fatherContact || null,
+          motherMaidenName: data.motherMaidenName || null,
+          motherOccupation: data.motherOccupation || null,
+          motherContact: data.motherContact || null,
+          numberOfSiblings: data.numberOfSiblings || null,
+          siblings: [],
+        },
+        create: {
+          familyId: crypto.randomUUID(),
+          profileId: profile.profileId,
+          fatherName: data.fatherName || null,
+          fatherOccupation: data.fatherOccupation || null,
+          fatherContact: data.fatherContact || null,
+          motherMaidenName: data.motherMaidenName || null,
+          motherOccupation: data.motherOccupation || null,
+          motherContact: data.motherContact || null,
+          numberOfSiblings: data.numberOfSiblings || null,
+          siblings: [],
+        },
       });
-
-      if (family) {
-        family = await tx.profileFamily.update({
-          where: { profileId: profile.profileId },
-          data: {
-            fatherName: data.fatherName || null,
-            fatherOccupation: data.fatherOccupation || null,
-            fatherContact: data.fatherContact || null,
-            motherMaidenName: data.motherMaidenName || null,
-            motherOccupation: data.motherOccupation || null,
-            motherContact: data.motherContact || null,
-            numberOfSiblings: data.numberOfSiblings || null,
-            siblings: [],
-          },
-        });
-      } else {
-        family = await tx.profileFamily.create({
-          data: {
-            familyId: crypto.randomUUID(),
-            profileId: profile.profileId,
-            fatherName: data.fatherName || null,
-            fatherOccupation: data.fatherOccupation || null,
-            fatherContact: data.fatherContact || null,
-            motherMaidenName: data.motherMaidenName || null,
-            motherOccupation: data.motherOccupation || null,
-            motherContact: data.motherContact || null,
-            numberOfSiblings: data.numberOfSiblings || null,
-            siblings: [],
-          },
-        });
-      }
 
       // Handle siblings via dedicated ProfileSibling entity
       await tx.profileSibling.deleteMany({
@@ -318,110 +278,74 @@ export async function POST(
       }
 
       // Handle guardian
-      let guardian = await tx.profileGuardian.findUnique({
+      const guardian = await tx.profileGuardian.upsert({
         where: { profileId: profile.profileId },
+        update: {
+          guardianName: data.guardianName || null,
+          guardianContact: data.guardianContact || null,
+          guardianAddress: data.guardianAddress || null,
+          guardianAge: data.guardianAge || null,
+          guardianOccupation: data.guardianOccupation || null,
+          guardianRelationship: data.guardianRelationship || null,
+        },
+        create: {
+          guardianId: crypto.randomUUID(),
+          profileId: profile.profileId,
+          guardianName: data.guardianName || null,
+          guardianContact: data.guardianContact || null,
+          guardianAddress: data.guardianAddress || null,
+          guardianAge: data.guardianAge || null,
+          guardianOccupation: data.guardianOccupation || null,
+          guardianRelationship: data.guardianRelationship || null,
+        },
       });
-
-      if (guardian) {
-        guardian = await tx.profileGuardian.update({
-          where: { profileId: profile.profileId },
-          data: {
-            guardianName: data.guardianName || null,
-            guardianContact: data.guardianContact || null,
-            guardianAddress: data.guardianAddress || null,
-            guardianAge: data.guardianAge || null,
-            guardianOccupation: data.guardianOccupation || null,
-            guardianRelationship: data.guardianRelationship || null,
-          },
-        });
-      } else {
-        guardian = await tx.profileGuardian.create({
-          data: {
-            guardianId: crypto.randomUUID(),
-            profileId: profile.profileId,
-            guardianName: data.guardianName || null,
-            guardianContact: data.guardianContact || null,
-            guardianAddress: data.guardianAddress || null,
-            guardianAge: data.guardianAge || null,
-            guardianOccupation: data.guardianOccupation || null,
-            guardianRelationship: data.guardianRelationship || null,
-          },
-        });
-      }
 
       // Handle benefactor
-      let benefactor = await tx.profileBenefactor.findUnique({
+      const benefactor = await tx.profileBenefactor.upsert({
         where: { profileId: profile.profileId },
+        update: {
+          benefactorName: data.benefactorName || null,
+          benefactorRelationship: data.benefactorRelationship || null,
+        },
+        create: {
+          benefactorId: crypto.randomUUID(),
+          profileId: profile.profileId,
+          benefactorName: data.benefactorName || null,
+          benefactorRelationship: data.benefactorRelationship || null,
+        },
       });
-
-      if (benefactor) {
-        benefactor = await tx.profileBenefactor.update({
-          where: { profileId: profile.profileId },
-          data: {
-            benefactorName: data.benefactorName || null,
-            benefactorRelationship: data.benefactorRelationship || null,
-          },
-        });
-      } else {
-        benefactor = await tx.profileBenefactor.create({
-          data: {
-            benefactorId: crypto.randomUUID(),
-            profileId: profile.profileId,
-            benefactorName: data.benefactorName || null,
-            benefactorRelationship: data.benefactorRelationship || null,
-          },
-        });
-      }
 
       // Handle education
-      let education = await tx.profileEducation.findUnique({
+      const education = await tx.profileEducation.upsert({
         where: { profileId: profile.profileId },
+        update: {
+          gradeYear: data.gradeYear || null,
+          schoolName: data.schoolName || null,
+          trackCourse: data.trackCourse || null,
+          schoolYear: data.schoolYear || null,
+        },
+        create: {
+          educationId: crypto.randomUUID(),
+          profileId: profile.profileId,
+          gradeYear: data.gradeYear || null,
+          schoolName: data.schoolName || null,
+          trackCourse: data.trackCourse || null,
+          schoolYear: data.schoolYear || null,
+        },
       });
-
-      if (education) {
-        education = await tx.profileEducation.update({
-          where: { profileId: profile.profileId },
-          data: {
-            gradeYear: data.gradeYear || null,
-            schoolName: data.schoolName || null,
-            trackCourse: data.trackCourse || null,
-            schoolYear: data.schoolYear || null,
-          },
-        });
-      } else {
-        education = await tx.profileEducation.create({
-          data: {
-            educationId: crypto.randomUUID(),
-            profileId: profile.profileId,
-            gradeYear: data.gradeYear || null,
-            schoolName: data.schoolName || null,
-            trackCourse: data.trackCourse || null,
-            schoolYear: data.schoolYear || null,
-          },
-        });
-      }
 
       // Handle skills
-      let skills = await tx.profileSkills.findUnique({
+      const skills = await tx.profileSkills.upsert({
         where: { profileId: profile.profileId },
+        update: {
+          skills: skillsList as string[],
+        },
+        create: {
+          skillsId: crypto.randomUUID(),
+          profileId: profile.profileId,
+          skills: skillsList as string[],
+        },
       });
-
-      if (skills) {
-        skills = await tx.profileSkills.update({
-          where: { profileId: profile.profileId },
-          data: {
-            skills: skillsList as string[],
-          },
-        });
-      } else {
-        skills = await tx.profileSkills.create({
-          data: {
-            skillsId: crypto.randomUUID(),
-            profileId: profile.profileId,
-            skills: skillsList as string[],
-          },
-        });
-      }
 
       const spesBabiesAvailmentYears =
         applicantType === "SPES_BABY"
@@ -431,32 +355,23 @@ export async function POST(
           : null;
 
       // Handle SPES info
-      let spes = await tx.profileSPES.findUnique({
+      const spes = await tx.profileSPES.upsert({
         where: { profileId: profile.profileId },
+        update: {
+          isFourPsBeneficiary: data.isFourPsBeneficiary || false,
+          applicationYear: data.applicationYear || null,
+          spesBabiesAvailmentYears,
+          motivation: data.motivation || null,
+        },
+        create: {
+          spesId: crypto.randomUUID(),
+          profileId: profile.profileId,
+          isFourPsBeneficiary: data.isFourPsBeneficiary || false,
+          applicationYear: data.applicationYear || null,
+          spesBabiesAvailmentYears,
+          motivation: data.motivation || null,
+        },
       });
-
-      if (spes) {
-        spes = await tx.profileSPES.update({
-          where: { profileId: profile.profileId },
-          data: {
-            isFourPsBeneficiary: data.isFourPsBeneficiary || false,
-            applicationYear: data.applicationYear || null,
-            spesBabiesAvailmentYears,
-            motivation: data.motivation || null,
-          },
-        });
-      } else {
-        spes = await tx.profileSPES.create({
-          data: {
-            spesId: crypto.randomUUID(),
-            profileId: profile.profileId,
-            isFourPsBeneficiary: data.isFourPsBeneficiary || false,
-            applicationYear: data.applicationYear || null,
-            spesBabiesAvailmentYears,
-            motivation: data.motivation || null,
-          },
-        });
-      }
 
       await tx.profileSPESAvailment.deleteMany({
         where: { profileId: profile.profileId },
@@ -529,6 +444,8 @@ export async function POST(
         spes,
         submission,
       };
+    }, {
+      timeout: 30000,
     });
 
     return NextResponse.json(
