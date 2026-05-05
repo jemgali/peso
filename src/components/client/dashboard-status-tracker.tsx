@@ -214,8 +214,8 @@ export default function DashboardStatusTracker({
             </Link>
           </Button>
           {status === "needs_revision" && (
-            <Button size="sm" asChild className="w-full">
-              <Link href="/protected/client/application">
+          <Button size="sm" asChild className="w-full">
+              <Link href="/protected/client/application?mode=resubmit">
                 <FileText data-icon="inline-start" />
                 Edit & Resubmit
               </Link>

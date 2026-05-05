@@ -1,7 +1,7 @@
 "use client";
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useForm, useFieldArray, FieldErrors, Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -15,6 +15,14 @@ import {
   validateSection,
   type SPESApplicationFormValues,
 } from "@/lib/validations/spes-application";
+import type { RevisionTargets } from "@/lib/validations/application-review";
+import { toUppercaseValues } from "@/lib/utils";
+import {
+  FORM_SECTION_FIELDS,
+  FORM_SECTION_IDS,
+  FORM_SECTION_TITLES,
+  type FormSectionId,
+} from "@/lib/utils/revision-targets";
 import type { StepStatus } from "@/components/client/application-progress";
 
 // Import section components
@@ -31,91 +39,14 @@ import {
   ReviewSection,
 } from "./sections";
 
-// Section IDs that match the stepper configuration (10 steps total)
-const SECTION_IDS = [
-  "basic-info",
-  "address",
-  "family",
-  "guardian",
-  "benefactor",
-  "education",
-  "skills",
-  "spes-info",
-  "documents",
-  "review",
-] as const;
+export type SectionId = FormSectionId;
 
-// Section titles for display
-const SECTION_TITLES: Record<string, string> = {
-  "basic-info": "Personal Information",
-  address: "Address",
-  family: "Family Information",
-  guardian: "Guardian Details",
-  benefactor: "Benefactor Information",
-  education: "Educational Background",
-  skills: "Skills",
-  "spes-info": "SPES Program Details",
-  documents: "Documents",
-  review: "Review & Submit",
-};
-
-// Section field mappings for validation
-const SECTION_FIELDS: Record<string, (keyof SPESApplicationFormValues)[]> = {
-  "basic-info": [
-    "profileLastName",
-    "profileFirstName",
-    "profileBirthdate",
-    "profileAge",
-    "profilePlaceOfBirth",
-    "profileSex",
-    "profileHeight",
-    "profileCivilStatus",
-    "profileReligion",
-    "profileEmail",
-    "profileContact",
-    "profileFacebook",
-    "profileLanguageDialect",
-    "profileDisability",
-    "profilePwdId",
-  ],
-  address: [
-    "profileHouseStreet",
-    "profileBarangay",
-    "profileMunicipality",
-    "profileProvince",
-  ],
-  family: [
-    "fatherName",
-    "fatherOccupation",
-    "fatherContact",
-    "motherMaidenName",
-    "motherOccupation",
-    "motherContact",
-    "numberOfSiblings",
-    "siblings",
-  ],
-  guardian: [
-    "guardianName",
-    "guardianContact",
-    "guardianAddress",
-    "guardianAge",
-    "guardianOccupation",
-    "guardianRelationship",
-  ],
-  benefactor: ["benefactorName", "benefactorRelationship"],
-  education: ["gradeYear", "schoolName", "trackCourse", "schoolYear"],
-  skills: ["skills"],
-  "spes-info": [
-    "applicationType",
-    "isFourPsBeneficiary",
-    "applicationYear",
-    "spesBabiesAvailmentYears",
-    "spesAvailments",
-    "motivation",
-  ],
-  documents: ["documents"],
-  review: [],
-};
+const SECTION_IDS = FORM_SECTION_IDS;
+const SECTION_TITLES = FORM_SECTION_TITLES;
+const SECTION_FIELDS = FORM_SECTION_FIELDS as Record<
+  SectionId,
+  (keyof SPESApplicationFormValues)[]
+>;
 
 const TOUCHED_FIELDS: Record<string, string[]> = {
   "basic-info": [
@@ -139,7 +70,13 @@ const TOUCHED_FIELDS: Record<string, string[]> = {
     "profileMunicipality",
     "profileProvince",
   ],
-  family: ["fatherName", "fatherOccupation", "motherMaidenName", "motherOccupation", "siblings"],
+  family: [
+    "fatherName",
+    "fatherOccupation",
+    "motherMaidenName",
+    "motherOccupation",
+    "siblings",
+  ],
   guardian: [],
   benefactor: ["benefactorName", "benefactorRelationship"],
   education: ["gradeYear", "schoolName", "trackCourse", "schoolYear"],
@@ -151,7 +88,7 @@ const TOUCHED_FIELDS: Record<string, string[]> = {
 
 // Check if a section has errors
 function checkSectionErrors(
-  sectionId: string,
+  sectionId: SectionId,
   errors: FieldErrors<SPESApplicationFormValues>,
 ): boolean {
   const fields = SECTION_FIELDS[sectionId] || [];
@@ -162,7 +99,7 @@ function checkSectionErrors(
 
 // Check if user has touched any field in a section
 function checkSectionTouched(
-  sectionId: string,
+  sectionId: SectionId,
   touched: Record<string, unknown>,
 ): boolean {
   const fields = TOUCHED_FIELDS[sectionId] || [];
@@ -176,7 +113,7 @@ function checkSectionTouched(
 }
 
 function checkSectionHasData(
-  sectionId: string,
+  sectionId: SectionId,
   values: SPESApplicationFormValues,
 ): boolean {
   const fields = SECTION_FIELDS[sectionId] || [];
@@ -201,7 +138,8 @@ export interface SPESApplicationFormProps {
   userId?: string;
   defaultValues?: Record<string, unknown>;
   applicationType?: "new" | "spes-baby";
-  revisionFeedback?: Record<string, any>;
+  revisionTargets?: RevisionTargets;
+  visibleSectionIds?: readonly SectionId[];
 }
 
 const SPESApplicationForm: React.FC<SPESApplicationFormProps> = ({
@@ -213,16 +151,36 @@ const SPESApplicationForm: React.FC<SPESApplicationFormProps> = ({
   userId,
   defaultValues: externalDefaults,
   applicationType,
-  revisionFeedback,
+  revisionTargets,
+  visibleSectionIds,
 }) => {
   const router = useRouter();
   const [internalStep, setInternalStep] = useState(0);
   const [isPending, setIsPending] = useState(false);
   const [isValidating, setIsValidating] = useState(false);
   const [visitedSteps, setVisitedSteps] = useState<Set<number>>(new Set([0]));
+  const formRef = useRef<HTMLFormElement | null>(null);
+
+  const activeSectionIds = useMemo<SectionId[]>(
+    () =>
+      visibleSectionIds && visibleSectionIds.length > 0
+        ? [...visibleSectionIds]
+        : [...SECTION_IDS],
+    [visibleSectionIds],
+  );
 
   // Use controlled step if provided, otherwise use internal state
-  const currentStep = controlledStep ?? internalStep;
+  const requestedStep = controlledStep ?? internalStep;
+  const currentStep = Math.min(
+    Math.max(requestedStep, 0),
+    Math.max(activeSectionIds.length - 1, 0),
+  );
+
+  useEffect(() => {
+    if (controlledStep === undefined && internalStep !== currentStep) {
+      setInternalStep(currentStep);
+    }
+  }, [controlledStep, currentStep, internalStep]);
 
   const {
     register,
@@ -360,7 +318,7 @@ const SPESApplicationForm: React.FC<SPESApplicationFormProps> = ({
   const getStepStatuses = useCallback((): Record<string, StepStatus> => {
     const statuses: Record<string, StepStatus> = {};
 
-    SECTION_IDS.forEach((sectionId, index) => {
+    activeSectionIds.forEach((sectionId, index) => {
       const sectionHasErrors = checkSectionErrors(sectionId, errors);
       const sectionIsValid = validateSection(sectionId, getValues());
       const isOptional = ["skills", "guardian"].includes(sectionId);
@@ -371,7 +329,9 @@ const SPESApplicationForm: React.FC<SPESApplicationFormProps> = ({
         statuses[sectionId] = "error";
       } else if (
         sectionIsValid &&
-        (sectionTouched || sectionHasData || (isOptional && visitedSteps.has(index)))
+        (sectionTouched ||
+          sectionHasData ||
+          (isOptional && visitedSteps.has(index)))
       ) {
         statuses[sectionId] = "complete";
       } else if (index === currentStep) {
@@ -381,10 +341,12 @@ const SPESApplicationForm: React.FC<SPESApplicationFormProps> = ({
       }
     });
 
-    statuses["review"] = isValid ? "complete" : "incomplete";
+    if (activeSectionIds.includes("review")) {
+      statuses.review = isValid ? "complete" : "incomplete";
+    }
 
     return statuses;
-  }, [errors, getValues, touchedFields, isValid, currentStep]);
+  }, [activeSectionIds, errors, getValues, touchedFields, isValid, currentStep, visitedSteps]);
 
   // Update validation statuses when form state changes
   useEffect(() => {
@@ -399,7 +361,7 @@ const SPESApplicationForm: React.FC<SPESApplicationFormProps> = ({
 
   // Navigate to specific step (from sidebar)
   const validateStepBeforeAdvance = useCallback(
-    async (sectionId: (typeof SECTION_IDS)[number]) => {
+    async (sectionId: SectionId) => {
       const fieldsToValidate = SECTION_FIELDS[sectionId];
       const isFieldValid = await trigger(fieldsToValidate);
 
@@ -428,12 +390,14 @@ const SPESApplicationForm: React.FC<SPESApplicationFormProps> = ({
 
       // For forward navigation, validate all steps up to and including the target
       for (let i = currentStep; i < stepIndex; i++) {
-        const sectionId = SECTION_IDS[i];
+        const sectionId = activeSectionIds[i];
         const isStepValid = await validateStepBeforeAdvance(sectionId);
 
         if (!isStepValid) {
           if (sectionId === "documents") {
-            toast.error("Please upload all required documents before proceeding.");
+            toast.error(
+              "Please upload all required documents before proceeding.",
+            );
           } else {
             toast.error(
               `Please complete the "${SECTION_TITLES[sectionId]}" section first.`,
@@ -453,7 +417,7 @@ const SPESApplicationForm: React.FC<SPESApplicationFormProps> = ({
       }
       onStepChange?.(stepIndex);
     },
-    [currentStep, controlledStep, onStepChange, validateStepBeforeAdvance],
+    [activeSectionIds, currentStep, controlledStep, onStepChange, validateStepBeforeAdvance],
   );
 
   // Expose goToStep function to parent via onMount callback
@@ -463,7 +427,7 @@ const SPESApplicationForm: React.FC<SPESApplicationFormProps> = ({
 
   // Navigate to next step with validation
   const handleNext = async () => {
-    const sectionId = SECTION_IDS[currentStep];
+    const sectionId = activeSectionIds[currentStep];
 
     setIsValidating(true);
 
@@ -472,7 +436,7 @@ const SPESApplicationForm: React.FC<SPESApplicationFormProps> = ({
     setIsValidating(false);
 
     if (isStepValid) {
-      if (currentStep < SECTION_IDS.length - 1) {
+      if (currentStep < activeSectionIds.length - 1) {
         const newStep = currentStep + 1;
         if (controlledStep === undefined) {
           setInternalStep(newStep);
@@ -502,10 +466,10 @@ const SPESApplicationForm: React.FC<SPESApplicationFormProps> = ({
   const onSubmit = async (data: SPESApplicationFormValues) => {
     setIsPending(true);
     try {
-      const payload = {
+      const payload = toUppercaseValues({
         ...data,
         applicationType: applicationType || data.applicationType || "new",
-      };
+      });
 
       const response = await fetch("/api/client/application", {
         method: "POST",
@@ -517,7 +481,11 @@ const SPESApplicationForm: React.FC<SPESApplicationFormProps> = ({
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || errorData.message || "Failed to submit application");
+        throw new Error(
+          errorData.error ||
+            errorData.message ||
+            "Failed to submit application",
+        );
       }
 
       toast.success("Application submitted successfully!");
@@ -549,7 +517,7 @@ const SPESApplicationForm: React.FC<SPESApplicationFormProps> = ({
     setValue,
     formValues: getValues(),
     applicationType,
-    revisionFeedback,
+    revisionTargets,
   };
 
   // Props for sections with control
@@ -569,40 +537,49 @@ const SPESApplicationForm: React.FC<SPESApplicationFormProps> = ({
 
   // Render only the current section (10 steps total)
   const renderCurrentSection = () => {
-    switch (currentStep) {
-      case 0:
-        return <BasicInfoSection {...sectionWithFieldArrayProps} userEmail={userEmail} />;
-      case 1:
+    const currentSectionId = activeSectionIds[currentStep];
+
+    switch (currentSectionId) {
+      case "basic-info":
+        return (
+          <BasicInfoSection
+            {...sectionWithFieldArrayProps}
+            userEmail={userEmail}
+          />
+        );
+      case "address":
         return <AddressSection {...sectionProps} />;
-      case 2:
+      case "family":
         return <FamilySection {...sectionWithFieldArrayProps} />;
-      case 3:
+      case "guardian":
         return <GuardianSection {...sectionProps} />;
-      case 4:
+      case "benefactor":
         return <BenefactorSection {...sectionProps} />;
-      case 5:
+      case "education":
         return <EducationSection {...sectionProps} />;
-      case 6:
+      case "skills":
         return <SkillsSection {...sectionWithFieldArrayProps} />;
-      case 7:
+      case "spes-info":
         return <SPESInfoSection {...sectionWithFieldArrayProps} />;
-      case 8:
+      case "documents":
         return <DocumentsSection {...sectionProps} />;
-      case 9: {
+      case "review": {
         const statuses = getStepStatuses();
-        const incompleteSections = SECTION_IDS.filter(
-          (id) => id !== "review" && statuses[id] !== "complete"
+        const incompleteSections = activeSectionIds.filter(
+          (id) => id !== "review" && statuses[id] !== "complete",
         ).map((id) => SECTION_TITLES[id]);
 
         return (
           <ReviewSection
-            formValues={getValues()}
+            formValues={watch()}
             isPending={isPending}
             isValid={isValid}
             errors={errors}
             incompleteSections={incompleteSections}
             triggerValidation={trigger as () => Promise<boolean>}
             onSubmitRequest={handleSubmitRequest}
+            visibleSectionIds={activeSectionIds}
+            revisionTargets={revisionTargets}
           />
         );
       }
@@ -611,21 +588,83 @@ const SPESApplicationForm: React.FC<SPESApplicationFormProps> = ({
     }
   };
 
-  const isLastStep = currentStep === SECTION_IDS.length - 1;
+  const isLastStep = currentStep === activeSectionIds.length - 1;
   const isFirstStep = currentStep === 0;
 
-  const currentSectionId = SECTION_IDS[currentStep];
-  const currentSectionFields = SECTION_FIELDS[currentSectionId] || [];
-  
   const currentSectionFeedback = useMemo(() => {
-    if (!revisionFeedback) return [];
-    return Object.entries(revisionFeedback).filter(([field]) => 
-      currentSectionFields.includes(field as any) || field === currentSectionId
+    if (!revisionTargets) return [] as Array<[string, string]>;
+    const currentSectionId = activeSectionIds[currentStep];
+
+    const fieldFeedback = revisionTargets.fields
+      .filter((feedback) => feedback.sectionId === currentSectionId)
+      .map(
+        (feedback): [string, string] => [
+          feedback.fieldName,
+          feedback.comment || "Needs revision",
+        ],
+      );
+
+    if (currentSectionId !== "documents") {
+      return fieldFeedback;
+    }
+
+    const documentFeedback = revisionTargets.documents.map(
+      (feedback): [string, string] => [
+        feedback.documentType,
+        feedback.comment ||
+          (feedback.status === "missing"
+            ? "Missing required document"
+            : "Document needs revision"),
+      ],
     );
-  }, [revisionFeedback, currentSectionId, currentSectionFields]);
+
+    return [...fieldFeedback, ...documentFeedback];
+  }, [activeSectionIds, currentStep, revisionTargets]);
+
+  useEffect(() => {
+    const form = formRef.current;
+    if (!form) return;
+
+    const previousHighlighted = form.querySelectorAll<HTMLElement>(
+      '[data-revision-highlight="true"]',
+    );
+    previousHighlighted.forEach((element) => {
+      element.classList.remove("ring-2", "ring-orange-300", "border-orange-400");
+      element.removeAttribute("data-revision-highlight");
+      element.removeAttribute("title");
+    });
+
+    if (!revisionTargets) return;
+
+    const currentSectionId = activeSectionIds[currentStep];
+    const targetFields = revisionTargets.fields.filter(
+      (feedback) => feedback.sectionId === currentSectionId,
+    );
+
+    targetFields.forEach((feedback) => {
+      const escapedName = feedback.fieldName.replace(/"/g, '\\"');
+      const candidates = form.querySelectorAll<HTMLElement>(
+        `[name="${escapedName}"], #${feedback.fieldName}`,
+      );
+
+      candidates.forEach((element) => {
+        const highlightTarget =
+          element.matches("input,select,textarea")
+            ? element
+            : element.querySelector<HTMLElement>("input,select,textarea");
+
+        const target = highlightTarget ?? element;
+        target.classList.add("ring-2", "ring-orange-300", "border-orange-400");
+        target.setAttribute("data-revision-highlight", "true");
+        if (feedback.comment) {
+          target.setAttribute("title", feedback.comment);
+        }
+      });
+    });
+  }, [activeSectionIds, currentStep, revisionTargets]);
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="w-full">
+    <form ref={formRef} onSubmit={handleSubmit(onSubmit)} className="w-full">
       {/* SPES Baby returning grantee banner */}
       {applicationType === "spes-baby" && (
         <div className="mb-6 p-4 rounded-lg bg-blue-50 border border-blue-200 dark:bg-blue-950/20 dark:border-blue-900/50">
@@ -633,33 +672,44 @@ const SPESApplicationForm: React.FC<SPESApplicationFormProps> = ({
             🔄 Returning SPES Grantee — Review &amp; Update
           </h3>
           <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
-            Your previous application data has been pre-filled. Please review and update any information that has changed before submitting.
+            Your previous application data has been pre-filled. Please review
+            and update any information that has changed before submitting.
           </p>
         </div>
       )}
       {/* Current Section Content */}
       <div className="min-h-100">
-        {currentSectionFeedback.length > 0 && currentStep !== SECTION_IDS.length - 1 && (
-          <div className="mb-6 p-4 rounded-lg bg-red-50 border border-red-200 dark:bg-red-950/20 dark:border-red-900/50">
-            <h3 className="text-sm font-semibold text-red-800 dark:text-red-400 mb-2">
-              ⚠️ Admin Feedback (Needs Revision)
-            </h3>
-            <ul className="text-sm text-red-700 dark:text-red-300 list-disc pl-5 space-y-1">
-              {currentSectionFeedback.map(([field, comment]: [string, any]) => {
-                const formattedName = field
-                  .replace(/^profile/, "")
-                  .replace(/([A-Z])/g, " $1")
-                  .trim();
-                return (
-                  <li key={field}>
-                    <strong>{formattedName ? formattedName.charAt(0).toUpperCase() + formattedName.slice(1) : field}: </strong> {comment}
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
-        )}
-        
+        {currentSectionFeedback.length > 0 &&
+          currentStep !== activeSectionIds.length - 1 && (
+            <div className="mb-6 p-4 rounded-lg bg-red-50 border border-red-200 dark:bg-red-950/20 dark:border-red-900/50">
+              <h3 className="text-sm font-semibold text-red-800 dark:text-red-400 mb-2">
+                ⚠️ Admin Feedback (Needs Revision)
+              </h3>
+              <ul className="text-sm text-red-700 dark:text-red-300 list-disc pl-5 space-y-1">
+                {currentSectionFeedback.map(
+                  ([field, comment]: [string, any]) => {
+                    const formattedName = field
+                      .replace(/^profile/, "")
+                      .replace(/([A-Z])/g, " $1")
+                      .trim();
+                    return (
+                      <li key={field}>
+                        <strong>
+                          {formattedName
+                            ? formattedName.charAt(0).toUpperCase() +
+                              formattedName.slice(1)
+                            : field}
+                          :{" "}
+                        </strong>{" "}
+                        {comment}
+                      </li>
+                    );
+                  },
+                )}
+              </ul>
+            </div>
+          )}
+
         {renderCurrentSection()}
       </div>
 
@@ -676,7 +726,7 @@ const SPESApplicationForm: React.FC<SPESApplicationFormProps> = ({
         </Button>
 
         <span className="text-sm text-muted-foreground">
-          Step {currentStep + 1} of {SECTION_IDS.length}
+          Step {currentStep + 1} of {activeSectionIds.length}
         </span>
 
         {!isLastStep ? (

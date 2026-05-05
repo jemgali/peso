@@ -33,12 +33,15 @@ const FamilySection: React.FC<FormSectionWithFieldArrayProps> = ({
   
   // Auto-update numberOfSiblings when siblings array changes
   useEffect(() => {
-    const siblingCount = siblings.length;
+    const siblingCount = siblingsFieldArray?.fields.length || 0;
     if (prevSiblingCountRef.current !== siblingCount) {
       prevSiblingCountRef.current = siblingCount;
-      setValue?.("numberOfSiblings", siblingCount);
+      setValue?.("numberOfSiblings", siblingCount, {
+        shouldValidate: true,
+        shouldDirty: true,
+      });
     }
-  }, [siblings.length, setValue]);
+  }, [siblingsFieldArray?.fields.length, setValue]);
   
   // Handle blur for sibling name fields - apply title case
   const handleSiblingNameBlur = (index: number) => (e: React.FocusEvent<HTMLInputElement>) => {
@@ -79,6 +82,7 @@ const FamilySection: React.FC<FormSectionWithFieldArrayProps> = ({
                 placeholder="Father's full name"
                 required
                 onBlur={autoCapitalizeBlur("fatherName")}
+                className="uppercase"
               />
 
               <TextField
@@ -90,6 +94,7 @@ const FamilySection: React.FC<FormSectionWithFieldArrayProps> = ({
                 placeholder="Occupation"
                 required
                 onBlur={autoCapitalizeBlur("fatherOccupation")}
+                className="uppercase"
               />
 
               <TextField
@@ -121,6 +126,7 @@ const FamilySection: React.FC<FormSectionWithFieldArrayProps> = ({
                 placeholder="Mother's maiden name"
                 required
                 onBlur={autoCapitalizeBlur("motherMaidenName")}
+                className="uppercase"
               />
 
               <TextField
@@ -132,6 +138,7 @@ const FamilySection: React.FC<FormSectionWithFieldArrayProps> = ({
                 placeholder="Occupation"
                 required
                 onBlur={autoCapitalizeBlur("motherOccupation")}
+                className="uppercase"
               />
 
               <TextField
@@ -195,6 +202,7 @@ const FamilySection: React.FC<FormSectionWithFieldArrayProps> = ({
                         required
                         aria-invalid={!!errors.siblings?.[index]?.name}
                         onBlur={handleSiblingNameBlur(index)}
+                        className="uppercase"
                       />
                       {errors.siblings?.[index]?.name && (
                         <FieldError className="text-xs">
@@ -235,6 +243,7 @@ const FamilySection: React.FC<FormSectionWithFieldArrayProps> = ({
                         id={`siblings.${index}.occupation`}
                         disabled={isPending}
                         placeholder="Occupation"
+                        className="uppercase"
                       />
                     </div>
                     <div className="space-y-1">

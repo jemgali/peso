@@ -7,6 +7,8 @@ import type {
   UseFormSetValue,
 } from "react-hook-form";
 import type { SPESApplicationFormValues } from "@/lib/validations/spes-application";
+import type { RevisionTargets } from "@/lib/validations/application-review";
+import type { FormSectionId } from "@/lib/utils/revision-targets";
 
 // Common props interface for all form sections
 export interface FormSectionProps {
@@ -23,8 +25,8 @@ export interface FormSectionProps {
   formValues?: SPESApplicationFormValues;
   /** SPES application type (New vs Baby) */
   applicationType?: "new" | "spes-baby";
-  /** Feedback from admin if application needs revision */
-  revisionFeedback?: Record<string, string>;
+  /** Normalized crossed fields/documents from latest needs_revision review */
+  revisionTargets?: RevisionTargets;
 }
 
 // Extended props for sections that need control (for Controller components)
@@ -49,6 +51,8 @@ export interface ReviewSectionProps {
   errors?: FieldErrors<SPESApplicationFormValues>;
   incompleteSections?: string[];
   triggerValidation?: () => Promise<boolean>;
+  visibleSectionIds?: readonly FormSectionId[];
+  revisionTargets?: RevisionTargets;
 }
 
 // Re-export validation types for convenience

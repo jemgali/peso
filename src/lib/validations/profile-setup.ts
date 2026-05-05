@@ -38,7 +38,7 @@ export const profileSetupSchema = z.object({
         "Contact number must follow 09xx xxx xxxx",
       ),
   ),
-  profileFacebook: z.string().url("Please enter a valid Facebook URL").optional().or(z.literal("")),
+  profileFacebook: z.string().url("Please enter a valid Facebook URL"),
   profileDisability: z.string().optional(),
   profilePwdId: z.string().optional(),
 });

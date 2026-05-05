@@ -45,6 +45,7 @@ const AddressSection: React.FC<FormSectionProps> = ({
 
   React.useEffect(() => {
     setSelectedBarangay(currentBarangay);
+    setBarangaySearch(currentBarangay);
   }, [currentBarangay]);
 
   React.useEffect(() => {
@@ -97,7 +98,7 @@ const AddressSection: React.FC<FormSectionProps> = ({
   }, []);
 
   // Filter barangays by search
-  const [barangaySearch, setBarangaySearch] = React.useState("");
+  const [barangaySearch, setBarangaySearch] = React.useState(currentBarangay);
 
   const filteredBarangays = React.useMemo(() => {
     if (!barangaySearch) return barangays;
@@ -124,44 +125,12 @@ const AddressSection: React.FC<FormSectionProps> = ({
             error={errors.profileHouseStreet?.message}
             disabled={isPending}
             placeholder="House/Unit No., Street, Subdivision/Village"
-            className="min-h-20"
+            className="min-h-20 uppercase"
             required
             onBlur={autoCapitalizeBlur("profileHouseStreet")}
           />
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {/* Province — Locked */}
-            <div className="space-y-1.5">
-              <FieldLabel htmlFor="profileProvince" required>
-                Province
-              </FieldLabel>
-              <Input
-                value={LOCKED_PROVINCE}
-                disabled
-                readOnly
-                className="bg-muted"
-              />
-              {errors.profileProvince && (
-                <FieldError>{errors.profileProvince.message}</FieldError>
-              )}
-            </div>
-
-            {/* City/Municipality — Locked */}
-            <div className="space-y-1.5">
-              <FieldLabel htmlFor="profileMunicipality" required>
-                Municipality/City
-              </FieldLabel>
-              <Input
-                value={LOCKED_CITY}
-                disabled
-                readOnly
-                className="bg-muted"
-              />
-              {errors.profileMunicipality && (
-                <FieldError>{errors.profileMunicipality.message}</FieldError>
-              )}
-            </div>
-
             {/* Barangay Combobox — Only editable field */}
             <div className="space-y-1.5">
               <FieldLabel htmlFor="profileBarangay" required>
@@ -179,7 +148,7 @@ const AddressSection: React.FC<FormSectionProps> = ({
                       shouldValidate: true,
                     });
                   }
-                  setBarangaySearch("");
+                  setBarangaySearch(nextBarangay);
                 }}
               >
                 <ComboboxInput
@@ -189,6 +158,7 @@ const AddressSection: React.FC<FormSectionProps> = ({
                   disabled={isPending || isLoadingBarangays}
                   showTrigger
                   showClear
+                  className="uppercase"
                 />
                 <ComboboxContent>
                   <ComboboxList>
@@ -214,6 +184,38 @@ const AddressSection: React.FC<FormSectionProps> = ({
               )}
               {!errors.profileBarangay && barangayLoadError && (
                 <FieldError>{barangayLoadError}</FieldError>
+              )}
+            </div>
+
+            {/* City/Municipality — Locked */}
+            <div className="space-y-1.5">
+              <FieldLabel htmlFor="profileMunicipality" required>
+                Municipality/City
+              </FieldLabel>
+              <Input
+                value={LOCKED_CITY}
+                disabled
+                readOnly
+                className="bg-muted uppercase"
+              />
+              {errors.profileMunicipality && (
+                <FieldError>{errors.profileMunicipality.message}</FieldError>
+              )}
+            </div>
+
+            {/* Province — Locked */}
+            <div className="space-y-1.5">
+              <FieldLabel htmlFor="profileProvince" required>
+                Province
+              </FieldLabel>
+              <Input
+                value={LOCKED_PROVINCE}
+                disabled
+                readOnly
+                className="bg-muted uppercase"
+              />
+              {errors.profileProvince && (
+                <FieldError>{errors.profileProvince.message}</FieldError>
               )}
             </div>
           </div>

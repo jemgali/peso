@@ -51,7 +51,7 @@ export const personalDetailsSchema = z.object({
   profileBirthdate: z.string().min(1, "Date of birth is required"),
   profileAge: z.preprocess(
     (v) => (v === "" || v === undefined ? undefined : Number(v)),
-    z.number().optional(),
+    z.number().min(14, "Must be at least 14 years old").max(31, "Must be at most 31 years old").optional(),
   ), // Auto-calculated, stays optional
   profilePlaceOfBirth: z.string().optional(),
   profileSex: z.string().min(1, "Sex is required"),
@@ -304,17 +304,24 @@ export function validateSection(
     });
   }
 
-  return requiredFields.every((field) => {
-    const value = formValues[field as keyof SPESApplicationFormValues];
-    if (typeof value === "string") {
-      return value.trim().length > 0;
-    }
-    // Check for non-empty arrays (e.g., profileLanguageDialect)
-    if (Array.isArray(value)) {
-      return value.length > 0;
-    }
-    return value !== undefined && value !== null;
-  });
+  const isValidAge =
+    formValues.profileAge === undefined ||
+    (Number(formValues.profileAge) >= 14 && Number(formValues.profileAge) <= 31);
+
+  return (
+    isValidAge &&
+    requiredFields.every((field) => {
+      const value = formValues[field as keyof SPESApplicationFormValues];
+      if (typeof value === "string") {
+        return value.trim().length > 0;
+      }
+      // Check for non-empty arrays (e.g., profileLanguageDialect)
+      if (Array.isArray(value)) {
+        return value.length > 0;
+      }
+      return value !== undefined && value !== null;
+    })
+  );
 }
 
 // API Request/Response Types

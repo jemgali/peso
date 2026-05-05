@@ -20,8 +20,8 @@ const SkillsSection: React.FC<FormSectionWithFieldArrayProps> = ({
     fetch("/data/skills-list.json")
       .then((res) => res.json())
       .then((data: Record<string, string>) => {
-        // Exclude "Others" from the checkbox list — handled separately
-        setSkillsList(Object.keys(data).filter((s) => s !== "Others"));
+        // Exclude "OTHERS" from the checkbox list — handled separately
+        setSkillsList(Object.keys(data).filter((s) => s !== "OTHERS"));
       })
       .catch(console.error);
   }, []);
@@ -96,7 +96,7 @@ const SkillsSection: React.FC<FormSectionWithFieldArrayProps> = ({
               return (
                 <label
                   key={skill}
-                  className="flex items-center gap-2.5 rounded-lg border px-3 py-2.5 cursor-pointer transition-colors hover:bg-muted/40 has-[:checked]:bg-primary/5 has-[:checked]:border-primary/30"
+                  className="flex items-center gap-2.5 rounded-lg border px-3 py-2.5 cursor-pointer transition-colors hover:bg-muted/40 has-checked:bg-primary/5 has-checked:border-primary/30"
                 >
                   <Checkbox
                     checked={isChecked}

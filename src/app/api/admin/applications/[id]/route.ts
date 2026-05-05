@@ -12,6 +12,7 @@ import type {
   FieldFeedback,
   DocumentFeedback,
 } from "@/lib/validations/application-review";
+import { buildRevisionTargets } from "@/lib/utils/revision-targets";
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -168,6 +169,13 @@ export async function GET(
           fieldFeedback: formatFieldFeedback(review.fieldFeedback),
           documentFeedback: formatDocumentFeedback(review.documentFeedback),
         })),
+        // Include revision targets for resubmitted applications so admin can scope review
+        revisionTargets: resubmittedAfterRevision && latestNeedsRevisionReview
+          ? buildRevisionTargets({
+              fieldFeedback: formatFieldFeedback(latestNeedsRevisionReview.fieldFeedback),
+              documentFeedback: formatDocumentFeedback(latestNeedsRevisionReview.documentFeedback),
+            })
+          : undefined,
       },
     });
   } catch (error) {

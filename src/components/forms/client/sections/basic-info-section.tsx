@@ -90,32 +90,32 @@ const DisabilityGroup = ({ control, setValue, isPending, errors }: any) => {
             <input
               type="checkbox"
               className="rounded border-input text-primary focus:ring-primary"
-              checked={profileDisability.includes("Others:")}
+              checked={profileDisability.includes("OTHERS:")}
               disabled={isPending}
               onChange={(e) => {
                 const items = profileDisability.split(",").map((i: string) => i.trim()).filter(Boolean);
                 let next;
                 if (e.target.checked) {
-                  next = [...items, "Others:"].join(", ");
+                  next = [...items, "OTHERS:"].join(", ");
                 } else {
-                  next = items.filter((i: string) => !i.startsWith("Others:")).join(", ");
+                  next = items.filter((i: string) => !i.startsWith("OTHERS:")).join(", ");
                 }
                 setValue?.("profileDisability", next, { shouldValidate: true });
               }}
             />
-            Others
+            OTHERS
           </label>
         </div>
-        {profileDisability.includes("Others:") && (
+        {profileDisability.includes("OTHERS:") && (
           <Input
-            className="mt-2"
-            placeholder="Please specify"
+            className="mt-2 uppercase"
+            placeholder="PLEASE SPECIFY"
             disabled={isPending}
-            value={profileDisability.split("Others:")[1]?.trim() || ""}
+            value={profileDisability.split("OTHERS:")[1]?.trim() || ""}
             onChange={(e) => {
               const items = profileDisability.split(",").map((i: string) => i.trim()).filter(Boolean);
               const specified = e.target.value;
-              const next = items.map((i: string) => i.startsWith("Others:") ? `Others: ${specified}` : i).join(", ");
+              const next = items.map((i: string) => i.startsWith("OTHERS:") ? `OTHERS: ${specified}` : i).join(", ");
               setValue?.("profileDisability", next, { shouldValidate: true });
             }}
           />
@@ -214,13 +214,16 @@ const LanguageGroup = ({ control, setValue, isPending, errors }: any) => {
         inputValue={languageSearch}
         onInputValueChange={(value) => setLanguageSearch(value ?? "")}
         onValueChange={(value) => {
-          if (value) handleAddLanguage(value);
+          if (value) {
+            handleAddLanguage(value);
+            setLanguageSearch("");
+          }
         }}
       >
-        <ComboboxInput placeholder="Search and select languages..." disabled={isPending} showTrigger />
+        <ComboboxInput placeholder="SEARCH AND SELECT LANGUAGES..." disabled={isPending} showTrigger className="uppercase" />
         <ComboboxContent>
           <ComboboxList>
-            {filteredLanguages.length === 0 && <ComboboxEmpty>No languages found</ComboboxEmpty>}
+            {filteredLanguages.length === 0 && <ComboboxEmpty>NO LANGUAGES FOUND</ComboboxEmpty>}
             {filteredLanguages.map((lang) => (
               <ComboboxItem key={lang.code} value={lang.name} disabled={selectedLanguages.some((l: any) => l.value === lang.name)}>
                 {lang.name}
@@ -270,10 +273,10 @@ const ReligionDropdown = ({ control, setValue, isPending, errors }: any) => {
         Religion
       </FieldLabel>
       <select
-        value={isOthers ? "Others" : currentValue}
+        value={isOthers ? "OTHERS" : currentValue}
         onChange={(e) => {
           const val = e.target.value;
-          if (val === "Others") {
+          if (val === "OTHERS") {
             setIsOthers(true);
             setCustomReligion("");
             setValue?.("profileReligion", "", { shouldValidate: true });
@@ -284,9 +287,9 @@ const ReligionDropdown = ({ control, setValue, isPending, errors }: any) => {
           }
         }}
         disabled={isPending}
-        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 uppercase"
       >
-        <option value="">Select religion...</option>
+        <option value="">SELECT RELIGION...</option>
         {religions.map((religion) => (
           <option key={religion} value={religion}>
             {religion}
@@ -295,8 +298,8 @@ const ReligionDropdown = ({ control, setValue, isPending, errors }: any) => {
       </select>
       {isOthers && (
         <Input
-          className="mt-2"
-          placeholder="Please specify your religion"
+          className="mt-2 uppercase"
+          placeholder="PLEASE SPECIFY YOUR RELIGION"
           disabled={isPending}
           value={customReligion}
           onChange={(e) => {
@@ -340,6 +343,18 @@ const BasicInfoSection: React.FC<FormSectionWithFieldArrayProps & { disableEmail
       emailPrefilledRef.current = true;
     }
   }, [userEmail, setValue]);
+
+  // Auto-calculate age if birthdate is present but age is missing
+  const birthdate = watch?.("profileBirthdate");
+  const age = watch?.("profileAge");
+  useEffect(() => {
+    if (birthdate && (age === undefined || age === null)) {
+      const calculatedAge = calculateAge(birthdate);
+      if (calculatedAge >= 0 && calculatedAge < 150) {
+        setValue?.("profileAge", calculatedAge, { shouldValidate: true });
+      }
+    }
+  }, [birthdate, age, setValue]);
 
 
 
@@ -388,6 +403,7 @@ const BasicInfoSection: React.FC<FormSectionWithFieldArrayProps & { disableEmail
               placeholder="Dela Cruz"
               required
               onBlur={autoCapitalizeBlur("profileLastName")}
+              className="uppercase"
             />
 
             <TextField
@@ -400,6 +416,7 @@ const BasicInfoSection: React.FC<FormSectionWithFieldArrayProps & { disableEmail
               placeholder="Juan"
               required
               onBlur={autoCapitalizeBlur("profileFirstName")}
+              className="uppercase"
             />
 
             <TextField
@@ -411,6 +428,7 @@ const BasicInfoSection: React.FC<FormSectionWithFieldArrayProps & { disableEmail
               autoCapitalize="words"
               placeholder="Antonio"
               onBlur={autoCapitalizeBlur("profileMiddleName")}
+              className="uppercase"
             />
 
             <TextField
@@ -422,6 +440,7 @@ const BasicInfoSection: React.FC<FormSectionWithFieldArrayProps & { disableEmail
               autoCapitalize="words"
               placeholder="Jr, Sr"
               onBlur={autoCapitalizeBlur("profileSuffix")}
+              className="uppercase"
             />
           </div>
 
@@ -468,16 +487,18 @@ const BasicInfoSection: React.FC<FormSectionWithFieldArrayProps & { disableEmail
                 control={control}
                 name="profileAge"
                 render={({ field }) => (
-                  <Input
-                    type="number"
-                    id="profileAge"
-                    value={field.value ?? ""}
-                    readOnly
-                    disabled
-                    placeholder="Auto-calculated"
-                    aria-invalid={!!errors.profileAge}
-                    className="bg-muted"
-                  />
+                  <div className="space-y-2">
+                    <Input
+                      type="number"
+                      id="profileAge"
+                      value={field.value ?? ""}
+                      readOnly
+                      disabled
+                      placeholder="Auto-calculated"
+                      aria-invalid={!!errors.profileAge}
+                      className="bg-muted"
+                    />
+                  </div>
                 )}
               />
               {errors.profileAge && (
@@ -493,6 +514,7 @@ const BasicInfoSection: React.FC<FormSectionWithFieldArrayProps & { disableEmail
               disabled={isPending}
               placeholder="City, Province"
               required
+              className="uppercase"
             />
 
             <Field data-invalid={!!errors.profileSex}>
@@ -508,21 +530,21 @@ const BasicInfoSection: React.FC<FormSectionWithFieldArrayProps & { disableEmail
                     className="flex gap-6 h-10 items-center"
                   >
                     <div className="flex items-center gap-2">
-                      <RadioGroupItem value="Male" id="sex-male" />
+                      <RadioGroupItem value="MALE" id="sex-male" />
                       <Label
                         htmlFor="sex-male"
                         className="font-normal cursor-pointer"
                       >
-                        Male
+                        MALE
                       </Label>
                     </div>
                     <div className="flex items-center gap-2">
-                      <RadioGroupItem value="Female" id="sex-female" />
+                      <RadioGroupItem value="FEMALE" id="sex-female" />
                       <Label
                         htmlFor="sex-female"
                         className="font-normal cursor-pointer"
                       >
-                        Female
+                        FEMALE
                       </Label>
                     </div>
                   </RadioGroup>
@@ -635,11 +657,11 @@ const BasicInfoSection: React.FC<FormSectionWithFieldArrayProps & { disableEmail
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                 aria-invalid={!!errors.profileCivilStatus}
               >
-                <option value="">Select...</option>
-                <option value="Single">Single</option>
-                <option value="Married">Married</option>
-                <option value="Divorced">Divorced</option>
-                <option value="Widowed">Widowed</option>
+                <option value="">SELECT...</option>
+                <option value="SINGLE">SINGLE</option>
+                <option value="MARRIED">MARRIED</option>
+                <option value="DIVORCED">DIVORCED</option>
+                <option value="WIDOWED">WIDOWED</option>
               </select>
               {errors.profileCivilStatus && (
                 <FieldError>{errors.profileCivilStatus.message}</FieldError>

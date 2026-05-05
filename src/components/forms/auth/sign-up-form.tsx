@@ -14,9 +14,19 @@ import {
     FieldSet,
     FieldGroup,
     FieldSeparator,
+    Field,
+    FieldLabel,
+    FieldError,
 } from "@/ui/field"
+import {
+    InputGroup,
+    InputGroupAddon,
+    InputGroupButton,
+    InputGroupInput,
+} from "@/ui/input-group"
 import { Button } from "@/ui/button"
 import { Spinner } from '@/ui/spinner'
+import { EyeIcon, EyeOffIcon } from "lucide-react"
 
 const signUpSchema = z.object({
     email: z.string().email("Please enter a valid email address."),
@@ -29,6 +39,7 @@ const SignUpForm = () => {
     const router = useRouter()
     const [isPending, setIsPending] = useState(false)
     const [isGooglePending, setIsGooglePending] = useState(false)
+    const [showPassword, setShowPassword] = useState(false)
 
     const {
         register,
@@ -94,15 +105,31 @@ const SignUpForm = () => {
                     placeholder="user@example.com"
                     className="w-full"
                 />
-                <TextField
-                    name="password"
-                    label="Password"
-                    type="password"
-                    register={register}
-                    error={errors.password?.message}
-                    disabled={isPending}
-                    className="w-full"
-                />
+                <Field data-invalid={!!errors.password}>
+                    <FieldLabel htmlFor="password">Password</FieldLabel>
+                    <InputGroup>
+                        <InputGroupInput
+                            {...register("password")}
+                            type={showPassword ? "text" : "password"}
+                            id="password" 
+                            disabled={isPending}
+                            autoComplete="new-password"
+                            placeholder="••••••••"
+                            aria-invalid={!!errors.password}
+                        />
+                        <InputGroupAddon align="inline-end">
+                            <InputGroupButton
+                                variant="ghost"
+                                size="icon-xs"
+                                onClick={() => setShowPassword(!showPassword)}
+                                aria-label={showPassword ? "Hide password" : "Show password"}
+                            >
+                                {showPassword ? <EyeOffIcon /> : <EyeIcon />}
+                            </InputGroupButton>
+                        </InputGroupAddon>
+                    </InputGroup>
+                    {errors.password && <FieldError>{errors.password.message}</FieldError>}
+                </Field>
             </FieldSet>
 
             <FieldSet className="flex flex-col gap-2 pt-4">

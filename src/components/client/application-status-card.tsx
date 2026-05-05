@@ -114,7 +114,7 @@ const ApplicationStatusCard: React.FC<ApplicationStatusCardProps> = ({
         </Link>
 
         {status === "needs_revision" && (
-          <Link href="/protected/client/application">
+          <Link href="/protected/client/application?mode=resubmit">
             <Button size="sm">
               Edit & Resubmit
               <ArrowRight className="h-4 w-4 ml-1" />

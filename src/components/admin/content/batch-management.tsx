@@ -240,6 +240,7 @@ export default function BatchManagement() {
         body: JSON.stringify({
           batchName,
           startDate,
+          batchYear: parseInt(startDate.split("-")[0] || "0", 10),
         }),
       });
       const payload = (await response.json()) as CreateBatchResponse;
@@ -527,10 +528,7 @@ export default function BatchManagement() {
   );
 
   const filteredBatches = useMemo(() => {
-    return batches.filter(batch => {
-      const year = new Date(batch.startDate).getFullYear().toString();
-      return year === batchYearFilter;
-    });
+    return batches.filter((batch) => batch.batchYear.toString() === batchYearFilter);
   }, [batches, batchYearFilter]);
 
   const allBatchMembersSelected =

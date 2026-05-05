@@ -149,6 +149,7 @@ const SPESInfoSection: React.FC<FormSectionWithFieldArrayProps> = ({
                           disabled={isPending}
                           required
                           aria-invalid={!!errors.spesAvailments?.[index]?.assignedOffice}
+                          className="uppercase"
                         />
                         {errors.spesAvailments?.[index]?.assignedOffice && (
                           <FieldError>{errors.spesAvailments[index].assignedOffice?.message}</FieldError>
@@ -179,7 +180,7 @@ const SPESInfoSection: React.FC<FormSectionWithFieldArrayProps> = ({
             error={errors.motivation?.message}
             disabled={isPending}
             placeholder="Share your reasons for applying to the SPES program. What do you hope to gain from this experience? How will it help you achieve your goals?"
-            className="min-h-32"
+            className="min-h-32 uppercase"
             required
           />
         </FieldSet>

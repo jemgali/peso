@@ -12,13 +12,14 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/ui/popover";
-import type { ApplicationDetailResponse, FieldFeedback } from "@/lib/validations/application-review";
+import type { ApplicationDetailResponse, FieldFeedback, RevisionTargets } from "@/lib/validations/application-review";
 
 interface ApplicationViewerProps {
   data: NonNullable<ApplicationDetailResponse["data"]>;
   fieldFeedback: FieldFeedback[];
   onFieldFeedbackChange: (feedback: FieldFeedback[]) => void;
   isReviewable?: boolean;
+  revisionTargets?: RevisionTargets;
 }
 
 interface SectionProps {
@@ -281,8 +282,31 @@ const ApplicationViewer: React.FC<ApplicationViewerProps> = ({
   fieldFeedback,
   onFieldFeedbackChange,
   isReviewable = true,
+  revisionTargets,
 }) => {
   const { profile, personal, address, family, siblings, guardian, benefactor, education, skills, spes } = data;
+
+  // Map admin section IDs to form section IDs for revision target matching
+  const ADMIN_TO_FORM_SECTION: Record<string, string> = {
+    "basic-info": "basic-info",
+    "personal-details": "basic-info",
+    address: "address",
+    family: "family",
+    siblings: "family",
+    guardian: "guardian",
+    benefactor: "benefactor",
+    education: "education",
+    skills: "skills",
+    spes: "spes-info",
+  };
+
+  const showSection = (adminSectionId: string): boolean => {
+    if (!revisionTargets || revisionTargets.sections.length === 0) return true;
+    const formSectionId = ADMIN_TO_FORM_SECTION[adminSectionId];
+    return formSectionId ? revisionTargets.sections.includes(formSectionId as any) : true;
+  };
+
+  const isRevisionScoped = Boolean(revisionTargets && revisionTargets.sections.length > 0);
 
   const markSectionAsValid = (sectionId: ReviewableSectionId) => {
     const feedbackMap = new Map<string, FieldFeedback>();
@@ -320,20 +344,29 @@ const ApplicationViewer: React.FC<ApplicationViewerProps> = ({
 
   return (
     <div className="space-y-6">
+      {isRevisionScoped && (
+        <div className="rounded-lg border border-orange-200 bg-orange-50 dark:bg-orange-950/20 dark:border-orange-800 p-4">
+          <p className="text-sm font-medium text-orange-800 dark:text-orange-300">
+            🔍 Showing only sections that were flagged for revision. All other sections remain unchanged from the original submission.
+          </p>
+        </div>
+      )}
       {/* Basic Information */}
-      <Section
-        title="Basic Information"
-        onMarkAllAsValid={isReviewable ? () => markSectionAsValid("basic-info") : undefined}
-      >
-        {rf("Last Name", "profileLastName", "basic-info", profile.profileLastName)}
-        {rf("First Name", "profileFirstName", "basic-info", profile.profileFirstName)}
-        {rf("Middle Name", "profileMiddleName", "basic-info", profile.profileMiddleName)}
-        {rf("Suffix", "profileSuffix", "basic-info", profile.profileSuffix)}
-        {rf("Email", "profileEmail", "basic-info", profile.profileEmail)}
-      </Section>
+      {showSection("basic-info") && (
+        <Section
+          title="Basic Information"
+          onMarkAllAsValid={isReviewable ? () => markSectionAsValid("basic-info") : undefined}
+        >
+          {rf("Last Name", "profileLastName", "basic-info", profile.profileLastName)}
+          {rf("First Name", "profileFirstName", "basic-info", profile.profileFirstName)}
+          {rf("Middle Name", "profileMiddleName", "basic-info", profile.profileMiddleName)}
+          {rf("Suffix", "profileSuffix", "basic-info", profile.profileSuffix)}
+          {rf("Email", "profileEmail", "basic-info", profile.profileEmail)}
+        </Section>
+      )}
 
       {/* Personal Details */}
-      {personal && (
+      {personal && showSection("personal-details") && (
         <Section
           title="Personal Details"
           onMarkAllAsValid={isReviewable ? () => markSectionAsValid("personal-details") : undefined}
@@ -353,7 +386,7 @@ const ApplicationViewer: React.FC<ApplicationViewerProps> = ({
       )}
 
       {/* Address */}
-      {address && (
+      {address && showSection("address") && (
         <Section
           title="Address"
           onMarkAllAsValid={isReviewable ? () => markSectionAsValid("address") : undefined}
@@ -366,7 +399,7 @@ const ApplicationViewer: React.FC<ApplicationViewerProps> = ({
       )}
 
       {/* Family Information */}
-      {family && (
+      {family && showSection("family") && (
         <>
           <Section
             title="Family Information"
@@ -402,7 +435,7 @@ const ApplicationViewer: React.FC<ApplicationViewerProps> = ({
       )}
 
       {/* Guardian Information */}
-      {guardian && (
+      {guardian && showSection("guardian") && (
         <Section
           title="Guardian Information"
           onMarkAllAsValid={isReviewable ? () => markSectionAsValid("guardian") : undefined}
@@ -417,7 +450,7 @@ const ApplicationViewer: React.FC<ApplicationViewerProps> = ({
       )}
 
       {/* Benefactor Information */}
-      {benefactor && (
+      {benefactor && showSection("benefactor") && (
         <Section
           title="Benefactor Information"
           onMarkAllAsValid={isReviewable ? () => markSectionAsValid("benefactor") : undefined}
@@ -428,7 +461,7 @@ const ApplicationViewer: React.FC<ApplicationViewerProps> = ({
       )}
 
       {/* Education */}
-      {education && (
+      {education && showSection("education") && (
         <Section
           title="Education"
           onMarkAllAsValid={isReviewable ? () => markSectionAsValid("education") : undefined}
@@ -441,7 +474,7 @@ const ApplicationViewer: React.FC<ApplicationViewerProps> = ({
       )}
 
       {/* Skills */}
-      {skills && (
+      {skills && showSection("skills") && (
         <Card className="p-4">
           <h3 className="font-semibold mb-3 text-lg">Skills</h3>
           {Array.isArray(skills.skills) && skills.skills.length > 0 ? (
@@ -459,7 +492,7 @@ const ApplicationViewer: React.FC<ApplicationViewerProps> = ({
       )}
 
       {/* SPES Information */}
-      {spes && (
+      {spes && showSection("spes") && (
         <Section
           title="SPES Information"
           onMarkAllAsValid={isReviewable ? () => markSectionAsValid("spes") : undefined}

@@ -169,7 +169,7 @@ export default function ApplicationStatusPage() {
           </AlertDescription>
           <AlertAction>
             <Button size="sm" asChild>
-              <Link href="/protected/client/application">
+              <Link href="/protected/client/application?mode=resubmit">
                 <FileTextIcon data-icon="inline-start" />
                 Edit &amp; Resubmit
               </Link>

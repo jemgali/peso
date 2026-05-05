@@ -24,6 +24,7 @@ import {
   profileSetupSchema,
   type ProfileSetupFormValues,
 } from "@/lib/validations/profile-setup";
+import { toUppercaseValues } from "@/lib/utils";
 import BasicInfoSection from "@/components/forms/client/sections/basic-info-section";
 
 interface ProfileSetupProps {
@@ -100,10 +101,11 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({ userEmail }) => {
     setIsPending(true);
 
     try {
+      const payload = toUppercaseValues(formValues);
       const response = await fetch("/api/client/profile-setup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formValues),
+        body: JSON.stringify(payload),
       });
 
       const result = await response.json();

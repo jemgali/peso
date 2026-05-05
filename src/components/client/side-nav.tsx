@@ -14,7 +14,8 @@ import {
 } from "@/components/ui/sidebar"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 
-const SideNav = () => {
+const SideNav = ({ age }: { age?: number }) => {
+  const isAgeIneligible = age !== undefined && (age < 14 || age > 31)
   const checkActive = useActivePath()
   const isApplicationSection = checkActive("/protected/client/application")
 
@@ -42,29 +43,31 @@ const SideNav = () => {
         </SidebarMenuButton>
       </SidebarMenuItem>
 
-      <SidebarMenuItem>
-        <Collapsible defaultOpen={isApplicationSection} className="group/collapse">
-          <CollapsibleTrigger asChild>
-            <SidebarMenuButton isActive={isApplicationSection} tooltip="Application Form">
-              <FileText />
-              <span>Application Form</span>
-              <ChevronDown className="ml-auto transition-transform group-data-[state=open]/collapse:rotate-180" />
-            </SidebarMenuButton>
-          </CollapsibleTrigger>
-          <CollapsibleContent>
-            <SidebarMenuSub>
-              <SidebarMenuSubItem>
-                <SidebarMenuSubButton
-                  asChild
-                  isActive={checkActive("/protected/client/application")}
-                >
-                  <Link href="/protected/client/application">SPES</Link>
-                </SidebarMenuSubButton>
-              </SidebarMenuSubItem>
-            </SidebarMenuSub>
-          </CollapsibleContent>
-        </Collapsible>
-      </SidebarMenuItem>
+      {!isAgeIneligible && (
+        <SidebarMenuItem>
+          <Collapsible defaultOpen={isApplicationSection} className="group/collapse">
+            <CollapsibleTrigger asChild>
+              <SidebarMenuButton isActive={isApplicationSection} tooltip="Application Form">
+                <FileText />
+                <span>Application Form</span>
+                <ChevronDown className="ml-auto transition-transform group-data-[state=open]/collapse:rotate-180" />
+              </SidebarMenuButton>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <SidebarMenuSub>
+                <SidebarMenuSubItem>
+                  <SidebarMenuSubButton
+                    asChild
+                    isActive={checkActive("/protected/client/application")}
+                  >
+                    <Link href="/protected/client/application">SPES</Link>
+                  </SidebarMenuSubButton>
+                </SidebarMenuSubItem>
+              </SidebarMenuSub>
+            </CollapsibleContent>
+          </Collapsible>
+        </SidebarMenuItem>
+      )}
     </SidebarMenu>
   )
 }

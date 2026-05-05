@@ -4,6 +4,7 @@ import type {
   SpesSelectionStatus,
   SpesWorkflowStage,
 } from "@/lib/validations/spes-workflow";
+import type { FormSectionId } from "@/lib/utils/revision-targets";
 
 // Review decision values
 export const REVIEW_DECISIONS = ["approved", "needs_revision", "rejected"] as const;
@@ -66,6 +67,20 @@ export const submitReviewSchema = z.object({
 export type FieldFeedback = z.infer<typeof fieldFeedbackSchema>;
 export type DocumentFeedback = z.infer<typeof documentFeedbackSchema>;
 export type SubmitReviewRequest = z.infer<typeof submitReviewSchema>;
+
+export interface RevisionTargets {
+  sections: FormSectionId[];
+  fields: Array<{
+    sectionId: string;
+    fieldName: string;
+    comment?: string;
+  }>;
+  documents: Array<{
+    documentType: string;
+    status: DocumentFeedbackStatus;
+    comment?: string;
+  }>;
+}
 
 // Response types
 export interface ApplicationListItem {
@@ -146,6 +161,7 @@ export interface ApplicationDetailResponse {
     documents: Record<string, unknown> | null;
     spes: Record<string, unknown> | null;
     reviews: ReviewHistoryItem[];
+    revisionTargets?: RevisionTargets;
   };
   error?: string;
 }

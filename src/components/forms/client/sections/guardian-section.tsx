@@ -13,13 +13,15 @@ import type { FormSectionProps } from "./types";
 
 const GUARDIAN_RELATIONSHIP_OPTIONS = [
   { value: "", label: "Select relationship..." },
-  { value: "Parent", label: "Parent" },
-  { value: "Grandparent", label: "Grandparent" },
-  { value: "Aunt/Uncle", label: "Aunt/Uncle" },
-  { value: "Sibling", label: "Sibling" },
-  { value: "Legal Guardian", label: "Legal Guardian" },
-  { value: "Relative", label: "Other Relative" },
-  { value: "Other", label: "Other" },
+  { value: "MOTHER", label: "MOTHER" },
+  { value: "FATHER", label: "FATHER" },
+  { value: "SISTER", label: "SISTER" },
+  { value: "BROTHER", label: "BROTHER" },
+  { value: "GRANDPARENT", label: "GRANDPARENT" },
+  { value: "AUNT/UNCLE", label: "AUNT/UNCLE" },
+  { value: "LEGAL GUARDIAN", label: "LEGAL GUARDIAN" },
+  { value: "RELATIVE", label: "OTHER RELATIVE" },
+  { value: "OTHER", label: "OTHER" },
 ];
 
 const GuardianSection: React.FC<FormSectionProps> = ({
@@ -55,6 +57,7 @@ const GuardianSection: React.FC<FormSectionProps> = ({
                 disabled={isPending}
                 placeholder="Full name of guardian"
                 onBlur={autoCapitalizeBlur("guardianName")}
+                className="uppercase"
               />
 
               <Field data-invalid={!!errors.guardianRelationship}>
@@ -97,6 +100,7 @@ const GuardianSection: React.FC<FormSectionProps> = ({
               disabled={isPending}
               placeholder="e.g., Teacher, Business Owner"
               onBlur={autoCapitalizeBlur("guardianOccupation")}
+              className="uppercase"
             />
 
               <TextField
@@ -119,7 +123,7 @@ const GuardianSection: React.FC<FormSectionProps> = ({
             error={errors.guardianAddress?.message}
             disabled={isPending}
             placeholder="Complete address of guardian"
-            className="min-h-20"
+            className="min-h-20 uppercase"
             onBlur={autoCapitalizeBlur("guardianAddress")}
           />
         </FieldSet>

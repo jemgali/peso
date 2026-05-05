@@ -5,16 +5,18 @@ import type { FormSectionProps } from "./types";
 
 const BENEFACTOR_RELATIONSHIP_OPTIONS = [
   { value: "", label: "Select relationship..." },
-  { value: "Parent", label: "Parent" },
-  { value: "Grandparent", label: "Grandparent" },
-  { value: "Aunt/Uncle", label: "Aunt/Uncle" },
-  { value: "Sibling", label: "Sibling" },
-  { value: "Relative", label: "Other Relative" },
-  { value: "Employer", label: "Employer" },
-  { value: "Sponsor", label: "Sponsor" },
-  { value: "NGO", label: "NGO/Organization" },
-  { value: "Government", label: "Government Agency" },
-  { value: "Other", label: "Other" },
+  { value: "MOTHER", label: "MOTHER" },
+  { value: "FATHER", label: "FATHER" },
+  { value: "SISTER", label: "SISTER" },
+  { value: "BROTHER", label: "BROTHER" },
+  { value: "GRANDPARENT", label: "GRANDPARENT" },
+  { value: "AUNT/UNCLE", label: "AUNT/UNCLE" },
+  { value: "RELATIVE", label: "OTHER RELATIVE" },
+  { value: "EMPLOYER", label: "EMPLOYER" },
+  { value: "SPONSOR", label: "SPONSOR" },
+  { value: "NGO", label: "NGO/ORGANIZATION" },
+  { value: "GOVERNMENT", label: "GOVERNMENT AGENCY" },
+  { value: "OTHER", label: "OTHER" },
 ];
 
 const BenefactorSection: React.FC<FormSectionProps> = ({
@@ -42,6 +44,7 @@ const BenefactorSection: React.FC<FormSectionProps> = ({
                 disabled={isPending}
                 placeholder="Full name of benefactor"
                 required
+                className="uppercase"
               />
 
               <Field data-invalid={!!errors.benefactorRelationship}>

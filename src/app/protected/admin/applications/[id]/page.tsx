@@ -232,6 +232,7 @@ export default function ApplicationReviewPage({ params }: PageProps) {
             fieldFeedback={fieldFeedback}
             onFieldFeedbackChange={setFieldFeedback}
             isReviewable={isReviewable}
+            revisionTargets={data.revisionTargets}
           />
         </TabsContent>
 

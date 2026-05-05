@@ -21,7 +21,13 @@ const Layout = async ({ children }: { children: React.ReactNode }) => {
   // Check if user has completed onboarding (profileFirstName exists)
   const profileUser = await prisma.profileUser.findUnique({
     where: { userId: user.id },
-    select: { profileFirstName: true, profileEmail: true },
+    select: { 
+      profileFirstName: true, 
+      profileEmail: true,
+      personal: {
+        select: { profileAge: true }
+      }
+    },
   })
 
   const needsOnboarding = !profileUser?.profileFirstName
@@ -40,7 +46,7 @@ const Layout = async ({ children }: { children: React.ReactNode }) => {
       <Header />
       <div className="relative flex flex-1 overflow-hidden">
         <SidebarProvider className="absolute inset-0 h-full min-h-0 w-full">
-          <Side />
+          <Side age={profileUser?.personal?.profileAge ?? undefined} />
           <SidebarInset className="flex-1 overflow-y-auto">
             <main className="h-full p-4 md:p-6">{children}</main>
           </SidebarInset>

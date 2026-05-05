@@ -9,9 +9,16 @@ import { z } from "zod"
 import { toast } from "sonner"
 import { authClient } from "@/lib/auth-client"
 import { TextField } from "@/components/shared"
-import { FieldGroup, FieldSet } from "@/ui/field"
+import { FieldGroup, FieldSet, Field, FieldLabel, FieldError } from "@/ui/field"
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupButton,
+  InputGroupInput,
+} from "@/ui/input-group"
 import { Button } from "@/ui/button"
 import { Spinner } from "@/ui/spinner"
+import { EyeIcon, EyeOffIcon } from "lucide-react"
 
 const resetPasswordSchema = z
   .object({
@@ -37,6 +44,8 @@ const ResetPasswordForm = ({ email }: ResetPasswordFormProps) => {
   const router = useRouter()
   const [isPending, setIsPending] = useState(false)
   const [isResending, setIsResending] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
   const {
     register,
@@ -116,24 +125,60 @@ const ResetPasswordForm = ({ email }: ResetPasswordFormProps) => {
                 .slice(0, 8)
             }}
           />
-          <TextField
-            name="password"
-            label="New Password"
-            type="password"
-            register={register}
-            error={errors.password?.message}
-            disabled={isPending}
-            className="w-full"
-          />
-          <TextField
-            name="confirmPassword"
-            label="Confirm New Password"
-            type="password"
-            register={register}
-            error={errors.confirmPassword?.message}
-            disabled={isPending}
-            className="w-full"
-          />
+          <Field data-invalid={!!errors.password}>
+            <FieldLabel htmlFor="password">New Password</FieldLabel>
+            <InputGroup>
+              <InputGroupInput
+                {...register("password")}
+                type={showPassword ? "text" : "password"}
+                id="password"
+                disabled={isPending}
+                autoComplete="new-password"
+                placeholder="••••••••"
+                aria-invalid={!!errors.password}
+              />
+              <InputGroupAddon align="inline-end">
+                <InputGroupButton
+                  variant="ghost"
+                  size="icon-xs"
+                  onClick={() => setShowPassword(!showPassword)}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? <EyeOffIcon /> : <EyeIcon />}
+                </InputGroupButton>
+              </InputGroupAddon>
+            </InputGroup>
+            {errors.password && <FieldError>{errors.password.message}</FieldError>}
+          </Field>
+          <Field data-invalid={!!errors.confirmPassword}>
+            <FieldLabel htmlFor="confirmPassword">Confirm New Password</FieldLabel>
+            <InputGroup>
+              <InputGroupInput
+                {...register("confirmPassword")}
+                type={showConfirmPassword ? "text" : "password"}
+                id="confirmPassword"
+                disabled={isPending}
+                autoComplete="new-password"
+                placeholder="••••••••"
+                aria-invalid={!!errors.confirmPassword}
+              />
+              <InputGroupAddon align="inline-end">
+                <InputGroupButton
+                  variant="ghost"
+                  size="icon-xs"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  aria-label={
+                    showConfirmPassword ? "Hide password" : "Show password"
+                  }
+                >
+                  {showConfirmPassword ? <EyeOffIcon /> : <EyeIcon />}
+                </InputGroupButton>
+              </InputGroupAddon>
+            </InputGroup>
+            {errors.confirmPassword && (
+              <FieldError>{errors.confirmPassword.message}</FieldError>
+            )}
+          </Field>
           <Button type="submit" className="w-full" size="lg" disabled={isPending}>
             {isPending && <Spinner data-icon="inline-start" />}
             {isPending ? "Updating password..." : "Verify code and reset password"}

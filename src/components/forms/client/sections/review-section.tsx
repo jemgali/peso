@@ -57,6 +57,8 @@ const ReviewSection: React.FC<ReviewSectionProps> = ({
   errors,
   incompleteSections,
   triggerValidation,
+  visibleSectionIds,
+  revisionTargets,
 }) => {
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [selectedDocumentId, setSelectedDocumentId] = useState<string>("");
@@ -121,9 +123,33 @@ const ReviewSection: React.FC<ReviewSectionProps> = ({
     string,
     UploadedDocument
   >;
+  const visibleSectionSet = useMemo(
+    () =>
+      new Set(
+        (visibleSectionIds || [])
+          .filter((sectionId) => sectionId !== "review")
+          .map((sectionId) => String(sectionId)),
+      ),
+    [visibleSectionIds],
+  );
+  const isRevisionScoped = visibleSectionSet.size > 0;
+  const showSection = (sectionId: string) =>
+    !isRevisionScoped || visibleSectionSet.has(sectionId);
+  const scopedDocumentIdSet = useMemo(
+    () =>
+      new Set(
+        (revisionTargets?.documents || []).map((feedback) => feedback.documentType),
+      ),
+    [revisionTargets],
+  );
+  const shouldScopeDocuments = scopedDocumentIdSet.size > 0;
   const uploadedDocumentEntries = useMemo(
-    () => Object.entries(uploadedDocuments),
-    [uploadedDocuments],
+    () => {
+      const allEntries = Object.entries(uploadedDocuments);
+      if (!shouldScopeDocuments) return allEntries;
+      return allEntries.filter(([documentId]) => scopedDocumentIdSet.has(documentId));
+    },
+    [uploadedDocuments, scopedDocumentIdSet, shouldScopeDocuments],
   );
   const requiredUploadedDocuments = useMemo(
     () =>
@@ -159,117 +185,151 @@ const ReviewSection: React.FC<ReviewSectionProps> = ({
       </div>
 
       <div className="space-y-4">
-        {/* Basic Information */}
-        <Card className="p-4 bg-muted/30">
-          <h3 className="text-sm font-semibold mb-3">Basic Information</h3>
-          <div className="grid grid-cols-2 gap-2 text-sm">
-            <div>
-              <p className="text-muted-foreground">Legal Name</p>
-              <p className="font-medium">{formatName()}</p>
-            </div>
-          </div>
-        </Card>
+        {showSection("basic-info") && (
+          <>
+            {/* Basic Information */}
+            <Card className="p-4 bg-muted/30">
+              <h3 className="text-sm font-semibold mb-3">Basic Information</h3>
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                <div>
+                  <p className="text-muted-foreground">Legal Name</p>
+                  <p className="font-medium uppercase">{formatName()}</p>
+                </div>
+              </div>
+            </Card>
 
-        {/* Personal Details */}
-        <Card className="p-4 bg-muted/30">
-          <h3 className="text-sm font-semibold mb-3">Personal Details</h3>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-sm">
-            <div>
-              <p className="text-muted-foreground">Birthdate</p>
-              <p className="font-medium">
-                {formValues.profileBirthdate || "Not provided"}
-              </p>
-            </div>
-            <div>
-              <p className="text-muted-foreground">Age</p>
-              <p className="font-medium">
-                {formValues.profileAge || "Not provided"}
-              </p>
-            </div>
-            <div>
-              <p className="text-muted-foreground">Sex</p>
-              <p className="font-medium">
-                {formValues.profileSex || "Not provided"}
-              </p>
-            </div>
-            <div>
-              <p className="text-muted-foreground">Civil Status</p>
-              <p className="font-medium">
-                {formValues.profileCivilStatus || "Not provided"}
-              </p>
-            </div>
-            <div>
-              <p className="text-muted-foreground">Religion</p>
-              <p className="font-medium">
-                {formValues.profileReligion || "Not provided"}
-              </p>
-            </div>
-            <div>
-              <p className="text-muted-foreground">Languages</p>
-              <p className="font-medium">{formatLanguages()}</p>
-            </div>
-          </div>
-        </Card>
+            {/* Personal Details */}
+            <Card className="p-4 bg-muted/30">
+              <h3 className="text-sm font-semibold mb-3">Personal Details</h3>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-sm">
+                <div>
+                  <p className="text-muted-foreground">Birthdate</p>
+                  <p className="font-medium uppercase">
+                    {formValues.profileBirthdate || "Not provided"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">Age</p>
+                  <p className="font-medium uppercase">
+                    {formValues.profileAge !== undefined && formValues.profileAge !== null ? formValues.profileAge : "Not provided"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">Sex</p>
+                  <p className="font-medium uppercase">
+                    {formValues.profileSex || "Not provided"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">Civil Status</p>
+                  <p className="font-medium uppercase">
+                    {formValues.profileCivilStatus || "Not provided"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">Religion</p>
+                  <p className="font-medium uppercase">
+                    {formValues.profileReligion || "Not provided"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">Languages</p>
+                  <p className="font-medium uppercase">{formatLanguages()}</p>
+                </div>
+              </div>
+            </Card>
+
+            {/* Contact Information */}
+            <Card className="p-4 bg-muted/30">
+              <h3 className="text-sm font-semibold mb-3">Contact Information</h3>
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                <div>
+                  <p className="text-muted-foreground">Contact Number</p>
+                  <p className="font-medium">
+                    {formValues.profileContact || "Not provided"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">Email</p>
+                  <p className="font-medium">
+                    {formValues.profileEmail || "Not provided"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">Facebook</p>
+                  <p className="font-medium truncate">
+                    {formValues.profileFacebook || "Not provided"}
+                  </p>
+                </div>
+              </div>
+            </Card>
+          </>
+        )}
 
         {/* Address */}
-        <Card className="p-4 bg-muted/30">
-          <h3 className="text-sm font-semibold mb-3">Address</h3>
-          <p className="text-sm font-medium">{formatAddress()}</p>
-        </Card>
+        {showSection("address") && (
+          <Card className="p-4 bg-muted/30">
+            <h3 className="text-sm font-semibold mb-3">Address</h3>
+            <p className="text-sm font-medium uppercase">{formatAddress()}</p>
+          </Card>
+        )}
 
         {/* Education */}
-        <Card className="p-4 bg-muted/30">
-          <h3 className="text-sm font-semibold mb-3">Education</h3>
-          <div className="grid grid-cols-2 gap-2 text-sm">
-            <div>
-              <p className="text-muted-foreground">Grade/Year Level</p>
-              <p className="font-medium">
-                {formValues.gradeYear || "Not provided"}
-              </p>
+        {showSection("education") && (
+          <Card className="p-4 bg-muted/30">
+            <h3 className="text-sm font-semibold mb-3">Education</h3>
+            <div className="grid grid-cols-2 gap-2 text-sm">
+              <div>
+                <p className="text-muted-foreground">Grade/Year Level</p>
+                <p className="font-medium uppercase">
+                  {formValues.gradeYear || "Not provided"}
+                </p>
+              </div>
+              <div>
+                <p className="text-muted-foreground">School Name</p>
+                <p className="font-medium uppercase">
+                  {formValues.schoolName || "Not provided"}
+                </p>
+              </div>
+              <div>
+                <p className="text-muted-foreground">Track/Course</p>
+                <p className="font-medium uppercase">
+                  {formValues.trackCourse || "Not provided"}
+                </p>
+              </div>
+              <div>
+                <p className="text-muted-foreground">School Year</p>
+                <p className="font-medium uppercase">
+                  {formValues.schoolYear || "Not provided"}
+                </p>
+              </div>
             </div>
-            <div>
-              <p className="text-muted-foreground">School Name</p>
-              <p className="font-medium">
-                {formValues.schoolName || "Not provided"}
-              </p>
-            </div>
-            <div>
-              <p className="text-muted-foreground">Track/Course</p>
-              <p className="font-medium">
-                {formValues.trackCourse || "Not provided"}
-              </p>
-            </div>
-            <div>
-              <p className="text-muted-foreground">School Year</p>
-              <p className="font-medium">
-                {formValues.schoolYear || "Not provided"}
-              </p>
-            </div>
-          </div>
-        </Card>
+          </Card>
+        )}
 
         {/* Family Information */}
-        <Card className="p-4 bg-muted/30">
+        {showSection("family") && (
+          <Card className="p-4 bg-muted/30">
           <h3 className="text-sm font-semibold mb-3">Family Information</h3>
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div>
               <p className="text-muted-foreground">Father</p>
-              <p className="font-medium">
+              <p className="font-medium uppercase">
                 {formValues.fatherName || "Not provided"}
               </p>
               {formValues.fatherOccupation && (
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-muted-foreground uppercase">
                   {formValues.fatherOccupation}
                 </p>
               )}
             </div>
             <div>
               <p className="text-muted-foreground">Mother</p>
-              <p className="font-medium">
+              <p className="font-medium uppercase">
                 {formValues.motherMaidenName || "Not provided"}
               </p>
               {formValues.motherOccupation && (
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-muted-foreground uppercase">
                   {formValues.motherOccupation}
                 </p>
               )}
@@ -283,9 +343,9 @@ const ReviewSection: React.FC<ReviewSectionProps> = ({
               <div className="space-y-1">
                 {formValues.siblings.map((sibling, index) => (
                     <div key={index} className="text-sm">
-                      <span className="font-medium">{sibling.name || "Unnamed"}</span>
+                      <span className="font-medium uppercase">{sibling.name || "Unnamed"}</span>
                       {sibling.age && <span className="text-muted-foreground"> ({sibling.age} yrs)</span>}
-                      {sibling.occupation && <span className="text-muted-foreground"> - {sibling.occupation}</span>}
+                      {sibling.occupation && <span className="text-muted-foreground uppercase"> - {sibling.occupation}</span>}
                       <span className="text-muted-foreground">
                         {" "}
                         - {sibling.sameHousehold ? "Same household" : "Not same household"}
@@ -295,19 +355,21 @@ const ReviewSection: React.FC<ReviewSectionProps> = ({
                 </div>
               </div>
           )}
-        </Card>
+          </Card>
+        )}
 
         {/* Guardian */}
-        <Card className="p-4 bg-muted/30">
+        {showSection("guardian") && (
+          <Card className="p-4 bg-muted/30">
           <h3 className="text-sm font-semibold mb-3">Guardian</h3>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-sm">
             <div>
               <p className="text-muted-foreground">Name</p>
-              <p className="font-medium">{formValues.guardianName || "Not provided"}</p>
+              <p className="font-medium uppercase">{formValues.guardianName || "Not provided"}</p>
             </div>
             <div>
               <p className="text-muted-foreground">Relationship</p>
-              <p className="font-medium">
+              <p className="font-medium uppercase">
                 {formValues.guardianRelationship || "Not provided"}
               </p>
             </div>
@@ -318,41 +380,39 @@ const ReviewSection: React.FC<ReviewSectionProps> = ({
               </p>
             </div>
           </div>
-        </Card>
+          </Card>
+        )}
 
-        {/* Skills */}
-        <Card className="p-4 bg-muted/30">
-          <h3 className="text-sm font-semibold mb-3">Skills</h3>
-          <p className="text-sm font-medium">{formatSkills()}</p>
-        </Card>
-
-        {/* Contact Information */}
-        <Card className="p-4 bg-muted/30">
-          <h3 className="text-sm font-semibold mb-3">Contact Information</h3>
+        {/* Benefactor */}
+        {showSection("benefactor") && (
+          <Card className="p-4 bg-muted/30">
+          <h3 className="text-sm font-semibold mb-3">Benefactor</h3>
           <div className="grid grid-cols-2 gap-2 text-sm">
             <div>
-              <p className="text-muted-foreground">Contact Number</p>
-              <p className="font-medium">
-                {formValues.profileContact || "Not provided"}
-              </p>
+              <p className="text-muted-foreground">Name</p>
+              <p className="font-medium uppercase">{formValues.benefactorName || "Not provided"}</p>
             </div>
             <div>
-              <p className="text-muted-foreground">Email</p>
-              <p className="font-medium">
-                {formValues.profileEmail || "Not provided"}
-              </p>
-            </div>
-            <div>
-              <p className="text-muted-foreground">Facebook</p>
-              <p className="font-medium truncate">
-                {formValues.profileFacebook || "Not provided"}
+              <p className="text-muted-foreground">Relationship</p>
+              <p className="font-medium uppercase">
+                {formValues.benefactorRelationship || "Not provided"}
               </p>
             </div>
           </div>
-        </Card>
+          </Card>
+        )}
+
+        {/* Skills */}
+        {showSection("skills") && (
+          <Card className="p-4 bg-muted/30">
+          <h3 className="text-sm font-semibold mb-3">Skills</h3>
+          <p className="text-sm font-medium uppercase">{formatSkills()}</p>
+          </Card>
+        )}
 
         {/* SPES Information */}
-        <Card className="p-4 bg-muted/30">
+        {showSection("spes-info") && (
+          <Card className="p-4 bg-muted/30">
           <h3 className="text-sm font-semibold mb-3">SPES Information</h3>
           <div className="grid grid-cols-2 gap-2 text-sm">
             <div>
@@ -371,135 +431,135 @@ const ReviewSection: React.FC<ReviewSectionProps> = ({
           {formValues.motivation && (
             <div className="mt-2">
               <p className="text-muted-foreground text-sm">Motivation</p>
-              <p className="text-sm font-medium">{formValues.motivation}</p>
+              <p className="text-sm font-medium uppercase">{formValues.motivation}</p>
             </div>
           )}
-        </Card>
+          </Card>
+        )}
 
         {/* Documents */}
-        <Card className="p-4 bg-muted/30">
+        {showSection("documents") && (
+          <Card className="p-4 bg-muted/30">
           <h3 className="text-sm font-semibold mb-3">Documents</h3>
           {uploadedDocumentEntries.length > 0 ? (
-            <Tabs defaultValue="required" className="space-y-4">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="required">
-                  Required ({requiredUploadedDocuments.length})
-                </TabsTrigger>
-                <TabsTrigger value="optional">
-                  Optional ({optionalUploadedDocuments.length})
-                </TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="required" className="space-y-2">
-                {requiredUploadedDocuments.length > 0 ? (
-                  requiredUploadedDocuments.map(([documentId, document]) => (
+            <div className="grid gap-6 xl:grid-cols-[280px_minmax(0,1fr)] 2xl:grid-cols-[320px_minmax(0,1fr)]">
+              {/* Left Side: List */}
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Required</h4>
+                  {requiredUploadedDocuments.map(([documentId, document]) => (
                     <button
                       key={documentId}
                       type="button"
                       onClick={() => setSelectedDocumentId(documentId)}
-                      className={`flex w-full items-center justify-between rounded-md border p-2 text-left text-sm transition-colors ${
+                      className={`flex w-full items-center justify-between rounded-md border p-2.5 text-left text-sm transition-colors ${
                         activeSelectedDocumentId === documentId
-                          ? "border-primary bg-primary/5"
-                          : "hover:bg-muted/40"
+                          ? "border-primary bg-primary/5 ring-1 ring-primary"
+                          : "bg-background hover:bg-muted/40"
                       }`}
                     >
-                      <span className="font-medium">
-                        {DOCUMENT_LABELS[documentId] || documentId}
-                      </span>
-                      <span className="text-xs text-muted-foreground">
-                        {document.fileName || "Uploaded file"}
-                      </span>
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium truncate">
+                          {DOCUMENT_LABELS[documentId] || documentId}
+                        </p>
+                        <p className="text-[10px] text-muted-foreground truncate mt-0.5">
+                          {document.fileName || "Uploaded file"}
+                        </p>
+                      </div>
                     </button>
-                  ))
-                ) : (
-                  <p className="text-sm text-muted-foreground">
-                    No required documents uploaded yet.
-                  </p>
-                )}
-              </TabsContent>
-
-              <TabsContent value="optional" className="space-y-2">
-                {optionalUploadedDocuments.length > 0 ? (
-                  optionalUploadedDocuments.map(([documentId, document]) => (
-                    <button
-                      key={documentId}
-                      type="button"
-                      onClick={() => setSelectedDocumentId(documentId)}
-                      className={`flex w-full items-center justify-between rounded-md border p-2 text-left text-sm transition-colors ${
-                        activeSelectedDocumentId === documentId
-                          ? "border-primary bg-primary/5"
-                          : "hover:bg-muted/40"
-                      }`}
-                    >
-                      <span className="font-medium">
-                        {DOCUMENT_LABELS[documentId] || documentId}
-                      </span>
-                      <span className="text-xs text-muted-foreground">
-                        {document.fileName || "Uploaded file"}
-                      </span>
-                    </button>
-                  ))
-                ) : (
-                  <p className="text-sm text-muted-foreground">
-                    No optional documents uploaded.
-                  </p>
-                )}
-              </TabsContent>
-            </Tabs>
-          ) : (
-            <p className="text-sm text-muted-foreground">No documents uploaded.</p>
-          )}
-
-          {selectedDocument && (
-            <div className="mt-4 space-y-3 rounded-md border border-muted/60 bg-background/60 p-3">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="text-sm font-semibold">
-                    {DOCUMENT_LABELS[activeSelectedDocumentId] || activeSelectedDocumentId}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {selectedDocument.fileName || "Uploaded document"}
-                  </p>
+                  ))}
                 </div>
-                {selectedDocument.url && (
-                  <a
-                    href={selectedDocument.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline"
-                  >
-                    Open
-                    <ExternalLink className="h-3 w-3" />
-                  </a>
+
+                {optionalUploadedDocuments.length > 0 && (
+                  <div className="space-y-2">
+                    <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Optional</h4>
+                    {optionalUploadedDocuments.map(([documentId, document]) => (
+                      <button
+                        key={documentId}
+                        type="button"
+                        onClick={() => setSelectedDocumentId(documentId)}
+                        className={`flex w-full items-center justify-between rounded-md border p-2.5 text-left text-sm transition-colors ${
+                          activeSelectedDocumentId === documentId
+                            ? "border-primary bg-primary/5 ring-1 ring-primary"
+                            : "bg-background hover:bg-muted/40"
+                        }`}
+                      >
+                        <div className="min-w-0 flex-1">
+                          <p className="font-medium truncate">
+                            {DOCUMENT_LABELS[documentId] || documentId}
+                          </p>
+                          <p className="text-[10px] text-muted-foreground truncate mt-0.5">
+                            {document.fileName || "Uploaded file"}
+                          </p>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
                 )}
               </div>
 
-              {selectedDocument.url &&
-                selectedDocument.fileType === "application/pdf" && (
-                  <iframe
-                    src={selectedDocument.url}
-                    title={selectedDocument.fileName || activeSelectedDocumentId}
-                    className="h-[360px] w-full rounded border bg-muted/20"
-                  />
+              {/* Right Side: Preview */}
+              <div className="relative min-h-[400px] rounded-lg border bg-background/50 overflow-hidden">
+                {selectedDocument ? (
+                  <div className="flex flex-col h-full">
+                    <div className="flex items-center justify-between p-3 border-b bg-muted/30">
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold truncate">
+                          {DOCUMENT_LABELS[activeSelectedDocumentId] || activeSelectedDocumentId}
+                        </p>
+                        <p className="text-xs text-muted-foreground truncate">
+                          {selectedDocument.fileName}
+                        </p>
+                      </div>
+                      {selectedDocument.url && (
+                        <a
+                          href={selectedDocument.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-primary hover:underline bg-primary/5 rounded-md"
+                        >
+                          Open Original
+                          <ExternalLink className="h-3 w-3" />
+                        </a>
+                      )}
+                    </div>
+                    <div className="flex-1 p-0 overflow-auto">
+                      {selectedDocument.fileType === "application/pdf" ? (
+                        <iframe
+                          src={selectedDocument.url}
+                          title={selectedDocument.fileName || activeSelectedDocumentId}
+                          className="w-full h-full min-h-[500px]"
+                        />
+                      ) : selectedDocument.fileType?.startsWith("image/") ? (
+                        <div className="flex items-center justify-center min-h-[400px] p-4">
+                          <img
+                            src={selectedDocument.url}
+                            alt={selectedDocument.fileName || activeSelectedDocumentId}
+                            className="max-w-full max-h-[600px] rounded shadow-sm object-contain"
+                          />
+                        </div>
+                      ) : (
+                        <div className="flex flex-col items-center justify-center h-full p-8 text-center text-muted-foreground">
+                          <p>Preview unavailable for this file type.</p>
+                          <p className="text-xs mt-1">Please use the "Open Original" button above.</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center h-full p-8 text-center text-muted-foreground italic">
+                    Select a document from the list to preview
+                  </div>
                 )}
-              {selectedDocument.url &&
-                selectedDocument.fileType?.startsWith("image/") && (
-                  <img
-                    src={selectedDocument.url}
-                    alt={selectedDocument.fileName || activeSelectedDocumentId}
-                    className="max-h-[360px] w-full rounded border bg-muted/20 object-contain"
-                  />
-                )}
-              {selectedDocument.url &&
-                selectedDocument.fileType !== "application/pdf" &&
-                !selectedDocument.fileType?.startsWith("image/") && (
-                  <p className="text-xs text-muted-foreground">
-                    Preview unavailable for this file type. Use Open to view.
-                  </p>
-                )}
+              </div>
             </div>
+          ) : (
+            <p className="text-sm text-muted-foreground italic bg-background/50 p-4 rounded-md border border-dashed">
+              No documents uploaded yet.
+            </p>
           )}
-        </Card>
+          </Card>
+        )}
       </div>
 
       {/* Submit Button */}

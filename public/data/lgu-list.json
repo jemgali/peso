@@ -1,6 +1,6 @@
 {
-  "Gender and Development": "Gender and Development",
-  "City Mayor's Office": [
+  "GENDER AND DEVELOPMENT": "GENDER AND DEVELOPMENT",
+  "CITY MAYOR'S OFFICE": [
     "Library Office",
     "People's Law Enforcement Board",
     "Management Information and Technology Office",
@@ -12,60 +12,60 @@
     "Public Order & Safety Division",
     "Special Services Division"
   ],
-  "Sangguniang Panlungsod ng Baguio": [
+  "SANGGUNIANG PANLUNGSOD NG BAGUIO": [
     "Administrative Division",
     "Agenda and Information Management Division",
     "Coterminous and Primarily Confidential",
     "Research Division",
     "Stenographic-Clerical Services Division"
   ],
-  "City Administrator's Office": [
+  "CITY ADMINISTRATOR'S OFFICE": [
     "Administrative Division",
     "Sports and Recreation Division",
     "Tourism and Special Events Division"
   ],
-  "City Human Resource Management Office": "City Human Resource Management Office",
-  "City General Services Office": "City General Services Office",
-  "City Building and Architecture Office": "City Building and Architecture Office",
-  "City Planning, Development, and Sustainability Office": "City Planning, Development, and Sustainability Office",
-  "City Accounting Office": "City Accounting Office",
-  "City Assessor's Office": "City Assessor's Office",
-  "City Budget Office": [
+  "CITY HUMAN RESOURCE MANAGEMENT OFFICE": "CITY HUMAN RESOURCE MANAGEMENT OFFICE",
+  "CITY GENERAL SERVICES OFFICE": "CITY GENERAL SERVICES OFFICE",
+  "CITY BUILDING AND ARCHITECTURE OFFICE": "CITY BUILDING AND ARCHITECTURE OFFICE",
+  "CITY PLANNING, DEVELOPMENT, AND SUSTAINABILITY OFFICE": "CITY PLANNING, DEVELOPMENT, AND SUSTAINABILITY OFFICE",
+  "CITY ACCOUNTING OFFICE": "CITY ACCOUNTING OFFICE",
+  "CITY ASSESSOR'S OFFICE": "CITY ASSESSOR'S OFFICE",
+  "CITY BUDGET OFFICE": [
     "Budget Operations-Technical Division",
     "Economic and Investment Unit",
     "Administrative Division"
   ],
-  "City Treasurer's Office": "City Treasurer's Office",
-  "City Civil Registry Office": "City Civil Registry Office",
-  "City Legal Office": "City Legal Office",
-  "City Disaster Risk Reduction and Management Office": [
+  "CITY TREASURER'S OFFICE": "CITY TREASURER'S OFFICE",
+  "CITY CIVIL REGISTRY OFFICE": "CITY CIVIL REGISTRY OFFICE",
+  "CITY LEGAL OFFICE": "CITY LEGAL OFFICE",
+  "CITY DISASTER RISK REDUCTION AND MANAGEMENT OFFICE": [
     "Administrative Division",
     "City Disaster Risk Reduction Management Operations Center Division"
   ],
-  "City Veterinary and Agriculture Office": [
+  "CITY VETERINARY AND AGRICULTURE OFFICE": [
     "Administrative Division",
     "Abattoir & Animal Products Quality Assurance Services",
     "Urban Agriculture Services",
     "Animal Health Services"
   ],
-  "City Social Welfare and Development Office": "City Social Welfare and Development Office",
-  "City Health Services Office": "City Health Services Office",
-  "City Environment and Parks Management Office": "City Environment and Parks Management Office",
-  "City Engineering Office": "City Engineering Office",
-  "Baguio City Police Office": "Baguio City Police Office",
-  "Bureau of Fire Protection": "Bureau of Fire Protection",
-  "Bureau of Jail Management and Penology (Female)": "Bureau of Jail Management and Penology (Female)",
-  "Bureau of Jail Management and Penology (Male)": "Bureau of Jail Management and Penology (Male)",
-  "Commission on Audit": "Commission on Audit",
-  "Department of Education": "Department of Education",
-  "Municipal Trial Court": "Municipal Trial Court",
-  "Parole": "Parole",
-  "Prosecutor's Office": "Prosecutor's Office",
-  "Public Attorney's Office": "Public Attorney's Office",
-  "Regional Trial Court": "Regional Trial Court",
-  "DILG - Baguio City Field Office": [
+  "CITY SOCIAL WELFARE AND DEVELOPMENT OFFICE": "CITY SOCIAL WELFARE AND DEVELOPMENT OFFICE",
+  "CITY HEALTH SERVICES OFFICE": "CITY HEALTH SERVICES OFFICE",
+  "CITY ENVIRONMENT AND PARKS MANAGEMENT OFFICE": "CITY ENVIRONMENT AND PARKS MANAGEMENT OFFICE",
+  "CITY ENGINEERING OFFICE": "CITY ENGINEERING OFFICE",
+  "BAGUIO CITY POLICE OFFICE": "BAGUIO CITY POLICE OFFICE",
+  "BUREAU OF FIRE PROTECTION": "BUREAU OF FIRE PROTECTION",
+  "BUREAU OF JAIL MANAGEMENT AND PENOLOGY (FEMALE)": "BUREAU OF JAIL MANAGEMENT AND PENOLOGY (FEMALE)",
+  "BUREAU OF JAIL MANAGEMENT AND PENOLOGY (MALE)": "BUREAU OF JAIL MANAGEMENT AND PENOLOGY (MALE)",
+  "COMMISSION ON AUDIT": "COMMISSION ON AUDIT",
+  "DEPARTMENT OF EDUCATION": "DEPARTMENT OF EDUCATION",
+  "MUNICIPAL TRIAL COURT": "MUNICIPAL TRIAL COURT",
+  "PAROLE": "PAROLE",
+  "PROSECUTOR'S OFFICE": "PROSECUTOR'S OFFICE",
+  "PUBLIC ATTORNEY'S OFFICE": "PUBLIC ATTORNEY'S OFFICE",
+  "REGIONAL TRIAL COURT": "REGIONAL TRIAL COURT",
+  "DILG - BAGUIO CITY FIELD OFFICE": [
     "Technical Operations Services Section",
     "Finance and Administrative Section"
   ],
-  "Others": "Others"
+  "OTHERS": "OTHERS"
 }

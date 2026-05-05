@@ -8,13 +8,23 @@ import ApplicationForm from "@/components/client/content/application-form";
 import SubmittedApplicationView from "@/components/client/submitted-application-view";
 import { PageHeader } from "@/components/shared";
 import { redirect } from "next/navigation";
+import {
+  buildRevisionTargets,
+} from "@/lib/utils/revision-targets";
+import type { RevisionTargets } from "@/lib/validations/application-review";
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const adapter = new PrismaPg(pool as any);
 const prisma = new PrismaClient({ adapter });
 
-const Page = async () => {
+interface PageProps {
+  searchParams?: Promise<{ mode?: string }>;
+}
+
+const Page = async ({ searchParams }: PageProps) => {
+  const resolvedSearchParams = searchParams ? await searchParams : undefined;
+  const isResubmitMode = resolvedSearchParams?.mode === "resubmit";
   const headersList = await headers();
   const session = await auth.api.getSession({
     headers: headersList,
@@ -26,7 +36,7 @@ const Page = async () => {
 
   // Fetch existing profile data (from onboarding or previous saves) to pre-populate the form
   let defaultValues: Record<string, unknown> | undefined;
-  let revisionFeedback: Record<string, string> | undefined;
+  let revisionTargets: RevisionTargets | undefined;
   let latestSubmission:
       | {
         status: string;
@@ -56,9 +66,10 @@ const Page = async () => {
           spesAvailments: {
             orderBy: { availmentOrder: "asc" },
           },
-        documents: true,
-      },
-    });
+          skills: true,
+          documents: true,
+        },
+      });
 
     if (profile) {
       // Build default values from existing profile data
@@ -71,6 +82,7 @@ const Page = async () => {
       const spes = profile.spes;
       const siblings = profile.siblings;
       const spesAvailments = profile.spesAvailments;
+      const skills = profile.skills;
       const documentsProfile = profile.documents;
       
       // Transform language dialect from string[] back to { value: string }[] // Assuming simple format here for Combobox or Multi-select
@@ -148,6 +160,10 @@ const Page = async () => {
           trackCourse: education.trackCourse || "",
           schoolYear: education.schoolYear || "",
         }),
+        // From ProfileSkills
+        skills: skills?.skills
+          ? (skills.skills as string[]).map((s) => ({ value: s }))
+          : [],
         // From ProfileSPES
         ...(spes && {
           isFourPsBeneficiary: spes.isFourPsBeneficiary ?? false,
@@ -179,7 +195,10 @@ const Page = async () => {
           reviews: {
             orderBy: { reviewedAt: "desc" },
             take: 1,
-            include: { fieldFeedback: true },
+            include: {
+              fieldFeedback: true,
+              documentFeedback: true,
+            },
           },
         },
       });
@@ -199,15 +218,33 @@ const Page = async () => {
 
       if (latest?.status === "needs_revision" && latest.reviews.length > 0) {
         const latestReview = latest.reviews[0];
-        const feedbackMap: Record<string, string> = {};
-        
-        latestReview.fieldFeedback.forEach(fb => {
-          if (fb.status === "invalid" && fb.comment) {
-            feedbackMap[fb.fieldName] = fb.comment;
-          }
+
+        const normalizedFieldFeedback = latestReview.fieldFeedback
+          .filter((fb) => fb.status === "valid" || fb.status === "invalid")
+          .map((fb) => ({
+            sectionId: fb.sectionId,
+            fieldName: fb.fieldName,
+            status: fb.status as "valid" | "invalid",
+            comment: fb.comment ?? undefined,
+          }));
+
+        const normalizedDocumentFeedback = latestReview.documentFeedback
+          .filter(
+            (fb) =>
+              fb.status === "valid" ||
+              fb.status === "invalid" ||
+              fb.status === "missing",
+          )
+          .map((fb) => ({
+            documentType: fb.documentType,
+            status: fb.status as "valid" | "invalid" | "missing",
+            comment: fb.comment ?? undefined,
+          }));
+
+        revisionTargets = buildRevisionTargets({
+          fieldFeedback: normalizedFieldFeedback,
+          documentFeedback: normalizedDocumentFeedback,
         });
-        
-        revisionFeedback = feedbackMap;
       }
     }
   }
@@ -253,6 +290,35 @@ const Page = async () => {
       }
       redirect("/protected/client/application/status");
     }
+  }
+
+  // Check if user meets age requirement (14-31)
+  const age = defaultValues?.profileAge as number | undefined;
+  const isAgeIneligible = age !== undefined && (age < 14 || age > 31);
+
+  if (isAgeIneligible) {
+    return (
+      <div className="flex flex-col gap-6">
+        <PageHeader
+          title="Application Form"
+          description="SPES application eligibility"
+        />
+        <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-8 text-center">
+          <h2 className="text-lg font-semibold text-destructive mb-2">
+            Not Eligible for SPES
+          </h2>
+          <p className="text-sm text-muted-foreground max-w-md mx-auto">
+            We noticed that your registered age is {age} years old. 
+            The Special Program for Employment of Students (SPES) is only open to applicants between 14 and 31 years old.
+          </p>
+          <div className="mt-6">
+            <p className="text-xs text-muted-foreground">
+              If you believe this is an error, please update your birthdate in your profile settings.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   if (
@@ -324,13 +390,17 @@ const Page = async () => {
     <div className="flex flex-col gap-6">
       <PageHeader
         title="Application Form"
-        description="Fill out and submit your SPES application"
+        description={
+          isResubmitMode && latestSubmission?.status === "needs_revision"
+            ? "Review highlighted sections and resubmit your SPES application"
+            : "Fill out and submit your SPES application"
+        }
       />
       <ApplicationForm 
         userEmail={userEmail} 
         userId={userId}
         defaultValues={defaultValues} 
-        revisionFeedback={revisionFeedback} 
+        revisionTargets={revisionTargets}
         initialApplicationType={
           isReturningGranteeSpesBaby
             ? "spes-baby"

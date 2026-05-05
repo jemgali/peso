@@ -14,7 +14,7 @@ interface ProgressStep {
   description: string;
 }
 
-const steps: ProgressStep[] = [
+const DEFAULT_STEPS: ProgressStep[] = [
   {
     id: "basic-info",
     title: "Basic Information",
@@ -72,6 +72,7 @@ interface ApplicationProgressProps {
   currentStepId?: string;
   stepStatuses?: Record<string, StepStatus>;
   onStepClick?: (stepId: string) => void;
+  steps?: ProgressStep[];
 }
 
 const ApplicationProgress: React.FC<ApplicationProgressProps> = ({
@@ -79,10 +80,15 @@ const ApplicationProgress: React.FC<ApplicationProgressProps> = ({
   currentStepId,
   stepStatuses = {},
   onStepClick,
+  steps = DEFAULT_STEPS,
 }) => {
+  const progressSteps = steps.length > 0 ? steps : DEFAULT_STEPS;
   // Use currentStepId if provided, otherwise derive from currentStep
-  const activeStepId = currentStepId ?? steps[currentStep]?.id ?? "basic-info";
-  const progressPercentage = (currentStep / (steps.length - 1)) * 100;
+  const activeStepId = currentStepId ?? progressSteps[currentStep]?.id ?? "basic-info";
+  const progressPercentage =
+    progressSteps.length > 1
+      ? (currentStep / (progressSteps.length - 1)) * 100
+      : 100;
 
   const getStepStatus = (stepId: string): StepStatus => {
     if (stepId === activeStepId) return "current";
@@ -146,13 +152,13 @@ const ApplicationProgress: React.FC<ApplicationProgressProps> = ({
         <div>
           <h3 className="font-semibold text-sm mb-2">Application Progress</h3>
           <Progress value={progressPercentage} className="h-2" />
-          <p className="text-xs text-muted-foreground mt-2">
-            Step {currentStep + 1} of {steps.length}
+            <p className="text-xs text-muted-foreground mt-2">
+            Step {currentStep + 1} of {progressSteps.length}
           </p>
         </div>
 
         <div className="space-y-1">
-          {steps.map((step, index) => {
+          {progressSteps.map((step, index) => {
             const status = getStepStatus(step.id);
             const clickable = isStepClickable(index);
 
