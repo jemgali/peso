@@ -97,7 +97,7 @@ const STAGE_CONFIG: Record<
   },
 }
 
-const CLIENT_DASHBOARD_LINK = "/protected/client"
+const CLIENT_ANNOUNCEMENTS_LINK = "/protected/client/announcements"
 
 async function getAdminUserId(): Promise<string | null> {
   const session = await auth.api.getSession({
@@ -360,7 +360,7 @@ export async function POST(
           type: notificationType,
           title: notificationTitle,
           message: notificationMessage,
-          link: CLIENT_DASHBOARD_LINK,
+          link: CLIENT_ANNOUNCEMENTS_LINK,
         },
       })
 
@@ -371,7 +371,7 @@ export async function POST(
           title: notificationTitle,
           message: notificationMessage,
           type: notificationType,
-          link: CLIENT_DASHBOARD_LINK,
+          link: CLIENT_ANNOUNCEMENTS_LINK,
         },
         wasUpdated,
       }

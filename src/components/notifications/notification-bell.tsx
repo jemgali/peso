@@ -3,16 +3,34 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/ui/button";
 import { Card } from "@/ui/card";
-import { Bell, Loader2, CheckCheck } from "lucide-react";
+import {
+  Bell,
+  Loader2,
+  CheckCheck,
+  CheckCircle2,
+  AlertCircle,
+  XCircle,
+  FileText,
+  Mail,
+  MoreHorizontal,
+  Clock,
+  ArrowRight,
+} from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
-import type { NotificationItem, NotificationType } from "@/lib/validations/application-review";
+import type {
+  NotificationItem,
+  NotificationType,
+} from "@/lib/validations/application-review";
 
-const NOTIFICATION_ICONS: Record<NotificationType, { icon: string; color: string }> = {
-  application_approved: { icon: "🎉", color: "text-green-600" },
-  application_revision: { icon: "⚠️", color: "text-orange-600" },
-  application_rejected: { icon: "❌", color: "text-red-600" },
-  batch_available: { icon: "📋", color: "text-blue-600" },
+const NOTIFICATION_ICONS: Record<
+  NotificationType,
+  { icon: React.ComponentType<{ className?: string }> }
+> = {
+  application_approved: { icon: CheckCircle2 },
+  application_revision: { icon: AlertCircle },
+  application_rejected: { icon: XCircle },
+  batch_available: { icon: FileText },
 };
 
 interface NotificationBellProps {
@@ -47,15 +65,16 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ className }) => {
 
   useEffect(() => {
     fetchNotifications();
-    // Poll for new notifications every 30 seconds
     const interval = setInterval(fetchNotifications, 30000);
     return () => clearInterval(interval);
   }, []);
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
         setIsOpen(false);
       }
     };
@@ -64,7 +83,6 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ className }) => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Mark notification as read
   const markAsRead = async (notificationId: string) => {
     try {
       await fetch(`/api/notifications/${notificationId}`, {
@@ -73,8 +91,8 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ className }) => {
 
       setNotifications((prev) =>
         prev.map((n) =>
-          n.notificationId === notificationId ? { ...n, isRead: true } : n
-        )
+          n.notificationId === notificationId ? { ...n, isRead: true } : n,
+        ),
       );
       setUnreadCount((prev) => Math.max(0, prev - 1));
     } catch (error) {
@@ -82,7 +100,6 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ className }) => {
     }
   };
 
-  // Handle notification click
   const handleNotificationClick = async (notification: NotificationItem) => {
     if (!notification.isRead) {
       await markAsRead(notification.notificationId);
@@ -95,17 +112,22 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ className }) => {
     setIsOpen(false);
   };
 
-  // Mark all as read
   const markAllAsRead = async () => {
     const unreadNotifications = notifications.filter((n) => !n.isRead);
-    await Promise.all(
-      unreadNotifications.map((n) =>
-        fetch(`/api/notifications/${n.notificationId}`, { method: "PATCH" })
-      )
-    );
+    if (unreadNotifications.length === 0) return;
 
-    setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
-    setUnreadCount(0);
+    try {
+      await Promise.all(
+        unreadNotifications.map((n) =>
+          fetch(`/api/notifications/${n.notificationId}`, { method: "PATCH" }),
+        ),
+      );
+
+      setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+      setUnreadCount(0);
+    } catch (error) {
+      console.error("Error marking all as read:", error);
+    }
   };
 
   const isClientArea = pathname.startsWith("/protected/client");
@@ -115,80 +137,106 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ className }) => {
       <Button
         variant="ghost"
         size="icon"
-        className="relative"
+        className={cn(
+          "relative size-9 rounded-full transition-all",
+          isOpen && "bg-muted",
+        )}
         onClick={() => setIsOpen(!isOpen)}
       >
-        <Bell className="h-5 w-5" />
+        <Bell className="size-[1.2rem]" />
         {unreadCount > 0 && (
-          <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center">
+          <span className="absolute right-0 top-0 flex size-4 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground ring-2 ring-background">
             {unreadCount > 9 ? "9+" : unreadCount}
           </span>
         )}
       </Button>
 
       {isOpen && (
-        <Card className="absolute right-0 top-full mt-2 w-80 md:w-96 max-h-96 overflow-hidden shadow-lg z-50">
-          {/* Header */}
-          <div className="flex items-center justify-between p-3 border-b">
-            <h3 className="font-semibold">Notifications</h3>
-            {unreadCount > 0 && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-xs"
-                onClick={markAllAsRead}
-              >
-                <CheckCheck className="h-3 w-3 mr-1" />
-                Mark all read
-              </Button>
-            )}
+        <Card className="absolute right-0 top-full z-50 mt-2 w-80 md:w-[360px] overflow-hidden border-none shadow-2xl animate-in fade-in slide-in-from-top-2 duration-200">
+          <div className="flex items-center justify-between border-b bg-muted/20 px-4 py-3">
+            <h3 className="text-sm font-bold">Notifications</h3>
+            <div className="flex items-center gap-1">
+              {unreadCount > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 px-2 text-[11px] font-semibold"
+                  onClick={markAllAsRead}
+                >
+                  <CheckCheck className="mr-1.5 size-3" />
+                  Mark all as read
+                </Button>
+              )}
+            </div>
           </div>
 
-          {/* Notification List */}
-          <div className="overflow-y-auto max-h-72">
+          <div className="max-h-[400px] overflow-y-auto">
             {loading ? (
-              <div className="flex items-center justify-center py-8">
-                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="size-6 animate-spin text-muted-foreground" />
               </div>
             ) : notifications.length === 0 ? (
-              <div className="py-8 text-center text-muted-foreground">
-                <Bell className="h-8 w-8 mx-auto mb-2 opacity-20" />
-                <p>No notifications yet</p>
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <div className="mb-3 rounded-full bg-muted p-3">
+                  <Bell className="size-6 text-muted-foreground/50" />
+                </div>
+                <p className="text-sm font-medium text-muted-foreground">
+                  No notifications yet
+                </p>
+                <p className="text-xs text-muted-foreground/60">
+                  We'll notify you when something happens.
+                </p>
               </div>
             ) : (
-              <div>
+              <div className="divide-y divide-border/50">
                 {notifications.slice(0, 10).map((notification) => {
                   const config = NOTIFICATION_ICONS[notification.type];
+                  const Icon = config?.icon || Mail;
+
                   return (
                     <button
                       key={notification.notificationId}
                       className={cn(
-                        "w-full p-3 text-left hover:bg-muted/50 transition-colors flex gap-3 border-b last:border-b-0",
-                        !notification.isRead && "bg-blue-50 dark:bg-blue-950/20"
+                        "group relative flex w-full gap-4 px-4 py-4 text-left transition-all hover:bg-muted/50",
+                        !notification.isRead && "bg-primary/2",
                       )}
                       onClick={() => handleNotificationClick(notification)}
                     >
-                      <span className="text-xl shrink-0">{config?.icon || "📬"}</span>
-                      <div className="flex-1 min-w-0">
+                      <div
+                        className={cn(
+                          "flex size-10 shrink-0 items-center justify-center rounded-full border bg-background text-foreground transition-colors group-hover:border-primary/20 group-hover:text-primary",
+                          !notification.isRead &&
+                            "border-primary/10 text-primary bg-primary/5",
+                        )}
+                      >
+                        <Icon className="size-5" />
+                      </div>
+                      <div className="flex-1 min-w-0 flex flex-col gap-0.5">
                         <div className="flex items-start justify-between gap-2">
                           <p
                             className={cn(
-                              "text-sm font-medium truncate",
-                              !notification.isRead && "font-semibold"
+                              "text-sm font-bold leading-none",
+                              !notification.isRead
+                                ? "text-foreground"
+                                : "text-muted-foreground",
                             )}
                           >
                             {notification.title}
                           </p>
                           {!notification.isRead && (
-                            <span className="h-2 w-2 rounded-full bg-blue-500 shrink-0 mt-1" />
+                            <span className="size-2 shrink-0 rounded-full bg-primary" />
                           )}
                         </div>
-                        <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
+                        <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
                           {notification.message}
                         </p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {new Date(notification.createdAt).toLocaleDateString()}
-                        </p>
+                        <div className="mt-2 flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">
+                          <Clock className="size-3" />
+                          {new Date(notification.createdAt).toLocaleDateString(
+                            "en-US",
+                            { month: "short", day: "numeric", year: "numeric" },
+                          )}
+                        </div>
                       </div>
                     </button>
                   );
@@ -197,19 +245,19 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ className }) => {
             )}
           </div>
 
-          {/* Footer */}
           {isClientArea && notifications.length > 0 && (
-            <div className="p-2 border-t text-center">
+            <div className="border-t bg-muted/10 p-2">
               <Button
                 variant="ghost"
                 size="sm"
-                className="text-xs"
+                className="w-full text-xs font-bold"
                 onClick={() => {
                   setIsOpen(false);
                   router.push("/protected/client/announcements");
                 }}
               >
-                View all notifications
+                View all activities
+                <ArrowRight className="ml-2 size-3" />
               </Button>
             </div>
           )}

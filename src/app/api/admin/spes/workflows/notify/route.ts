@@ -154,7 +154,7 @@ export async function POST(request: Request): Promise<NextResponse<BulkNotifyWor
   }
   const notificationMessage = messageParts.join("\n")
   const notificationLink = scheduleInput
-    ? CLIENT_DASHBOARD_ROUTE
+    ? "/protected/client/announcements"
     : CLIENT_APPLICATION_STATUS_ROUTE
 
   let scheduledEvent:

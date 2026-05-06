@@ -80,7 +80,7 @@ const SideNav = ({ service }: SideNavProps) => {
     url: "/protected/admin/programs",
     icon: ArrowLeft,
   };
-  const useSpesMode = service === "spes" && isSpesRoute(pathname);
+  const useSpesMode = (service === "spes" || isSpesRoute(pathname)) && !isGeneralRoute(pathname);
 
   const items = useSpesMode
     ? [backToProgramsItem, ...spesNavItems]

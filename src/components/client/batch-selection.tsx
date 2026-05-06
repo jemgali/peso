@@ -20,6 +20,7 @@ export default function BatchSelection() {
   const [currentBatchId, setCurrentBatchId] = useState<string | null>(null)
   const [selectedBatchId, setSelectedBatchId] = useState("")
   const [submitting, setSubmitting] = useState(false)
+  const [isEditing, setIsEditing] = useState(false)
 
   const loadData = useCallback(async () => {
     try {
@@ -101,14 +102,24 @@ export default function BatchSelection() {
     )
   }
 
+
+
   const assignedBatch = currentBatchId ? batches.find((b) => b.batchId === currentBatchId) : null
 
-  if (currentBatchId) {
+  if (currentBatchId && !isEditing) {
     return (
       <Card className="border-primary/50 shadow-sm">
-        <CardHeader>
-          <CardTitle>Batch Assignment</CardTitle>
-          <CardDescription>You have been assigned to a batch for the SPES program.</CardDescription>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0">
+          <div>
+            <CardTitle>Batch Assignment</CardTitle>
+            <CardDescription>You have been assigned to a batch for the SPES program.</CardDescription>
+          </div>
+          <Button variant="outline" size="sm" onClick={() => {
+            setSelectedBatchId(currentBatchId)
+            setIsEditing(true)
+          }}>
+            Edit Batch
+          </Button>
         </CardHeader>
         <CardContent>
           <div className="rounded-lg bg-muted/40 p-4 border border-primary/20">
@@ -120,6 +131,16 @@ export default function BatchSelection() {
         </CardContent>
       </Card>
     )
+  }
+
+  const handleCancelEdit = () => {
+    setIsEditing(false)
+    setSelectedBatchId("")
+  }
+
+  const handleSave = async () => {
+    await submitSelection()
+    setIsEditing(false)
   }
 
   return (
@@ -142,11 +163,23 @@ export default function BatchSelection() {
           </NativeSelect>
         </div>
       </CardContent>
-      <CardFooter>
-        <Button onClick={submitSelection} disabled={submitting || !selectedBatchId}>
-          {submitting && <Spinner data-icon="inline-start" />}
-          Confirm Batch Selection
-        </Button>
+      <CardFooter className="flex gap-2">
+        {isEditing ? (
+          <>
+            <Button onClick={handleSave} disabled={submitting || !selectedBatchId || selectedBatchId === currentBatchId}>
+              {submitting && <Spinner data-icon="inline-start" />}
+              Save Changes
+            </Button>
+            <Button variant="ghost" onClick={handleCancelEdit} disabled={submitting}>
+              Cancel
+            </Button>
+          </>
+        ) : (
+          <Button onClick={submitSelection} disabled={submitting || !selectedBatchId}>
+            {submitting && <Spinner data-icon="inline-start" />}
+            Confirm Batch Selection
+          </Button>
+        )}
       </CardFooter>
     </Card>
   )

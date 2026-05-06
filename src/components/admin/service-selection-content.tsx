@@ -3,9 +3,9 @@
 import React, { useState } from "react"
 import { useRouter } from "next/navigation"
 import { GraduationCap } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Spinner } from "@/components/ui/spinner"
+import { Button } from "@/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/ui/card"
+import { Spinner } from "@/ui/spinner"
 import { toast } from "sonner"
 import { type AdminService } from "@/lib/constants/admin-service"
 
@@ -42,6 +42,7 @@ export default function ServiceSelectionContent() {
         throw new Error(data.error || "Failed to save service context")
       }
 
+      router.refresh()
       router.push("/protected/admin/applications")
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to select service")

@@ -1,10 +1,12 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Spinner } from "@/components/ui/spinner";
-import { LayoutGrid, Activity } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/ui/card";
+import { Badge } from "@/ui/badge";
+import { Button } from "@/ui/button";
+import { Spinner } from "@/ui/spinner";
+import { LayoutGrid, Activity, FileText, ArrowRight } from "lucide-react";
+import Link from "next/link";
 import { PageHeader } from "@/components/shared";
 import DashboardStatusTracker from "@/components/client/dashboard-status-tracker";
 import DashboardCalendar from "@/components/client/dashboard-calendar";
@@ -165,18 +167,30 @@ const Page = () => {
                 updatedAt={statusData.submission.updatedAt}
                 latestReviewComments={statusData.latestReview?.overallComments}
                 isGrantee={Boolean(statusData.workflow?.isGrantee)}
+                batchName={statusData.workflow?.batch?.batchName}
+                assignedOffice={statusData.workflow?.assignedOffice}
               />
             ) : (
-              <Card className="h-fit">
-                <CardHeader>
-                  <CardTitle className="text-base">
-                    Application Status
-                  </CardTitle>
+              <Card className="h-fit overflow-hidden border-none shadow-md">
+                <CardHeader className="bg-primary/5 pb-4">
+                  <CardTitle className="text-base font-bold">SPES Application</CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-muted-foreground">
-                    Submit an application to track your progress here.
+                <CardContent className="pt-6 text-center">
+                  <div className="mb-4 flex justify-center">
+                    <div className="rounded-full bg-primary/10 p-3 text-primary">
+                      <FileText className="size-6" />
+                    </div>
+                  </div>
+                  <h3 className="mb-2 font-semibold">No Active Application</h3>
+                  <p className="mb-6 text-sm text-muted-foreground leading-relaxed">
+                    Start your journey as a SPES grantee today. Submit your application now.
                   </p>
+                  <Button asChild className="w-full">
+                    <Link href="/protected/client/application">
+                      Apply Now
+                      <ArrowRight className="size-4 ml-2" />
+                    </Link>
+                  </Button>
                 </CardContent>
               </Card>
             )}
@@ -192,18 +206,32 @@ const Page = () => {
               updatedAt={statusData.submission.updatedAt}
               latestReviewComments={statusData.latestReview?.overallComments}
               isGrantee={Boolean(statusData.workflow?.isGrantee)}
+              batchName={statusData.workflow?.batch?.batchName}
+              assignedOffice={statusData.workflow?.assignedOffice}
             />
           ) : (
-            <Card className="h-fit">
-              <CardHeader>
-                <CardTitle className="text-base">Application Status</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground">
-                  Submit an application to track your progress here.
-                </p>
-              </CardContent>
-            </Card>
+            <Card className="h-fit overflow-hidden border-none shadow-md">
+                <CardHeader className="bg-primary/5 pb-4">
+                  <CardTitle className="text-base font-bold">SPES Application</CardTitle>
+                </CardHeader>
+                <CardContent className="pt-6 text-center">
+                  <div className="mb-4 flex justify-center">
+                    <div className="rounded-full bg-primary/10 p-3 text-primary">
+                      <FileText className="size-6" />
+                    </div>
+                  </div>
+                  <h3 className="mb-2 font-semibold">No Active Application</h3>
+                  <p className="mb-6 text-sm text-muted-foreground leading-relaxed">
+                    Start your journey as a SPES grantee today. Submit your application now.
+                  </p>
+                  <Button asChild className="w-full">
+                    <Link href="/protected/client/application">
+                      Apply Now
+                      <ArrowRight className="size-4 ml-2" />
+                    </Link>
+                  </Button>
+                </CardContent>
+              </Card>
           )}
         </div>
       </div>

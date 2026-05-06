@@ -38,18 +38,18 @@ const GRADE_YEAR_OPTIONS = [
 ];
 
 const LOWER_GRADES = new Set([
-  "Grade 1",
-  "Grade 2",
-  "Grade 3",
-  "Grade 4",
-  "Grade 5",
-  "Grade 6",
-  "Grade 7",
-  "Grade 8",
-  "Grade 9",
-  "Grade 10",
+  "GRADE 1",
+  "GRADE 2",
+  "GRADE 3",
+  "GRADE 4",
+  "GRADE 5",
+  "GRADE 6",
+  "GRADE 7",
+  "GRADE 8",
+  "GRADE 9",
+  "GRADE 10",
 ]);
-const SENIOR_HIGH_GRADES = new Set(["Grade 11", "Grade 12"]);
+const SENIOR_HIGH_GRADES = new Set(["GRADE 11", "GRADE 12"]);
 const SENIOR_HIGH_STRANDS = [
   "STEM",
   "ABM",

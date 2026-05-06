@@ -78,13 +78,15 @@ const DashboardCalendar: React.FC = () => {
         const data = await response.json();
         if (data.announcements) {
           setAnnouncements(
-            (data.announcements as ScheduleEventApiRecord[]).map((a) => ({
-              ...a,
-              startDate: new Date(a.startDate),
-              endDate: a.endDate ? new Date(a.endDate) : null,
-              createdAt: new Date(a.createdAt),
-              updatedAt: new Date(a.updatedAt),
-            }))
+            (data.announcements as ScheduleEventApiRecord[])
+              .filter((a) => a.type !== "announcement")
+              .map((a) => ({
+                ...a,
+                startDate: new Date(a.startDate),
+                endDate: a.endDate ? new Date(a.endDate) : null,
+                createdAt: new Date(a.createdAt),
+                updatedAt: new Date(a.updatedAt),
+              }))
           );
         }
       } catch (error) {
@@ -124,7 +126,44 @@ const DashboardCalendar: React.FC = () => {
       <CardHeader className="flex flex-row items-center justify-between pb-3">
         <div className="flex items-center gap-2">
           <CalendarDays className="h-4 w-4 text-muted-foreground" />
-          <CardTitle className="text-base">Calendar & Announcements</CardTitle>
+          <CardTitle className="text-base">Calendar</CardTitle>
+        </div>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center rounded-md border p-0.5">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-7"
+              onClick={() => navigateMonth(-1)}
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-7"
+              onClick={() => navigateMonth(1)}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-8"
+            onClick={() => setCurrentDate(new Date())}
+          >
+            Today
+          </Button>
+          <div className="min-w-[140px] text-right">
+            <p className="text-sm font-bold">
+              {currentDate.toLocaleDateString("en-US", {
+                month: "long",
+                year: "numeric",
+                timeZone: MANILA_TIME_ZONE,
+              })}
+            </p>
+          </div>
         </div>
       </CardHeader>
 
@@ -135,26 +174,6 @@ const DashboardCalendar: React.FC = () => {
           </div>
         ) : (
           <>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" onClick={() => navigateMonth(-1)}>
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                <Button variant="outline" size="sm" onClick={() => navigateMonth(1)}>
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-                <Button variant="outline" size="sm" onClick={() => setCurrentDate(new Date())}>
-                  Today
-                </Button>
-              </div>
-              <p className="text-sm font-semibold">
-                {currentDate.toLocaleDateString("en-US", {
-                  month: "long",
-                  year: "numeric",
-                  timeZone: MANILA_TIME_ZONE,
-                })}
-              </p>
-            </div>
 
             <div className="overflow-hidden rounded-lg border">
               <div className="grid grid-cols-7 bg-muted">
@@ -226,42 +245,6 @@ const DashboardCalendar: React.FC = () => {
                 </div>
               </div>
 
-            <div className="flex flex-col gap-2">
-              <p className="text-sm font-medium text-muted-foreground">
-                {selectedDate.toLocaleDateString("en-US", {
-                  month: "long",
-                  day: "numeric",
-                  year: "numeric",
-                  timeZone: MANILA_TIME_ZONE,
-                })}
-              </p>
-              {selectedEvents.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No announcements for this date.</p>
-              ) : (
-                selectedEvents.map((event) => (
-                  <button
-                    key={event.id}
-                    type="button"
-                    className="w-full rounded-lg border p-3 text-left hover:bg-muted/40"
-                    onClick={() => {
-                      setSelectedAnnouncement(event);
-                      setDialogOpen(true);
-                    }}
-                  >
-                    <div className="flex items-center gap-2">
-                      <div className={cn("h-2 w-2 rounded-full", EVENT_TYPE_COLORS[event.type] || "bg-gray-500")} />
-                      <p className="text-sm font-medium">{event.title}</p>
-                      <Badge variant="secondary" className="ml-auto text-xs">
-                        {EVENT_TYPE_LABELS[event.type] || event.type}
-                      </Badge>
-                    </div>
-                    {event.description && (
-                      <p className="mt-1 text-xs text-muted-foreground line-clamp-2">{event.description}</p>
-                    )}
-                  </button>
-                ))
-              )}
-            </div>
           </>
         )}
       </CardContent>

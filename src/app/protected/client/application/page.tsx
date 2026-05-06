@@ -8,6 +8,9 @@ import ApplicationForm from "@/components/client/content/application-form";
 import SubmittedApplicationView from "@/components/client/submitted-application-view";
 import { PageHeader } from "@/components/shared";
 import { redirect } from "next/navigation";
+import Link from "next/link";
+import { XCircle } from "lucide-react";
+import { Button } from "@/ui/button";
 import {
   buildRevisionTargets,
 } from "@/lib/utils/revision-targets";
@@ -303,18 +306,26 @@ const Page = async ({ searchParams }: PageProps) => {
           title="Application Form"
           description="SPES application eligibility"
         />
-        <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-8 text-center">
-          <h2 className="text-lg font-semibold text-destructive mb-2">
-            Not Eligible for SPES
+        <div className="flex min-h-[400px] flex-col items-center justify-center rounded-xl border border-destructive/20 bg-destructive/5 p-8 text-center shadow-sm">
+          <div className="mb-4 rounded-full bg-destructive/10 p-4 text-destructive">
+            <XCircle className="size-10" />
+          </div>
+          <h2 className="mb-2 text-2xl font-bold text-destructive">
+            You do not meet the age requirement to apply for SPES
           </h2>
-          <p className="text-sm text-muted-foreground max-w-md mx-auto">
-            We noticed that your registered age is {age} years old. 
-            The Special Program for Employment of Students (SPES) is only open to applicants between 14 and 31 years old.
+          <p className="max-w-md text-base text-muted-foreground">
+            We noticed that your registered age is <strong>{age} years old</strong>. 
+            The Special Program for Employment of Students (SPES) is strictly open to applicants between <strong>14 and 31 years old</strong> only.
           </p>
-          <div className="mt-6">
-            <p className="text-xs text-muted-foreground">
+          <div className="mt-8 rounded-lg bg-background p-4 shadow-sm border">
+            <p className="text-sm text-muted-foreground">
               If you believe this is an error, please update your birthdate in your profile settings.
             </p>
+            <Button variant="outline" size="sm" className="mt-4" asChild>
+              <Link href="/protected/profile">
+                Go to Profile Settings
+              </Link>
+            </Button>
           </div>
         </div>
       </div>

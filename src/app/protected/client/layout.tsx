@@ -32,6 +32,19 @@ const Layout = async ({ children }: { children: React.ReactNode }) => {
 
   const needsOnboarding = !profileUser?.profileFirstName
 
+  // Check application status
+  const submission = await prisma.applicationSubmission.findFirst({
+    where: { profile: { userId: user.id } },
+    orderBy: { submittedAt: "desc" },
+    select: {
+      spesWorkflow: {
+        select: { selectionStatus: true }
+      }
+    }
+  })
+  const hasApplication = !!submission
+  const isGrantee = submission?.spesWorkflow?.selectionStatus === "GRANTEE"
+
   if (needsOnboarding) {
     const email = profileUser?.profileEmail || user.email
     return (
@@ -46,9 +59,13 @@ const Layout = async ({ children }: { children: React.ReactNode }) => {
       <Header />
       <div className="relative flex flex-1 overflow-hidden">
         <SidebarProvider className="absolute inset-0 h-full min-h-0 w-full">
-          <Side age={profileUser?.personal?.profileAge ?? undefined} />
+          <Side 
+            age={profileUser?.personal?.profileAge ?? undefined} 
+            hasApplication={hasApplication}
+            isGrantee={isGrantee}
+          />
           <SidebarInset className="flex-1 overflow-y-auto">
-            <main className="h-full p-4 md:p-6">{children}</main>
+            <main className="p-4 md:p-6">{children}</main>
           </SidebarInset>
         </SidebarProvider>
       </div>

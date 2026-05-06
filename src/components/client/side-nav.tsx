@@ -2,7 +2,7 @@
 
 import React from "react"
 import Link from "next/link"
-import { ChevronDown, FileText, LayoutDashboard, Megaphone } from "lucide-react"
+import { ChevronDown, FileText, LayoutDashboard, Megaphone, GraduationCap, ClipboardList } from "lucide-react"
 import { useActivePath } from "@/hooks/use-active-path"
 import {
   SidebarMenu,
@@ -14,10 +14,11 @@ import {
 } from "@/components/ui/sidebar"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 
-const SideNav = ({ age }: { age?: number }) => {
+const SideNav = ({ age, hasApplication, isGrantee }: { age?: number, hasApplication?: boolean, isGrantee?: boolean }) => {
   const isAgeIneligible = age !== undefined && (age < 14 || age > 31)
   const checkActive = useActivePath()
   const isApplicationSection = checkActive("/protected/client/application")
+  const isGranteePortal = checkActive("/protected/client/application/documents")
 
   return (
     <SidebarMenu>
@@ -47,12 +48,27 @@ const SideNav = ({ age }: { age?: number }) => {
         <SidebarMenuItem>
           <SidebarMenuButton
             asChild
-            isActive={isApplicationSection}
-            tooltip="Application Form"
+            isActive={isApplicationSection && !isGranteePortal}
+            tooltip="Applications"
           >
-            <Link href="/protected/client/application">
-              <FileText />
-              <span>Application Form</span>
+            <Link href={hasApplication || isGrantee ? "/protected/client/application/status" : "/protected/client/application"}>
+              <ClipboardList />
+              <span>Applications</span>
+            </Link>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+      )}
+
+      {isGrantee && (
+        <SidebarMenuItem>
+          <SidebarMenuButton
+            asChild
+            isActive={isGranteePortal}
+            tooltip="SPES Portal"
+          >
+            <Link href="/protected/client/application/documents">
+              <GraduationCap />
+              <span>SPES Portal</span>
             </Link>
           </SidebarMenuButton>
         </SidebarMenuItem>
