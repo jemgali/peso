@@ -8,7 +8,7 @@ import type {
 } from "@/generated/prisma/client"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
-import { sendEvaluationBulkNotifyEmail } from "@/lib/email"
+import { sendSystemNotificationEmail } from "@/lib/email"
 import {
   updateWorkflowSchema,
   type UpdateWorkflowResponse,
@@ -396,10 +396,12 @@ export async function PATCH(
       .join(" ")
       .trim() || "Applicant"
 
-    sendEvaluationBulkNotifyEmail({
+    sendSystemNotificationEmail({
       to: existingWorkflow.submission.profile.user.email,
       applicantName,
-      note: "Congratulations! You were selected as an SPES grantee.",
+      title: "SPES Grantee Selected",
+      message: "Congratulations! You have been selected as an SPES grantee. Please check your application status for next steps.",
+      linkUrl: "/protected/client/application/status",
     }).catch((error) => {
       console.error("Failed to send grantee email notification:", error)
     })

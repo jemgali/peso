@@ -563,7 +563,7 @@ const ReviewSection: React.FC<ReviewSectionProps> = ({
       </div>
 
       {/* Submit Button */}
-      <div className="pt-6">
+      <div className="pt-6 flex justify-end">
         <Button
           type="button"
           onClick={handleSubmitClick}

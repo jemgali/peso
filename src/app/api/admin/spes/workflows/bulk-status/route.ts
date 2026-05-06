@@ -7,7 +7,7 @@ import type {
 } from "@/generated/prisma/client"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
-import { sendEvaluationBulkNotifyEmail } from "@/lib/email"
+import { sendSystemNotificationEmail } from "@/lib/email"
 import {
   bulkUpdateWorkflowStatusSchema,
   type BulkUpdateWorkflowStatusResponse,
@@ -220,10 +220,12 @@ export async function POST(
 
   await Promise.allSettled(
     granteeEmailRecipients.map((recipient) =>
-      sendEvaluationBulkNotifyEmail({
+      sendSystemNotificationEmail({
         to: recipient.email,
         applicantName: recipient.applicantName,
-        note: "Congratulations! You were selected as an SPES grantee.",
+        title: "SPES Grantee Selected",
+        message: "Congratulations! You have been selected as an SPES grantee. Please check your application status for next steps.",
+        linkUrl: "/protected/client/application/status",
       })
     )
   )

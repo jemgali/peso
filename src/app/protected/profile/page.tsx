@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
+import { ProfileFormSkeleton } from "@/components/ui/skeletons";
 import { PageHeader } from "@/components/shared";
 import BasicInfoSection from "@/components/forms/client/sections/basic-info-section";
 import { profileSetupSchema, type ProfileSetupFormValues } from "@/lib/validations/profile-setup";
@@ -73,11 +74,7 @@ export default function ProfilePage() {
   };
 
   if (loading) {
-    return (
-      <div className="flex min-h-[400px] items-center justify-center">
-        <Spinner className="size-8 text-muted-foreground" />
-      </div>
-    );
+    return <ProfileFormSkeleton />;
   }
 
   return (

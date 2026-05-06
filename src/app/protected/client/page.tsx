@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/ui/card";
 import { Badge } from "@/ui/badge";
 import { Button } from "@/ui/button";
 import { Spinner } from "@/ui/spinner";
+import { ClientDashboardSkeleton } from "@/ui/skeletons";
 import { LayoutGrid, Activity, FileText, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { PageHeader } from "@/components/shared";
@@ -62,11 +63,7 @@ const Page = () => {
   }, []);
 
   if (loading) {
-    return (
-      <div className="flex min-h-75 items-center justify-center">
-        <Spinner className="size-8 text-muted-foreground" />
-      </div>
-    );
+    return <ClientDashboardSkeleton />;
   }
 
   return (

@@ -211,6 +211,7 @@ const LanguageGroup = ({ control, setValue, isPending, errors }: any) => {
       )}
 
       <Combobox<string>
+        value={null}
         inputValue={languageSearch}
         onInputValueChange={(value) => setLanguageSearch(value ?? "")}
         onValueChange={(value) => {

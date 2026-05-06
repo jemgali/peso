@@ -39,10 +39,19 @@ export async function GET(): Promise<NextResponse> {
     });
 
     if (!profile) {
-      return NextResponse.json(
-        { success: false, message: "Profile not found" },
-        { status: 404 }
-      );
+      const nameParts = session.user.name?.split(" ") || [];
+      const profileFirstName = nameParts[0] || "";
+      const profileLastName = nameParts.length > 1 ? nameParts[nameParts.length - 1] : "";
+      
+      return NextResponse.json({
+        success: true,
+        data: {
+          profileFirstName,
+          profileLastName,
+          profileEmail: session.user.email,
+          profileLanguageDialect: [],
+        }
+      }, { status: 200 });
     }
 
     // Map database model to form schema (ProfileSetupFormValues)

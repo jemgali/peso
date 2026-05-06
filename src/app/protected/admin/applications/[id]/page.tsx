@@ -7,12 +7,12 @@ import { Badge } from "@/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/ui/tabs";
 import { Card } from "@/ui/card";
 import {
-  Loader2,
   ArrowLeft,
   ClipboardCheck,
   FileText,
   Send,
 } from "lucide-react";
+import { ApplicationDetailSkeleton } from "@/ui/skeletons";
 import { toast } from "sonner";
 import ApplicationViewer from "@/components/admin/review/application-viewer";
 import DocumentReview from "@/components/admin/review/document-review";
@@ -139,11 +139,7 @@ export default function ApplicationReviewPage({ params }: PageProps) {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-100">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
-    );
+    return <ApplicationDetailSkeleton />;
   }
 
   if (error || !data) {

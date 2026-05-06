@@ -11,6 +11,7 @@ import { Input } from "@/ui/input"
 import { Switch } from "@/ui/switch"
 import { Badge } from "@/ui/badge"
 import { Spinner } from "@/ui/spinner"
+import { ApplicationPeriodSkeleton } from "@/ui/skeletons"
 import { Separator } from "@/ui/separator"
 import { Alert, AlertDescription, AlertTitle } from "@/ui/alert"
 import { FieldGroup, Field, FieldLabel, FieldDescription } from "@/ui/field"
@@ -99,11 +100,7 @@ export default function ApplicationPeriodSettings() {
   }
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center rounded-lg border p-4">
-        <Spinner className="size-5 text-muted-foreground" />
-      </div>
-    )
+    return <ApplicationPeriodSkeleton />
   }
 
   const hasUnsavedChanges =

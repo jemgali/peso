@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 import { headers } from "next/headers"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
-import { sendEvaluationBulkNotifyEmail } from "@/lib/email"
+import { sendSystemNotificationEmail } from "@/lib/email"
 import {
   bulkNotifyWorkflowsSchema,
   type BulkNotifyWorkflowsResponse,
@@ -213,13 +213,15 @@ export async function POST(request: Request): Promise<NextResponse<BulkNotifyWor
 
   const emailResults = await Promise.allSettled(
     workflows.map((workflow) =>
-      sendEvaluationBulkNotifyEmail({
+      sendSystemNotificationEmail({
         to: workflow.submission.profile.user.email,
         applicantName: getApplicantName(
           workflow.submission.profile.profileFirstName,
           workflow.submission.profile.profileLastName
         ),
-        note: note || undefined,
+        title: notificationTitle,
+        message: notificationMessage,
+        linkUrl: notificationLink,
       })
     )
   )

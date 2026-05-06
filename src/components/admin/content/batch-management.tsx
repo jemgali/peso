@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/spinner";
+import { BatchManagementSkeleton } from "@/components/ui/skeletons";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -36,7 +37,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { toast } from "sonner";
-import { Building2Icon, LayersIcon, UsersIcon } from "lucide-react";
+import { Building2Icon, LayersIcon, UsersIcon, Trash2Icon, Edit2Icon, CheckIcon, XIcon } from "lucide-react";
 import { ROUTES } from "@/lib/constants/routes";
 import type {
   BatchListItem,
@@ -110,6 +111,12 @@ export default function BatchManagement() {
 
   const currentYear = new Date().getFullYear().toString();
   const [batchYearFilter, setBatchYearFilter] = useState(currentYear);
+
+  const [editingBatchId, setEditingBatchId] = useState<string | null>(null);
+  const [editBatchName, setEditBatchName] = useState("");
+  const [editStartDate, setEditStartDate] = useState("");
+  const [updatingBatch, setUpdatingBatch] = useState(false);
+  const [deletingBatchId, setDeletingBatchId] = useState<string | null>(null);
 
   const [notifyingApplicants, setNotifyingApplicants] = useState(false);
   const [notificationNote, setNotificationNote] = useState("");
@@ -261,6 +268,82 @@ export default function BatchManagement() {
       );
     } finally {
       setSavingBatch(false);
+    }
+  };
+
+  const startEditingBatch = (batch: BatchListItem) => {
+    setEditingBatchId(batch.batchId);
+    setEditBatchName(batch.batchName);
+    setEditStartDate(batch.startDate);
+  };
+
+  const cancelEditingBatch = () => {
+    setEditingBatchId(null);
+    setEditBatchName("");
+    setEditStartDate("");
+  };
+
+  const updateBatch = async (batchId: string) => {
+    if (!editBatchName.trim() || !editStartDate) return;
+    setUpdatingBatch(true);
+
+    try {
+      const response = await fetch(`/api/admin/spes/batches/${batchId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          batchName: editBatchName,
+          startDate: editStartDate,
+        }),
+      });
+      const payload = await response.json();
+
+      if (!response.ok || !payload.success) {
+        throw new Error(payload.error || "Failed to update batch");
+      }
+
+      setBatches((current) =>
+        current.map((b) =>
+          b.batchId === batchId
+            ? {
+                ...b,
+                batchName: payload.data.batch.batchName,
+                startDate: new Date(payload.data.batch.startDate).toISOString().slice(0, 10),
+                batchYear: payload.data.batch.batchYear,
+              }
+            : b
+        )
+      );
+      toast.success("Batch updated");
+      cancelEditingBatch();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to update batch");
+    } finally {
+      setUpdatingBatch(false);
+    }
+  };
+
+  const deleteBatch = async (batchId: string) => {
+    if (!confirm("Are you sure you want to delete this batch?")) return;
+    setDeletingBatchId(batchId);
+
+    try {
+      const response = await fetch(`/api/admin/spes/batches/${batchId}`, {
+        method: "DELETE",
+      });
+      const payload = await response.json();
+
+      if (!response.ok || !payload.success) {
+        throw new Error(payload.error || "Failed to delete batch");
+      }
+
+      setBatches((current) => current.filter((b) => b.batchId !== batchId));
+      if (selectedBatchId === batchId) setSelectedBatchId("");
+      toast.success("Batch deleted");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to delete batch");
+    } finally {
+      setDeletingBatchId(null);
     }
   };
 
@@ -657,10 +740,7 @@ export default function BatchManagement() {
             </div>
 
             {loadingBatches || loadingWorkflows ? (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Spinner data-icon="inline-start" />
-                Loading batch records...
-              </div>
+              <BatchManagementSkeleton />
             ) : batchError || workflowError ? (
               <p className="text-sm text-destructive">
                 {batchError || workflowError}
@@ -797,11 +877,88 @@ export default function BatchManagement() {
                     No batches yet.
                   </p>
                 ) : (
-                  <div className="rounded-lg border p-3 text-sm text-muted-foreground">
-                    Total batches:{" "}
-                    <span className="font-medium text-foreground">
-                      {batches.length}
-                    </span>
+                  <div className="mt-4 flex flex-col gap-3">
+                    <h3 className="text-sm font-semibold">
+                      Batches for {batchYearFilter} ({filteredBatches.length})
+                    </h3>
+                    {filteredBatches.length === 0 ? (
+                      <p className="text-sm text-muted-foreground italic">No batches found for this year.</p>
+                    ) : (
+                      <div className="flex flex-col gap-2">
+                        {filteredBatches.map((batch) => (
+                          <div key={batch.batchId} className="flex items-center justify-between rounded-lg border p-3 bg-card shadow-sm">
+                            {editingBatchId === batch.batchId ? (
+                              <div className="flex w-full items-center gap-3">
+                                <Input
+                                  value={editBatchName}
+                                  onChange={(e) => setEditBatchName(e.target.value)}
+                                  className="h-8 max-w-[200px]"
+                                  placeholder="Batch Name"
+                                />
+                                <Input
+                                  type="date"
+                                  value={editStartDate}
+                                  onChange={(e) => setEditStartDate(e.target.value)}
+                                  className="h-8 max-w-[150px]"
+                                />
+                                <div className="flex items-center gap-1 ml-auto">
+                                  <Button
+                                    type="button"
+                                    size="icon-xs"
+                                    variant="ghost"
+                                    onClick={() => updateBatch(batch.batchId)}
+                                    disabled={updatingBatch}
+                                    title="Save"
+                                  >
+                                    {updatingBatch ? <Spinner /> : <CheckIcon className="text-green-500" />}
+                                  </Button>
+                                  <Button
+                                    type="button"
+                                    size="icon-xs"
+                                    variant="ghost"
+                                    onClick={cancelEditingBatch}
+                                    disabled={updatingBatch}
+                                    title="Cancel"
+                                  >
+                                    <XIcon className="text-red-500" />
+                                  </Button>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="flex w-full items-center justify-between gap-3">
+                                <div className="flex flex-col">
+                                  <span className="font-medium text-sm">{batch.batchName}</span>
+                                  <span className="text-xs text-muted-foreground">
+                                    Start: {new Date(batch.startDate).toLocaleDateString()} &middot; Grantees: {batch.granteeCount || 0}
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <Button
+                                    type="button"
+                                    size="icon-xs"
+                                    variant="ghost"
+                                    onClick={() => startEditingBatch(batch)}
+                                    title="Edit Batch"
+                                  >
+                                    <Edit2Icon className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    type="button"
+                                    size="icon-xs"
+                                    variant="ghost"
+                                    onClick={() => deleteBatch(batch.batchId)}
+                                    disabled={deletingBatchId === batch.batchId || (batch.granteeCount || 0) > 0}
+                                    title={(batch.granteeCount || 0) > 0 ? "Cannot delete batch with assigned grantees" : "Delete Batch"}
+                                  >
+                                    {deletingBatchId === batch.batchId ? <Spinner /> : <Trash2Icon className="h-4 w-4 text-destructive" />}
+                                  </Button>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 )}
               </CardContent>

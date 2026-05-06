@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Spinner } from "@/components/ui/spinner"
+import { EvaluationSkeleton } from "@/components/ui/skeletons"
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Textarea } from "@/components/ui/textarea"
@@ -655,10 +656,7 @@ export default function Evaluation() {
             </div>
 
             {loadingWorkflows ? (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Spinner data-icon="inline-start" />
-                Loading records...
-              </div>
+              <EvaluationSkeleton />
             ) : workflowError ? (
               <p className="text-sm text-destructive">{workflowError}</p>
             ) : workflows.length === 0 ? (

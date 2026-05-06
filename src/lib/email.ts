@@ -7,6 +7,7 @@ import type {
   FieldFeedback,
   DocumentFeedback,
 } from "@/lib/validations/application-review";
+import { GoogleNotificationEmail } from "@/components/email-template/google-notification";
 
 const FROM_EMAIL = "PESO <noreply@jemgali.tech>";
 
@@ -118,12 +119,25 @@ export async function sendEvaluationBulkNotifyEmail({
   const resend = new Resend(process.env.RESEND_API_KEY);
 
   try {
-    const noteText = note?.trim() ? `\n\nAdmin note: ${note.trim()}` : "";
+    const messageLines = [
+      "PESO sent an update regarding your SPES application evaluation.",
+      "Please check your application status page for details and next steps.",
+    ];
+    
+    if (note?.trim()) {
+      messageLines.push(`Admin note: ${note.trim()}`);
+    }
+
     const { error } = await resend.emails.send({
       from: FROM_EMAIL,
       to,
       subject: "SPES Application Update from PESO",
-      text: `Hello ${applicantName},\n\nPESO sent an update regarding your SPES application evaluation. Please check your application status page for details and next steps.${noteText}\n\n- PESO Team`,
+      react: createElement(GoogleNotificationEmail, {
+        applicantName,
+        title: "SPES Evaluation Update",
+        message: messageLines.join("\n"),
+        linkUrl: "/protected/client/application/status",
+      }),
     });
 
     if (error) {
@@ -134,6 +148,57 @@ export async function sendEvaluationBulkNotifyEmail({
     return { success: true };
   } catch (error) {
     console.error("Error sending evaluation notification email:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown error",
+    };
+  }
+}
+
+interface SendSystemNotificationEmailParams {
+  to: string;
+  applicantName: string;
+  title: string;
+  message: string;
+  linkUrl?: string;
+  linkText?: string;
+}
+
+export async function sendSystemNotificationEmail({
+  to,
+  applicantName,
+  title,
+  message,
+  linkUrl,
+  linkText,
+}: SendSystemNotificationEmailParams): Promise<{
+  success: boolean;
+  error?: string;
+}> {
+  const resend = new Resend(process.env.RESEND_API_KEY);
+
+  try {
+    const { error } = await resend.emails.send({
+      from: FROM_EMAIL,
+      to,
+      subject: title,
+      react: createElement(GoogleNotificationEmail, {
+        applicantName,
+        title,
+        message,
+        linkUrl,
+        linkText,
+      }),
+    });
+
+    if (error) {
+      console.error("Failed to send system notification email:", error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error sending system notification email:", error);
     return {
       success: false,
       error: error instanceof Error ? error.message : "Unknown error",
