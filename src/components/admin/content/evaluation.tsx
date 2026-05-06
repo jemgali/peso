@@ -339,6 +339,11 @@ export default function Evaluation() {
     if (!isSpesBaby) {
       requestPayload.priority = draft.priority || null
       requestPayload.examScore = draft.examScore === "" ? null : Number(draft.examScore)
+      
+      if (requestPayload.examScore !== null && requestPayload.examScore > totalScore) {
+        toast.error(`Exam score cannot exceed the total score (${totalScore})`)
+        return
+      }
     }
 
     setSavingWorkflowId(workflowId)
@@ -747,6 +752,7 @@ export default function Evaluation() {
                               <Input
                                 type="number"
                                 min={0}
+                                max={totalScore}
                                 className="h-9 w-24"
                                 value={draft.examScore}
                                 onChange={(event) =>

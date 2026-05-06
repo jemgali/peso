@@ -16,6 +16,7 @@ import {
   type EventType,
 } from "@/lib/validations/schedule-event"
 import { cn } from "@/lib/utils"
+import { MANILA_TIME_ZONE } from "@/lib/manila-datetime"
 import { useDialogState } from "@/hooks"
 
 export default function Announcements() {
@@ -99,6 +100,7 @@ export default function Announcements() {
         year: "numeric",
         month: "short",
         day: "numeric",
+        timeZone: MANILA_TIME_ZONE,
       })
     }
     return date.toLocaleString("en-US", {
@@ -107,6 +109,7 @@ export default function Announcements() {
       day: "numeric",
       hour: "numeric",
       minute: "2-digit",
+      timeZone: MANILA_TIME_ZONE,
     })
   }
 
