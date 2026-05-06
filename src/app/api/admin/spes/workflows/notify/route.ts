@@ -3,6 +3,7 @@ import { headers } from "next/headers"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { sendSystemNotificationEmail } from "@/lib/email"
+import { MANILA_TIME_ZONE } from "@/lib/manila-datetime"
 import {
   bulkNotifyWorkflowsSchema,
   type BulkNotifyWorkflowsResponse,
@@ -45,10 +46,12 @@ function formatScheduleDateTime(
 ): string {
   const dateFormatter = new Intl.DateTimeFormat("en-PH", {
     dateStyle: "medium",
+    timeZone: MANILA_TIME_ZONE,
   })
   const dateTimeFormatter = new Intl.DateTimeFormat("en-PH", {
     dateStyle: "medium",
     timeStyle: "short",
+    timeZone: MANILA_TIME_ZONE,
   })
 
   if (allDay) {

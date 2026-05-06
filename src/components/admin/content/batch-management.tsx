@@ -52,6 +52,7 @@ import {
   formatDateTimeInputInManila,
   parseManilaDateInput,
   parseManilaDateTimeInput,
+  MANILA_TIME_ZONE,
 } from "@/lib/manila-datetime";
 
 type LguOfficeSource = Record<string, string | string[]>;
@@ -308,7 +309,7 @@ export default function BatchManagement() {
             ? {
                 ...b,
                 batchName: payload.data.batch.batchName,
-                startDate: new Date(payload.data.batch.startDate).toISOString().slice(0, 10),
+                startDate: new Date(payload.data.batch.startDate).toLocaleDateString("en-CA", { timeZone: MANILA_TIME_ZONE }),
                 batchYear: payload.data.batch.batchYear,
               }
             : b
@@ -929,7 +930,7 @@ export default function BatchManagement() {
                                 <div className="flex flex-col">
                                   <span className="font-medium text-sm">{batch.batchName}</span>
                                   <span className="text-xs text-muted-foreground">
-                                    Start: {new Date(batch.startDate).toLocaleDateString()} &middot; Grantees: {batch.granteeCount || 0}
+                                    Start: {new Date(batch.startDate).toLocaleDateString("en-US", { timeZone: MANILA_TIME_ZONE })} &middot; Grantees: {batch.granteeCount || 0}
                                   </span>
                                 </div>
                                 <div className="flex items-center gap-1">

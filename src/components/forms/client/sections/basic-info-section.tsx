@@ -59,6 +59,7 @@ function calculateAge(birthdate: string): number {
 
 const DisabilityGroup = ({ control, setValue, isPending, errors }: any) => {
   const profileDisability = useWatch({ control, name: "profileDisability" }) || "";
+  const normalizedDisability = profileDisability.toUpperCase();
   
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
@@ -70,15 +71,15 @@ const DisabilityGroup = ({ control, setValue, isPending, errors }: any) => {
               <input
                 type="checkbox"
                 className="rounded border-input text-primary focus:ring-primary"
-                checked={profileDisability.includes(d)}
+                checked={normalizedDisability.includes(d.toUpperCase())}
                 disabled={isPending}
                 onChange={(e) => {
                   const items = profileDisability.split(",").map((i: string) => i.trim()).filter(Boolean);
                   let next;
                   if (e.target.checked) {
-                    next = [...items, d].join(", ");
+                    next = [...items, d.toUpperCase()].join(", ");
                   } else {
-                    next = items.filter((i: string) => i !== d).join(", ");
+                    next = items.filter((i: string) => i.toUpperCase() !== d.toUpperCase()).join(", ");
                   }
                   setValue?.("profileDisability", next, { shouldValidate: true });
                 }}
@@ -90,7 +91,7 @@ const DisabilityGroup = ({ control, setValue, isPending, errors }: any) => {
             <input
               type="checkbox"
               className="rounded border-input text-primary focus:ring-primary"
-              checked={profileDisability.includes("OTHERS:")}
+              checked={normalizedDisability.includes("OTHERS:")}
               disabled={isPending}
               onChange={(e) => {
                 const items = profileDisability.split(",").map((i: string) => i.trim()).filter(Boolean);
@@ -98,7 +99,7 @@ const DisabilityGroup = ({ control, setValue, isPending, errors }: any) => {
                 if (e.target.checked) {
                   next = [...items, "OTHERS:"].join(", ");
                 } else {
-                  next = items.filter((i: string) => !i.startsWith("OTHERS:")).join(", ");
+                  next = items.filter((i: string) => !i.toUpperCase().startsWith("OTHERS:")).join(", ");
                 }
                 setValue?.("profileDisability", next, { shouldValidate: true });
               }}
@@ -106,16 +107,19 @@ const DisabilityGroup = ({ control, setValue, isPending, errors }: any) => {
             OTHERS
           </label>
         </div>
-        {profileDisability.includes("OTHERS:") && (
+        {normalizedDisability.includes("OTHERS:") && (
           <Input
             className="mt-2 uppercase"
             placeholder="PLEASE SPECIFY"
             disabled={isPending}
-            value={profileDisability.split("OTHERS:")[1]?.trim() || ""}
+            value={(() => {
+              const othersItem = profileDisability.split(",").map((i: string) => i.trim()).find((i: string) => i.toUpperCase().startsWith("OTHERS:"));
+              return othersItem ? othersItem.substring(7).trim() : "";
+            })()}
             onChange={(e) => {
               const items = profileDisability.split(",").map((i: string) => i.trim()).filter(Boolean);
-              const specified = e.target.value;
-              const next = items.map((i: string) => i.startsWith("OTHERS:") ? `OTHERS: ${specified}` : i).join(", ");
+              const specified = e.target.value.toUpperCase();
+              const next = items.map((i: string) => i.toUpperCase().startsWith("OTHERS:") ? `OTHERS: ${specified}` : i).join(", ");
               setValue?.("profileDisability", next, { shouldValidate: true });
             }}
           />
