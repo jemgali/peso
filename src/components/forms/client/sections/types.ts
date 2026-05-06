@@ -27,6 +27,8 @@ export interface FormSectionProps {
   applicationType?: "new" | "spes-baby";
   /** Normalized crossed fields/documents from latest needs_revision review */
   revisionTargets?: RevisionTargets;
+  /** Callback to notify parent that a revision target has been addressed */
+  onResolveRevision?: (type: "field" | "document", id: string) => void;
 }
 
 // Extended props for sections that need control (for Controller components)

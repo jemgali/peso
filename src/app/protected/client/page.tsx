@@ -8,7 +8,6 @@ import { LayoutGrid, Activity } from "lucide-react";
 import { PageHeader } from "@/components/shared";
 import DashboardStatusTracker from "@/components/client/dashboard-status-tracker";
 import DashboardCalendar from "@/components/client/dashboard-calendar";
-import BatchSelection from "@/components/client/batch-selection";
 import type { ClientApplicationStatusResponse } from "@/lib/validations/application-review";
 
 function getStatusLabel(status: string) {
@@ -151,8 +150,6 @@ const Page = () => {
             </Card>
           </div>
 
-          {/* Batch Selection for Grantees */}
-          <BatchSelection />
 
           {/* Calendar with Announcements — replaces DashboardAnnouncements */}
           <DashboardCalendar />

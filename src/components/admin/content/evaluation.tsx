@@ -21,8 +21,17 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { toast } from "sonner"
-import { ClipboardListIcon } from "lucide-react"
+import { ClipboardListIcon, HistoryIcon, SearchIcon, InfoIcon } from "lucide-react"
 import { ROUTES } from "@/lib/constants/routes"
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import type { GranteeRemarksListResponse, SpesGranteeWithRemarks } from "@/lib/validations/spes-remarks"
 import type {
   ApplicantPriority,
   BulkNotifyWorkflowsResponse,
@@ -137,8 +146,6 @@ export default function Evaluation() {
   const [workflows, setWorkflows] = useState<SpesWorkflowListItem[]>([])
   const [drafts, setDrafts] = useState<Record<string, WorkflowDraft>>({})
   const [selectedWorkflowIds, setSelectedWorkflowIds] = useState<Set<string>>(new Set())
-  const [notificationNote, setNotificationNote] = useState("")
-  const [attachSchedule, setAttachSchedule] = useState(false)
   const [scheduleTitle, setScheduleTitle] = useState("")
   const [scheduleDescription, setScheduleDescription] = useState("")
   const [scheduleAllDay, setScheduleAllDay] = useState(false)
@@ -147,8 +154,14 @@ export default function Evaluation() {
   )
   const [scheduleEndDate, setScheduleEndDate] = useState("")
   const [search, setSearch] = useState("")
+  const [applicantCategory, setApplicantCategory] = useState<SpesApplicantCategory>("new")
+  const [statusFilter, setStatusFilter] = useState<SpesSelectionStatus | "all">("all")
   const [bulkStatus, setBulkStatus] = useState<MutableSpesSelectionStatus>("pending")
   const [bulkNote, setBulkNote] = useState("")
+
+  const [remarksDialogOpen, setRemarksDialogOpen] = useState(false)
+  const [loadingRemarks, setLoadingRemarks] = useState(false)
+  const [selectedGranteeRemarks, setSelectedGranteeRemarks] = useState<SpesGranteeWithRemarks | null>(null)
 
   const loadSettings = useCallback(async () => {
     setLoadingSettings(true)
@@ -185,6 +198,12 @@ export default function Evaluation() {
       if (trimmedSearch) {
         params.set("search", trimmedSearch)
       }
+      if (applicantCategory) {
+        params.set("category", applicantCategory)
+      }
+      if (statusFilter !== "all") {
+        params.set("status", statusFilter)
+      }
 
       const endpoint = params.toString()
         ? `${ROUTES.API.ADMIN.SPES.WORKFLOWS}?${params.toString()}`
@@ -214,7 +233,37 @@ export default function Evaluation() {
     } finally {
       setLoadingWorkflows(false)
     }
-  }, [search])
+  }, [search, applicantCategory, statusFilter])
+
+  const viewRemarksHistory = async (workflowId: string) => {
+    setLoadingRemarks(true)
+    setRemarksDialogOpen(true)
+    setSelectedGranteeRemarks(null)
+
+    try {
+      const response = await fetch(`/api/admin/spes/remarks?workflowId=${workflowId}`)
+      const payload = (await response.json()) as GranteeRemarksListResponse
+
+      if (!response.ok || !payload.success || !payload.data) {
+        throw new Error(payload.error || "Failed to load remarks history")
+      }
+
+      // The API returns an array of grantees, we find the one matching our workflowId
+      const grantee = payload.data.grantees.find((g) => g.workflowId === workflowId)
+      if (!grantee) {
+        toast.error("No remarks history found for this applicant")
+        setRemarksDialogOpen(false)
+        return
+      }
+
+      setSelectedGranteeRemarks(grantee)
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to load remarks history")
+      setRemarksDialogOpen(false)
+    } finally {
+      setLoadingRemarks(false)
+    }
+  }
 
   useEffect(() => {
     void loadSettings()
@@ -366,55 +415,54 @@ export default function Evaluation() {
           allDay: boolean
         }
       | undefined
-    if (attachSchedule) {
-      const trimmedScheduleTitle = scheduleTitle.trim()
-      if (!trimmedScheduleTitle) {
-        toast.error("Schedule title is required when calendar scheduling is enabled")
+
+    const trimmedScheduleTitle = scheduleTitle.trim()
+    if (!trimmedScheduleTitle) {
+      toast.error("Schedule title is required")
+      return
+    }
+
+    if (!scheduleStartDate) {
+      toast.error("Schedule start date is required")
+      return
+    }
+
+    const startDateInputValue = scheduleAllDay
+      ? scheduleStartDate.split("T")[0] || scheduleStartDate
+      : scheduleStartDate
+    const parsedStartDate = scheduleAllDay
+      ? parseManilaDateInput(startDateInputValue)
+      : parseManilaDateTimeInput(scheduleStartDate)
+    if (!parsedStartDate) {
+      toast.error("Schedule start date is invalid")
+      return
+    }
+
+    let parsedEndDate: Date | null = null
+    if (scheduleEndDate) {
+      const endDateInputValue = scheduleAllDay
+        ? scheduleEndDate.split("T")[0] || scheduleEndDate
+        : scheduleEndDate
+      parsedEndDate = scheduleAllDay
+        ? parseManilaDateInput(endDateInputValue)
+        : parseManilaDateTimeInput(scheduleEndDate)
+      if (!parsedEndDate) {
+        toast.error("Schedule end date is invalid")
         return
       }
 
-      if (!scheduleStartDate) {
-        toast.error("Schedule start date is required")
+      if (parsedEndDate.getTime() < parsedStartDate.getTime()) {
+        toast.error("Schedule end date must be after or equal to start date")
         return
       }
+    }
 
-      const startDateInputValue = scheduleAllDay
-        ? scheduleStartDate.split("T")[0] || scheduleStartDate
-        : scheduleStartDate
-      const parsedStartDate = scheduleAllDay
-        ? parseManilaDateInput(startDateInputValue)
-        : parseManilaDateTimeInput(scheduleStartDate)
-      if (!parsedStartDate) {
-        toast.error("Schedule start date is invalid")
-        return
-      }
-
-      let parsedEndDate: Date | null = null
-      if (scheduleEndDate) {
-        const endDateInputValue = scheduleAllDay
-          ? scheduleEndDate.split("T")[0] || scheduleEndDate
-          : scheduleEndDate
-        parsedEndDate = scheduleAllDay
-          ? parseManilaDateInput(endDateInputValue)
-          : parseManilaDateTimeInput(scheduleEndDate)
-        if (!parsedEndDate) {
-          toast.error("Schedule end date is invalid")
-          return
-        }
-
-        if (parsedEndDate.getTime() < parsedStartDate.getTime()) {
-          toast.error("Schedule end date must be after or equal to start date")
-          return
-        }
-      }
-
-      schedulePayload = {
-        title: trimmedScheduleTitle,
-        description: scheduleDescription.trim() || undefined,
-        startDate: parsedStartDate.toISOString(),
-        endDate: parsedEndDate ? parsedEndDate.toISOString() : null,
-        allDay: scheduleAllDay,
-      }
+    schedulePayload = {
+      title: trimmedScheduleTitle,
+      description: scheduleDescription.trim() || undefined,
+      startDate: parsedStartDate.toISOString(),
+      endDate: parsedEndDate ? parsedEndDate.toISOString() : null,
+      allDay: scheduleAllDay,
     }
 
     setNotifyingApplicants(true)
@@ -424,7 +472,7 @@ export default function Evaluation() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           workflowIds: targetWorkflowIds,
-          note: notificationNote.trim() || undefined,
+          note: undefined,
           schedule: schedulePayload,
         }),
       })
@@ -456,8 +504,6 @@ export default function Evaluation() {
       }
 
       setSelectedWorkflowIds(new Set())
-      setNotificationNote("")
-      setAttachSchedule(false)
       setScheduleTitle("")
       setScheduleDescription("")
       setScheduleAllDay(false)
@@ -529,6 +575,10 @@ export default function Evaluation() {
     return Math.ceil((totalScore * thresholdPercent) / 100)
   }, [totalScore, thresholdPercent])
 
+  const pendingCount = useMemo(() => {
+    return workflows.filter((w) => w.selectionStatus === "pending").length
+  }, [workflows])
+
   const allSelected =
     workflows.length > 0 && workflows.every((workflow) => selectedWorkflowIds.has(workflow.workflowId))
   const selectedCount = selectedWorkflowIds.size
@@ -545,15 +595,62 @@ export default function Evaluation() {
       <div className="grid gap-6 lg:grid-cols-3">
         <Card className="lg:col-span-2">
           <CardContent className="pt-6">
-            <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center">
-              <Input
-                placeholder="Search applicant name..."
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-                className="md:max-w-sm"
-              />
-              <div className="rounded-md bg-muted/40 px-3 py-2 text-sm text-muted-foreground md:ml-auto">
-                Selected applicants: <span className="font-medium text-foreground">{selectedCount}</span>
+            <div className="mb-6 flex flex-col gap-4">
+              <div className="flex flex-col gap-3 md:flex-row md:items-center">
+                <div className="relative flex-1 md:max-w-sm">
+                  <SearchIcon className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search applicant name..."
+                    value={search}
+                    onChange={(event) => setSearch(event.target.value)}
+                    className="pl-9"
+                  />
+                </div>
+
+                <ToggleGroup
+                  type="single"
+                  value={applicantCategory}
+                  onValueChange={(value) => {
+                    if (value) setApplicantCategory(value as SpesApplicantCategory)
+                  }}
+                  variant="outline"
+                  className="justify-start"
+                >
+                  <ToggleGroupItem value="new" className="px-4">
+                    New Applicant
+                  </ToggleGroupItem>
+                  <ToggleGroupItem value="spes_baby" className="px-4">
+                    SPES Baby
+                  </ToggleGroupItem>
+                </ToggleGroup>
+
+                <div className="flex items-center gap-2 md:ml-auto">
+                  <Label htmlFor="statusFilter" className="sr-only">
+                    Status Filter
+                  </Label>
+                  <NativeSelect
+                    id="statusFilter"
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value as SpesSelectionStatus | "all")}
+                    className="w-[140px]"
+                  >
+                    <NativeSelectOption value="all">All Statuses</NativeSelectOption>
+                    <NativeSelectOption value="pending">Pending</NativeSelectOption>
+                    <NativeSelectOption value="waitlisted">Waitlisted</NativeSelectOption>
+                    <NativeSelectOption value="grantee">Grantee</NativeSelectOption>
+                    <NativeSelectOption value="denied">Denied</NativeSelectOption>
+                  </NativeSelect>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
+                <div className="flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1 text-amber-700 dark:bg-amber-950/30 dark:text-amber-300">
+                  <InfoIcon className="h-3.5 w-3.5" />
+                  <span className="font-medium">{pendingCount}</span> applicants pending
+                </div>
+                <div className="rounded-full bg-muted/40 px-3 py-1">
+                  Selected: <span className="font-medium text-foreground">{selectedCount}</span>
+                </div>
               </div>
             </div>
 
@@ -587,12 +684,15 @@ export default function Evaluation() {
                       />
                     </TableHead>
                     <TableHead>Applicant</TableHead>
-                    <TableHead>Category</TableHead>
                     <TableHead>Stage</TableHead>
-                    <TableHead>Priority</TableHead>
-                    <TableHead>Score</TableHead>
-                    <TableHead>Result</TableHead>
-                    <TableHead>Rank</TableHead>
+                    {applicantCategory === "new" && (
+                      <>
+                        <TableHead>Priority</TableHead>
+                        <TableHead>Score</TableHead>
+                        <TableHead>Result</TableHead>
+                        <TableHead>Rank</TableHead>
+                      </>
+                    )}
                     <TableHead>Status</TableHead>
                     <TableHead>Actions</TableHead>
                   </TableRow>
@@ -622,76 +722,63 @@ export default function Evaluation() {
                           )}
                         </TableCell>
                         <TableCell>
-                          <Badge variant={isSpesBaby ? "secondary" : "outline"}>
-                            {APPLICANT_CATEGORY_LABELS[workflow.applicantCategory]}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
                           <Badge variant={getStageBadgeVariant(workflow.stage)}>
                             {WORKFLOW_STAGE_LABELS[workflow.stage]}
                           </Badge>
                         </TableCell>
-                        <TableCell>
-                          {isSpesBaby ? (
-                            <Badge variant="outline">N/A</Badge>
-                          ) : (
-                            <NativeSelect
-                              value={draft.priority}
-                              className={getPrioritySelectClass(draft.priority)}
-                              onChange={(event) =>
-                                updateDraft(workflow.workflowId, (current) => ({
-                                  ...current,
-                                  priority: event.target.value as ApplicantPriority | "",
-                                }))
-                              }
-                            >
-                              <NativeSelectOption value="">Not set</NativeSelectOption>
-                              <NativeSelectOption value="high">High</NativeSelectOption>
-                              <NativeSelectOption value="moderate">Moderate</NativeSelectOption>
-                              <NativeSelectOption value="low">Low</NativeSelectOption>
-                            </NativeSelect>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          {isSpesBaby ? (
-                            <Badge variant="outline">N/A</Badge>
-                          ) : (
-                            <Input
-                              type="number"
-                              min={0}
-                              className="h-9 w-24"
-                              value={draft.examScore}
-                              onChange={(event) =>
-                                updateDraft(workflow.workflowId, (current) => ({
-                                  ...current,
-                                  examScore: event.target.value,
-                                }))
-                              }
-                            />
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          {isSpesBaby ? (
-                            <Badge variant="outline">N/A</Badge>
-                          ) : (
-                            <Badge
-                              variant={
-                                workflow.examResult === "passed"
-                                  ? "secondary"
-                                  : workflow.examResult === "failed"
-                                    ? "destructive"
-                                    : "outline"
-                              }
-                            >
-                              {workflow.examResult.toUpperCase()}
-                            </Badge>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          <span className="font-medium">
-                            {isSpesBaby ? "N/A" : workflow.rankPosition ?? "—"}
-                          </span>
-                        </TableCell>
+                        {applicantCategory === "new" && (
+                          <>
+                            <TableCell>
+                              <NativeSelect
+                                value={draft.priority}
+                                className={getPrioritySelectClass(draft.priority)}
+                                onChange={(event) =>
+                                  updateDraft(workflow.workflowId, (current) => ({
+                                    ...current,
+                                    priority: event.target.value as ApplicantPriority | "",
+                                  }))
+                                }
+                              >
+                                <NativeSelectOption value="">Not set</NativeSelectOption>
+                                <NativeSelectOption value="high">High</NativeSelectOption>
+                                <NativeSelectOption value="moderate">Moderate</NativeSelectOption>
+                                <NativeSelectOption value="low">Low</NativeSelectOption>
+                              </NativeSelect>
+                            </TableCell>
+                            <TableCell>
+                              <Input
+                                type="number"
+                                min={0}
+                                className="h-9 w-24"
+                                value={draft.examScore}
+                                onChange={(event) =>
+                                  updateDraft(workflow.workflowId, (current) => ({
+                                    ...current,
+                                    examScore: event.target.value,
+                                  }))
+                                }
+                              />
+                            </TableCell>
+                            <TableCell>
+                              <Badge
+                                variant={
+                                  workflow.examResult === "passed"
+                                    ? "secondary"
+                                    : workflow.examResult === "failed"
+                                      ? "destructive"
+                                      : "outline"
+                                }
+                              >
+                                {workflow.examResult.toUpperCase()}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <span className="font-medium">
+                                {workflow.rankPosition ?? "—"}
+                              </span>
+                            </TableCell>
+                          </>
+                        )}
                         <TableCell>
                           <Badge variant={getSelectionStatusBadgeVariant(workflow.selectionStatus)}>
                             {toSelectionStatusLabel(workflow.selectionStatus)}
@@ -699,14 +786,17 @@ export default function Evaluation() {
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">
-                            <Button
-                              type="button"
-                              size="sm"
-                              variant="outline"
-                              onClick={() => editRemarks(workflow.workflowId)}
-                            >
-                              Remarks
-                            </Button>
+                            {isSpesBaby && (
+                              <Button
+                                type="button"
+                                size="icon"
+                                variant="outline"
+                                onClick={() => viewRemarksHistory(workflow.workflowId)}
+                                title="View Remarks History"
+                              >
+                                <HistoryIcon className="size-4" />
+                              </Button>
+                            )}
                             <Button
                               type="button"
                               size="sm"
@@ -741,118 +831,83 @@ export default function Evaluation() {
               <CardHeader>
                 <CardTitle>Notify Selected Applicants</CardTitle>
                 <CardDescription>
-                  Send the same update to all selected applicants without changing workflow status.
+                  Send a calendar event notification to all selected applicants.
                 </CardDescription>
               </CardHeader>
-              <CardContent className="flex flex-col gap-4">
-                <div className="rounded-lg border p-3 text-sm text-muted-foreground">
-                  Message template: <span className="font-medium text-foreground">SPES Evaluation Update</span>. This
-                  sends in-app and email notifications to selected applicants.
-                </div>
+              <CardContent className="flex flex-col gap-6">
+                <div className="space-y-4">
+                  <div className="flex flex-col gap-2">
+                    <Label htmlFor="notifyScheduleTitle">Schedule Title</Label>
+                    <NativeSelect
+                      id="notifyScheduleTitle"
+                      value={scheduleTitle}
+                      onChange={(event) => setScheduleTitle(event.target.value)}
+                    >
+                      <NativeSelectOption value="">Select Title</NativeSelectOption>
+                      <NativeSelectOption value="Interview">Interview</NativeSelectOption>
+                      <NativeSelectOption value="Examination">Examination</NativeSelectOption>
+                      <NativeSelectOption value="Orientation">Orientation</NativeSelectOption>
+                      <NativeSelectOption value="Others">Others</NativeSelectOption>
+                    </NativeSelect>
+                  </div>
 
-                <div className="flex flex-col gap-2">
-                  <Label htmlFor="notificationNote">Admin Note (optional)</Label>
-                  <Textarea
-                    id="notificationNote"
-                    value={notificationNote}
-                    onChange={(event) => setNotificationNote(event.target.value)}
-                    placeholder="Optional note added to the notification message"
-                  />
-                </div>
-
-                <div className="rounded-lg border p-4 space-y-4">
-                  <div className="flex items-start gap-3">
-                    <Checkbox
-                      id="attachSchedule"
-                      checked={attachSchedule}
-                      onCheckedChange={(checked) => setAttachSchedule(checked === true)}
+                  <div className="flex flex-col gap-2">
+                    <Label htmlFor="notifyScheduleDescription">Schedule Description (optional)</Label>
+                    <Textarea
+                      id="notifyScheduleDescription"
+                      value={scheduleDescription}
+                      onChange={(event) => setScheduleDescription(event.target.value)}
+                      placeholder="Optional details about the event"
+                      className="min-h-[80px]"
                     />
-                    <div className="space-y-1">
-                      <Label htmlFor="attachSchedule" className="cursor-pointer">
-                        Add calendar event for selected applicants
-                      </Label>
-                      <p className="text-xs text-muted-foreground">
-                        Calendar-only schedule. This does not change applicant workflow stage.
-                      </p>
+                  </div>
+
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="flex flex-col gap-2">
+                      <Label htmlFor="notifyScheduleStartDate">Start Date & Time</Label>
+                      <Input
+                        id="notifyScheduleStartDate"
+                        type={scheduleAllDay ? "date" : "datetime-local"}
+                        value={scheduleStartDate}
+                        onChange={(event) => setScheduleStartDate(event.target.value)}
+                      />
+                    </div>
+
+                    <div className="flex flex-col gap-2">
+                      <Label htmlFor="notifyScheduleEndDate">End Date & Time (optional)</Label>
+                      <Input
+                        id="notifyScheduleEndDate"
+                        type={scheduleAllDay ? "date" : "datetime-local"}
+                        value={scheduleEndDate}
+                        onChange={(event) => setScheduleEndDate(event.target.value)}
+                      />
                     </div>
                   </div>
 
-                  {attachSchedule && (
-                    <div className="space-y-3 rounded-lg bg-muted/30 p-3">
-                      <div className="flex flex-col gap-2">
-                        <Label htmlFor="notifyScheduleTitle">Schedule Title</Label>
-                        <NativeSelect
-                          id="notifyScheduleTitle"
-                          value={scheduleTitle}
-                          onChange={(event) => setScheduleTitle(event.target.value)}
-                        >
-                          <NativeSelectOption value="">Select Title</NativeSelectOption>
-                          <NativeSelectOption value="Interview">Interview</NativeSelectOption>
-                          <NativeSelectOption value="Examination">Examination</NativeSelectOption>
-                          <NativeSelectOption value="Others">Others</NativeSelectOption>
-                        </NativeSelect>
-                      </div>
-
-                      <div className="flex flex-col gap-2">
-                        <Label htmlFor="notifyScheduleDescription">Schedule Description (optional)</Label>
-                        <Textarea
-                          id="notifyScheduleDescription"
-                          value={scheduleDescription}
-                          onChange={(event) => setScheduleDescription(event.target.value)}
-                          placeholder="Optional details about this scheduled event"
-                        />
-                      </div>
-
-                      <div className="flex items-center gap-3">
-                        <Checkbox
-                          id="notifyScheduleAllDay"
-                          checked={scheduleAllDay}
-                          onCheckedChange={(checked) => setScheduleAllDay(checked === true)}
-                        />
-                        <Label htmlFor="notifyScheduleAllDay" className="cursor-pointer">
-                          All-day event
-                        </Label>
-                      </div>
-
-                      <div className="grid gap-3 md:grid-cols-2">
-                        <div className="flex flex-col gap-2">
-                          <Label htmlFor="notifyScheduleStart">
-                            {scheduleAllDay ? "Start Date" : "Start Date & Time"}
-                          </Label>
-                          <Input
-                            id="notifyScheduleStart"
-                            type={scheduleAllDay ? "date" : "datetime-local"}
-                            value={scheduleAllDay ? scheduleStartDate.split("T")[0] || "" : scheduleStartDate}
-                            onChange={(event) => setScheduleStartDate(event.target.value)}
-                          />
-                        </div>
-                        <div className="flex flex-col gap-2">
-                          <Label htmlFor="notifyScheduleEnd">
-                            {scheduleAllDay ? "End Date (optional)" : "End Date & Time (optional)"}
-                          </Label>
-                          <Input
-                            id="notifyScheduleEnd"
-                            type={scheduleAllDay ? "date" : "datetime-local"}
-                            value={scheduleAllDay ? scheduleEndDate.split("T")[0] || "" : scheduleEndDate}
-                            onChange={(event) => setScheduleEndDate(event.target.value)}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                <div className="rounded-lg bg-muted/40 p-3 text-sm text-muted-foreground">
-                  Selected applicants: <span className="font-medium text-foreground">{selectedCount}</span>
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id="notifyScheduleAllDay"
+                      checked={scheduleAllDay}
+                      onCheckedChange={(checked) => setScheduleAllDay(checked === true)}
+                    />
+                    <Label htmlFor="notifyScheduleAllDay" className="cursor-pointer">
+                      All day event
+                    </Label>
+                  </div>
                 </div>
 
                 <Button
-                  type="button"
-                  onClick={notifySelectedApplicants}
+                  className="w-full"
+                  size="lg"
+                  onClick={() => void notifySelectedApplicants()}
                   disabled={notifyingApplicants || selectedCount === 0}
                 >
-                  {notifyingApplicants && <Spinner data-icon="inline-start" />}
-                  Notify Selected Applicants
+                  {notifyingApplicants ? (
+                    <Spinner data-icon="inline-start" />
+                  ) : (
+                    <ClipboardListIcon data-icon="inline-start" />
+                  )}
+                  Send Event Notification ({selectedCount})
                 </Button>
               </CardContent>
             </Card>
@@ -968,6 +1023,80 @@ export default function Evaluation() {
           </TabsContent>
         </Tabs>
       </div>
+      <Dialog open={remarksDialogOpen} onOpenChange={setRemarksDialogOpen}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Remarks History</DialogTitle>
+            <DialogDescription>
+              Past availment records and evaluations for{" "}
+              <span className="font-semibold text-foreground">
+                {selectedGranteeRemarks?.applicantName}
+              </span>
+            </DialogDescription>
+          </DialogHeader>
+
+          {loadingRemarks ? (
+            <div className="flex flex-col items-center justify-center py-12 gap-2 text-muted-foreground">
+              <Spinner className="size-6" />
+              <p className="text-sm">Loading history...</p>
+            </div>
+          ) : !selectedGranteeRemarks || selectedGranteeRemarks.records.length === 0 ? (
+            <Empty className="py-12">
+              <EmptyHeader>
+                <EmptyMedia variant="icon">
+                  <ClipboardListIcon />
+                </EmptyMedia>
+                <EmptyTitle>No history found</EmptyTitle>
+                <EmptyDescription>
+                  This applicant has no previous SPES availment records or remarks.
+                </EmptyDescription>
+              </EmptyHeader>
+            </Empty>
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2 mt-4">
+              {selectedGranteeRemarks.records.map((record) => (
+                <Card key={record.recordId} className="bg-muted/30">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm">Year: {record.applicationYear || "N/A"}</CardTitle>
+                    <CardDescription className="text-xs">
+                      Office: {record.assignedOffice || "N/A"}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="text-xs space-y-3 pb-4">
+                    <div className="grid grid-cols-2 gap-x-2 gap-y-1">
+                      <span>Punctuality: {record.punctuality}/5</span>
+                      <span>Respect: {record.respect}/5</span>
+                      <span>Honesty: {record.honesty}/5</span>
+                      <span>Adaptability: {record.adaptability}/5</span>
+                      <span>Expression: {record.expression}/5</span>
+                      <span>Initiative: {record.initiative}/5</span>
+                      <span>Following: {record.following}/5</span>
+                      <span>Efficiency: {record.efficiency}/5</span>
+                      <span>Creativity: {record.creativity}/5</span>
+                    </div>
+                    {record.remarks && (
+                      <div className="border-t pt-2 italic">
+                        <span className="font-medium not-italic">Comments:</span> {record.remarks}
+                      </div>
+                    )}
+                    <div className="text-muted-foreground pt-1">
+                      Rated By: {record.ratedBy} <br />
+                      Date: {new Date(record.createdAt).toLocaleDateString()}
+                    </div>
+                    {record.documentUrl && (
+                      <Button asChild variant="link" size="sm" className="h-auto p-0 text-blue-500">
+                        <a href={record.documentUrl} target="_blank" rel="noreferrer">
+                          View Scanned Document
+                        </a>
+                      </Button>
+                    )}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

@@ -14,6 +14,7 @@ import {
   DropdownMenuSeparator,
 } from "@/ui/dropdown-menu";
 import { Button } from "@/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/ui/avatar";
 
 interface ProfileNameResponse {
   success: boolean;
@@ -97,6 +98,7 @@ const UserProfile = () => {
   const user = session.user;
   const displayName = profileName || user.email;
   const role = user.role || "client";
+  const isClient = role === "client";
 
   let dashboardRoute = "/protected";
   if (role === "admin") {
@@ -104,6 +106,13 @@ const UserProfile = () => {
   } else if (role === "employee") {
     dashboardRoute = "/protected/employee";
   }
+
+  const initials = (profileName || user.email || "U")
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
 
   return (
     <DropdownMenu>
@@ -113,50 +122,69 @@ const UserProfile = () => {
           className="flex items-center gap-3 rounded-full border border-white/30 bg-white/10 px-4 py-2 text-white shadow-sm hover:bg-white/20 hover:text-white focus-visible:ring-0 focus-visible:ring-offset-0 h-auto transition-all"
         >
           <span className="text-sm font-medium truncate max-w-30 md:max-w-50">
-            {displayName}
+            {profileName || user.email?.split("@")[0] || "Account"}
           </span>
-          <UserCircle className="w-6 h-6" />
+          <Avatar className="size-8 border border-white/20">
+            <AvatarImage src={user.image || undefined} />
+            <AvatarFallback className="bg-primary/20 text-xs font-bold">
+              {initials}
+            </AvatarFallback>
+          </Avatar>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-56 mt-2">
-        <DropdownMenuLabel className="font-normal">
-          <div className="flex flex-col gap-1">
-            <p className="text-sm font-medium leading-none truncate">
-              {displayName || "Account"}
-            </p>
-            <p className="text-xs leading-none text-muted-foreground truncate">
-              {user.email}
-            </p>
+      <DropdownMenuContent align="end" className="w-64 mt-2 p-1">
+        <DropdownMenuLabel className="p-3">
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center gap-3">
+              <Avatar className="size-10 border">
+                <AvatarImage src={user.image || undefined} />
+                <AvatarFallback className="bg-primary/10 text-primary font-bold">
+                  {initials}
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex flex-col min-w-0">
+                <p className="text-sm font-semibold truncate leading-none mb-1">
+                  {profileName || "Account"}
+                </p>
+                <p className="text-xs text-muted-foreground truncate leading-none">
+                  {user.email}
+                </p>
+              </div>
+            </div>
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
           <DropdownMenuItem
             onSelect={() => router.push("/")}
-            className="cursor-pointer w-full"
+            className="cursor-pointer py-2.5"
           >
-            <Home data-icon="inline-start" />
+            <Home data-icon="inline-start" className="size-4" />
             Back to Home
           </DropdownMenuItem>
           <DropdownMenuItem
             onSelect={() => router.push(dashboardRoute)}
-            className="cursor-pointer w-full"
+            className="cursor-pointer py-2.5"
           >
-            <LayoutDashboard data-icon="inline-start" />
-            Dashboard
+            <LayoutDashboard data-icon="inline-start" className="size-4" />
+            {isClient ? "SPES" : "Dashboard"}
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onSelect={() => router.push("/protected/profile")}
+            className="cursor-pointer py-2.5"
+          >
+            <UserCircle data-icon="inline-start" className="size-4" />
+            Profile Settings
           </DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
-        <DropdownMenuGroup>
-          <DropdownMenuItem
-            onSelect={handleLogout}
-            className="cursor-pointer w-full"
-            variant="destructive"
-          >
-            <LogOut data-icon="inline-start" />
+        <DropdownMenuItem
+          onSelect={handleLogout}
+          className="cursor-pointer py-2.5 text-destructive focus:text-destructive focus:bg-destructive/10"
+        >
+          <LogOut data-icon="inline-start" className="size-4" />
           Logout
-          </DropdownMenuItem>
-        </DropdownMenuGroup>
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );

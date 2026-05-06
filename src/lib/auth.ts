@@ -77,12 +77,14 @@ export const auth = betterAuth({
 
           // For OAuth signups (callback path), force emailVerified to false 
           // so they must go through our verification flow.
+          // Also nullify image to avoid using Google profile pictures.
           if (ctx?.path?.startsWith("/callback")) {
             return {
               data: {
                 ...user,
                 role: normalizedRole,
                 emailVerified: false,
+                image: null,
               },
             };
           }

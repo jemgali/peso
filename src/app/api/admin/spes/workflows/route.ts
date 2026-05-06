@@ -36,6 +36,7 @@ export async function GET(request: Request): Promise<NextResponse<SpesWorkflowLi
   const parsedQuery = listWorkflowsQuerySchema.safeParse({
     search: searchParams.get("search") || undefined,
     status: searchParams.get("status") || undefined,
+    category: searchParams.get("category") || undefined,
   })
 
   if (!parsedQuery.success) {
@@ -60,6 +61,19 @@ export async function GET(request: Request): Promise<NextResponse<SpesWorkflowLi
 
   if (parsedQuery.data.status) {
     where.selectionStatus = parsedQuery.data.status.toUpperCase() as PrismaSelectionStatus
+  }
+
+  if (parsedQuery.data.category) {
+    if (where.submission) {
+      where.submission = {
+        ...where.submission,
+        applicantType: parsedQuery.data.category.toUpperCase() as any,
+      }
+    } else {
+      where.submission = {
+        applicantType: parsedQuery.data.category.toUpperCase() as any,
+      }
+    }
   }
 
   const workflows = await prisma.spesWorkflow.findMany({

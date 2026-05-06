@@ -159,7 +159,40 @@ const SPESApplicationForm: React.FC<SPESApplicationFormProps> = ({
   const [isPending, setIsPending] = useState(false);
   const [isValidating, setIsValidating] = useState(false);
   const [visitedSteps, setVisitedSteps] = useState<Set<number>>(new Set([0]));
+  const [activeRevisionTargets, setActiveRevisionTargets] = useState<RevisionTargets | undefined>(revisionTargets);
   const formRef = useRef<HTMLFormElement | null>(null);
+
+  useEffect(() => {
+    setActiveRevisionTargets(revisionTargets);
+  }, [revisionTargets]);
+
+  const handleResolveRevision = useCallback(
+    (type: "field" | "document", id: string) => {
+      setActiveRevisionTargets((prev) => {
+        if (!prev) return prev;
+
+        if (type === "document") {
+          const newDocs = prev.documents.filter((d) => d.documentType !== id);
+          // If no more documents need revision and no fields in this section need revision, 
+          // we might want to remove the section from targets, but keeping it simple for now
+          return {
+            ...prev,
+            documents: newDocs,
+          };
+        }
+
+        if (type === "field") {
+          return {
+            ...prev,
+            fields: prev.fields.filter((f) => f.fieldName !== id),
+          };
+        }
+
+        return prev;
+      });
+    },
+    [],
+  );
 
   const activeSectionIds = useMemo<SectionId[]>(
     () =>
@@ -325,7 +358,15 @@ const SPESApplicationForm: React.FC<SPESApplicationFormProps> = ({
       const sectionTouched = checkSectionTouched(sectionId, touchedFields);
       const sectionHasData = checkSectionHasData(sectionId, getValues());
 
-      if (sectionHasErrors) {
+      // Check if this section needs revision based on active admin feedback
+      const needsRevision =
+        activeRevisionTargets?.sections.includes(sectionId) && 
+        (activeRevisionTargets?.fields.some(f => f.sectionId === sectionId) || 
+         (sectionId === "documents" && activeRevisionTargets?.documents.some(d => d.status !== "valid")));
+
+      if (needsRevision && index !== currentStep) {
+        statuses[sectionId] = "revision";
+      } else if (sectionHasErrors) {
         statuses[sectionId] = "error";
       } else if (
         sectionIsValid &&
@@ -346,7 +387,7 @@ const SPESApplicationForm: React.FC<SPESApplicationFormProps> = ({
     }
 
     return statuses;
-  }, [activeSectionIds, errors, getValues, touchedFields, isValid, currentStep, visitedSteps]);
+  }, [activeSectionIds, errors, getValues, touchedFields, isValid, currentStep, visitedSteps, activeRevisionTargets]);
 
   // Update validation statuses when form state changes
   useEffect(() => {
@@ -517,7 +558,8 @@ const SPESApplicationForm: React.FC<SPESApplicationFormProps> = ({
     setValue,
     formValues: getValues(),
     applicationType,
-    revisionTargets,
+    revisionTargets: activeRevisionTargets,
+    onResolveRevision: handleResolveRevision,
   };
 
   // Props for sections with control
@@ -592,10 +634,10 @@ const SPESApplicationForm: React.FC<SPESApplicationFormProps> = ({
   const isFirstStep = currentStep === 0;
 
   const currentSectionFeedback = useMemo(() => {
-    if (!revisionTargets) return [] as Array<[string, string]>;
+    if (!activeRevisionTargets) return [] as Array<[string, string]>;
     const currentSectionId = activeSectionIds[currentStep];
 
-    const fieldFeedback = revisionTargets.fields
+    const fieldFeedback = activeRevisionTargets.fields
       .filter((feedback) => feedback.sectionId === currentSectionId)
       .map(
         (feedback): [string, string] => [
@@ -608,7 +650,7 @@ const SPESApplicationForm: React.FC<SPESApplicationFormProps> = ({
       return fieldFeedback;
     }
 
-    const documentFeedback = revisionTargets.documents.map(
+    const documentFeedback = activeRevisionTargets.documents.map(
       (feedback): [string, string] => [
         feedback.documentType,
         feedback.comment ||
@@ -619,7 +661,7 @@ const SPESApplicationForm: React.FC<SPESApplicationFormProps> = ({
     );
 
     return [...fieldFeedback, ...documentFeedback];
-  }, [activeSectionIds, currentStep, revisionTargets]);
+  }, [activeSectionIds, currentStep, activeRevisionTargets]);
 
   useEffect(() => {
     const form = formRef.current;
@@ -634,10 +676,10 @@ const SPESApplicationForm: React.FC<SPESApplicationFormProps> = ({
       element.removeAttribute("title");
     });
 
-    if (!revisionTargets) return;
+    if (!activeRevisionTargets) return;
 
     const currentSectionId = activeSectionIds[currentStep];
-    const targetFields = revisionTargets.fields.filter(
+    const targetFields = activeRevisionTargets.fields.filter(
       (feedback) => feedback.sectionId === currentSectionId,
     );
 
@@ -661,7 +703,7 @@ const SPESApplicationForm: React.FC<SPESApplicationFormProps> = ({
         }
       });
     });
-  }, [activeSectionIds, currentStep, revisionTargets]);
+  }, [activeSectionIds, currentStep, activeRevisionTargets]);
 
   return (
     <form ref={formRef} onSubmit={handleSubmit(onSubmit)} className="w-full">

@@ -6,7 +6,7 @@ import { CheckCircle2, Circle, AlertCircle } from "lucide-react";
 import { Progress } from "@/ui/progress";
 import { cn } from "@/lib/utils";
 
-export type StepStatus = "incomplete" | "complete" | "error" | "current";
+export type StepStatus = "incomplete" | "complete" | "error" | "current" | "revision";
 
 interface ProgressStep {
   id: string;
@@ -108,6 +108,10 @@ const ApplicationProgress: React.FC<ApplicationProgressProps> = ({
         return (
           <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400" />
         );
+      case "revision":
+        return (
+          <AlertCircle className="w-5 h-5 text-orange-600 dark:text-orange-400 animate-pulse" />
+        );
       case "current":
         return (
           <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center">
@@ -127,11 +131,13 @@ const ApplicationProgress: React.FC<ApplicationProgressProps> = ({
 
     switch (status) {
       case "complete":
-        return "bg-green-50 dark:bg-green-950";
+        return "bg-green-50 dark:bg-green-950/20";
       case "error":
-        return "bg-red-50 dark:bg-red-950";
+        return "bg-red-50 dark:bg-red-950/20";
+      case "revision":
+        return "bg-orange-50 dark:bg-orange-950/20 ring-1 ring-orange-200 dark:ring-orange-800";
       case "current":
-        return "bg-blue-50 dark:bg-blue-950";
+        return "bg-blue-50 dark:bg-blue-950/20";
       case "incomplete":
       default:
         return "bg-muted";

@@ -13,15 +13,13 @@ import {
   ExternalLink,
   Image as ImageIcon,
   Eye,
+  AlertCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import type { FormSectionProps } from "./types";
 import { useUploadThing } from "@/lib/uploadthing";
-import {
-  isDocumentType,
-  type DocumentType,
-} from "@/lib/upload-documents";
+import { isDocumentType, type DocumentType } from "@/lib/upload-documents";
 import type { ApplicantUploadServerData } from "@/app/api/uploadthing/core";
 
 interface UploadedDocument {
@@ -76,7 +74,10 @@ const REQUIRED_DOCUMENTS: DocumentRequirement[] = [
     description: "Proof of current school enrollment",
     required: true,
     sampleImages: [
-      { src: `${SAMPLE_BASE}/proof-of-enrollment.png`, label: "proof-of-enrollment.png" },
+      {
+        src: `${SAMPLE_BASE}/proof-of-enrollment.png`,
+        label: "proof-of-enrollment.png",
+      },
     ],
   },
   {
@@ -102,7 +103,12 @@ const REQUIRED_DOCUMENTS: DocumentRequirement[] = [
     description:
       "Both parents should have an affidavit of low income. If only one parent is present, attach affidavit of solo parent. Indicate the Poverty Threshold (e.g. P192,000.00). This only modifies the description on the upload field, since the system can't verify the uploaded file of a PDF.",
     required: true,
-    sampleImages: [{ src: `${SAMPLE_BASE}/affidavit-low-income.png`, label: "affidavit-low-income.png" }],
+    sampleImages: [
+      {
+        src: `${SAMPLE_BASE}/affidavit-low-income.png`,
+        label: "affidavit-low-income.png",
+      },
+    ],
   },
   {
     id: "barangayCertLowIncome",
@@ -119,7 +125,8 @@ const REQUIRED_DOCUMENTS: DocumentRequirement[] = [
   {
     id: "barangayCertResidency",
     name: "Barangay Certificate of Residency (Applicant)",
-    description: "Certificate of residency issued by the barangay for the applicant",
+    description:
+      "Certificate of residency issued by the barangay for the applicant",
     required: true,
     sampleImages: [
       {
@@ -188,14 +195,18 @@ const DocumentsSection: React.FC<FormSectionProps> = ({
   isPending,
   setValue,
   formValues,
+  revisionTargets,
+  onResolveRevision,
 }) => {
   const formDocs = formValues?.documents as DocumentsMap | undefined;
-  const [uploadedDocs, setUploadedDocs] = useState<DocumentsMap>(formDocs || {});
+  const [uploadedDocs, setUploadedDocs] = useState<DocumentsMap>(
+    formDocs || {},
+  );
   const [uploading, setUploading] = useState<Record<string, boolean>>({});
   const [deleting, setDeleting] = useState<Record<string, boolean>>({});
-  const [localPreviews, setLocalPreviews] = useState<Record<string, LocalPreview>>(
-    {},
-  );
+  const [localPreviews, setLocalPreviews] = useState<
+    Record<string, LocalPreview>
+  >({});
   const [selectedDocumentId, setSelectedDocumentId] = useState<string>(
     REQUIRED_DOCUMENTS[0]?.id || "",
   );
@@ -216,7 +227,10 @@ const DocumentsSection: React.FC<FormSectionProps> = ({
           if (data.data?.documents?.documents) {
             setUploadedDocs(data.data.documents.documents as DocumentsMap);
             if (setValue) {
-              setValue("documents", data.data.documents.documents, { shouldValidate: true, shouldTouch: true });
+              setValue("documents", data.data.documents.documents, {
+                shouldValidate: true,
+                shouldTouch: true,
+              });
             }
           }
         }
@@ -225,11 +239,12 @@ const DocumentsSection: React.FC<FormSectionProps> = ({
       }
     };
     fetchDocuments();
-  }, []);
+  }, [formDocs, setValue]);
 
   useEffect(() => {
+    const urls = localPreviewUrlsRef.current;
     return () => {
-      Object.values(localPreviewUrlsRef.current).forEach((url) => {
+      Object.values(urls).forEach((url) => {
         URL.revokeObjectURL(url);
       });
     };
@@ -314,7 +329,8 @@ const DocumentsSection: React.FC<FormSectionProps> = ({
       const result = await startUpload([file], {
         documentType: documentId as DocumentType,
       });
-      const uploadData = result?.[0]?.serverData as ApplicantUploadServerData | null;
+      const uploadData = result?.[0]
+        ?.serverData as ApplicantUploadServerData | null;
 
       if (!uploadData) {
         throw new Error("Upload failed");
@@ -347,9 +363,12 @@ const DocumentsSection: React.FC<FormSectionProps> = ({
       });
 
       clearLocalPreview(documentId);
+      onResolveRevision?.("document", documentId);
       toast.success("Document uploaded successfully!");
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to upload document");
+      toast.error(
+        error instanceof Error ? error.message : "Failed to upload document",
+      );
     } finally {
       setUploading((prev) => ({ ...prev, [documentId]: false }));
     }
@@ -362,9 +381,12 @@ const DocumentsSection: React.FC<FormSectionProps> = ({
     setDeleting((prev) => ({ ...prev, [documentId]: true }));
 
     try {
-      const response = await fetch(`/api/upload/${encodeURIComponent(doc.key)}`, {
-        method: "DELETE",
-      });
+      const response = await fetch(
+        `/api/upload/${encodeURIComponent(doc.key)}`,
+        {
+          method: "DELETE",
+        },
+      );
 
       const result = await response.json();
 
@@ -377,7 +399,14 @@ const DocumentsSection: React.FC<FormSectionProps> = ({
         const newDocs = { ...prev };
         delete newDocs[documentId];
         if (setValue) {
-          setTimeout(() => setValue("documents", newDocs, { shouldValidate: true, shouldTouch: true }), 0);
+          setTimeout(
+            () =>
+              setValue("documents", newDocs, {
+                shouldValidate: true,
+                shouldTouch: true,
+              }),
+            0,
+          );
         }
         return newDocs;
       });
@@ -385,13 +414,18 @@ const DocumentsSection: React.FC<FormSectionProps> = ({
       clearLocalPreview(documentId);
       toast.success("Document removed");
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to delete document");
+      toast.error(
+        error instanceof Error ? error.message : "Failed to delete document",
+      );
     } finally {
       setDeleting((prev) => ({ ...prev, [documentId]: false }));
     }
   };
 
-  const handleInputChange = (documentId: string, e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = (
+    documentId: string,
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
     const file = e.target.files?.[0];
     if (file) {
       handleFileSelect(documentId, file);
@@ -403,6 +437,10 @@ const DocumentsSection: React.FC<FormSectionProps> = ({
   const renderDocumentListItem = (doc: DocumentRequirement) => {
     const uploaded = uploadedDocs[doc.id];
     const isSelected = selectedRequirement?.id === doc.id;
+    const revisionFeedback = revisionTargets?.documents.find(
+      (fb) => fb.documentType === doc.id && fb.status !== "valid",
+    );
+    const needsRevision = !!revisionFeedback;
 
     return (
       <button
@@ -410,49 +448,95 @@ const DocumentsSection: React.FC<FormSectionProps> = ({
         key={doc.id}
         onClick={() => setSelectedDocumentId(doc.id)}
         className={cn(
-          "w-full rounded-lg border p-3 text-left transition-colors",
+          "w-full rounded-lg border p-3 text-left transition-all duration-200",
           isPending && "opacity-50",
-          uploaded && "border-green-200 dark:border-green-800 bg-green-50/50 dark:bg-green-950/20",
-          isSelected && "ring-1 ring-primary bg-primary/5"
+          uploaded &&
+            !needsRevision &&
+            "border-green-200 dark:border-green-800 bg-green-50/50 dark:bg-green-950/20",
+          needsRevision &&
+            "border-red-300 dark:border-red-900 bg-red-50/50 dark:bg-red-950/30 ring-1 ring-red-400",
+          isSelected && !needsRevision && "ring-1 ring-primary bg-primary/5",
+          isSelected &&
+            needsRevision &&
+            "ring-2 ring-red-500 bg-red-50/80 dark:bg-red-950/40",
         )}
       >
         <div className="flex items-start gap-2.5">
-          <div className={cn(
-            "p-1.5 rounded-md shrink-0",
-            uploaded ? "bg-green-100 dark:bg-green-900/50" : "bg-muted"
-          )}>
-            {uploaded ? (
+          <div
+            className={cn(
+              "p-1.5 rounded-md shrink-0",
+              needsRevision
+                ? "bg-red-100 dark:bg-red-900/50"
+                : uploaded
+                  ? "bg-green-100 dark:bg-green-900/50"
+                  : "bg-muted",
+            )}
+          >
+            {needsRevision ? (
+              <AlertCircle className="h-4 w-4 text-red-600 dark:text-red-400" />
+            ) : uploaded ? (
               <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
             ) : (
               <FileText className="h-4 w-4 text-muted-foreground" />
             )}
           </div>
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2">
-              <h4 className="text-sm font-medium leading-tight">{doc.name}</h4>
+            <div className="flex items-center flex-wrap gap-2">
+              <h4
+                className={cn(
+                  "text-sm font-medium leading-tight",
+                  needsRevision && "text-red-900 dark:text-red-200",
+                )}
+              >
+                {doc.name}
+              </h4>
               {doc.required ? (
-                <span className="text-xs px-1.5 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded">
+                <span className="text-[10px] px-1.5 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded font-medium uppercase">
                   Required
                 </span>
               ) : (
-                <span className="text-xs px-1.5 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded">
+                <span className="text-[10px] px-1.5 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded font-medium uppercase">
                   If Applicable
                 </span>
               )}
+              {needsRevision && (
+                <span className="text-[10px] px-1.5 py-0.5 bg-red-600 text-white rounded font-bold uppercase animate-pulse">
+                  Needs Revision
+                </span>
+              )}
             </div>
-            <p className="mt-0.5 text-xs text-muted-foreground line-clamp-2">
+            <p className="mt-1 text-xs text-muted-foreground line-clamp-2">
               {doc.description}
             </p>
+
+            {needsRevision && revisionFeedback.comment && (
+              <div className="mt-2 p-2 rounded bg-red-100/50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-[11px] text-red-800 dark:text-red-300">
+                <span className="font-semibold">Note:</span>{" "}
+                {revisionFeedback.comment}
+              </div>
+            )}
+
             {uploaded && (
-              <div className="mt-1 text-xs text-green-700 dark:text-green-400 truncate">
-                Uploaded: {uploaded.fileName}
+              <div
+                className={cn(
+                  "mt-2 text-[10px] truncate flex items-center gap-1",
+                  needsRevision
+                    ? "text-red-700/70 dark:text-red-400/70"
+                    : "text-green-700 dark:text-green-400",
+                )}
+              >
+                {needsRevision && <X className="h-3 w-3" />}
+                {needsRevision ? "Current file rejected: " : "Uploaded: "}
+                {uploaded.fileName}
               </div>
             )}
           </div>
         </div>
         <input
           type="file"
-          ref={(el) => { fileInputRefs.current[doc.id] = el; }}
+          ref={(el) => {
+            fileInputRefs.current[doc.id] = el;
+          }}
           onChange={(e) => handleInputChange(doc.id, e)}
           accept={ALLOWED_TYPES.join(",")}
           className="hidden"
@@ -475,14 +559,20 @@ const DocumentsSection: React.FC<FormSectionProps> = ({
       : previewMode === "sample"
         ? false
         : hasSelectedUpload;
-  const showingUploadedPreview = shouldShowUploadedPreview && !!selectedUploadedDoc;
-  const showingLocalPreview = shouldShowUploadedPreview && !!selectedLocalPreview && !selectedUploadedDoc;
+  const showingUploadedPreview =
+    shouldShowUploadedPreview && !!selectedUploadedDoc;
+  const showingLocalPreview =
+    shouldShowUploadedPreview && !!selectedLocalPreview && !selectedUploadedDoc;
   const uploadedFileType =
     selectedUploadedDoc?.fileType || selectedLocalPreview?.fileType || "";
   const isUploadedImage = uploadedFileType.startsWith("image/");
   const isUploadedPdf = uploadedFileType === "application/pdf";
-  const selectedIsUploading = previewDocumentId ? !!uploading[previewDocumentId] : false;
-  const selectedIsDeleting = previewDocumentId ? !!deleting[previewDocumentId] : false;
+  const selectedIsUploading = previewDocumentId
+    ? !!uploading[previewDocumentId]
+    : false;
+  const selectedIsDeleting = previewDocumentId
+    ? !!deleting[previewDocumentId]
+    : false;
   const canShowSample = (selectedRequirement?.sampleImages?.length || 0) > 0;
 
   return (
@@ -535,13 +625,51 @@ const DocumentsSection: React.FC<FormSectionProps> = ({
 
           <Card className="h-fit p-4 xl:sticky xl:top-4">
             <div className="mb-3">
-              <h3 className="text-sm font-semibold">Document Preview</h3>
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-semibold">Document Preview</h3>
+                {selectedRequirement &&
+                  revisionTargets?.documents.some(
+                    (d) =>
+                      d.documentType === selectedRequirement.id &&
+                      d.status !== "valid",
+                  ) && (
+                    <span className="text-[10px] px-1.5 py-0.5 bg-red-600 text-white rounded font-bold uppercase animate-pulse">
+                      Needs Revision
+                    </span>
+                  )}
+              </div>
               <p className="text-xs text-muted-foreground mt-1">
                 {selectedRequirement
                   ? selectedRequirement.name
                   : "Select a requirement to preview"}
               </p>
             </div>
+
+            {selectedRequirement &&
+              (() => {
+                const feedback = revisionTargets?.documents.find(
+                  (d) =>
+                    d.documentType === selectedRequirement.id &&
+                    d.status !== "valid",
+                );
+                if (!feedback) return null;
+                return (
+                  <div className="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 dark:bg-red-950/30 dark:border-red-900/50">
+                    <div className="flex gap-2">
+                      <AlertCircle className="h-4 w-4 text-red-600 dark:text-red-400 shrink-0 mt-0.5" />
+                      <div>
+                        <p className="text-xs font-semibold text-red-800 dark:text-red-300">
+                          Revision Feedback
+                        </p>
+                        <p className="text-[11px] text-red-700 dark:text-red-400 mt-0.5">
+                          {feedback.comment ||
+                            "This document needs to be re-uploaded or corrected."}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
             <div className="mb-4 flex flex-wrap gap-2">
               <Button
                 type="button"
@@ -567,8 +695,12 @@ const DocumentsSection: React.FC<FormSectionProps> = ({
                 type="button"
                 size="sm"
                 variant={hasSelectedUpload ? "outline" : "default"}
-                disabled={isPending || selectedIsUploading || !previewDocumentId}
-                onClick={() => fileInputRefs.current[previewDocumentId]?.click()}
+                disabled={
+                  isPending || selectedIsUploading || !previewDocumentId
+                }
+                onClick={() =>
+                  fileInputRefs.current[previewDocumentId]?.click()
+                }
               >
                 {selectedIsUploading ? (
                   <>
@@ -622,12 +754,16 @@ const DocumentsSection: React.FC<FormSectionProps> = ({
             {shouldShowUploadedPreview && isUploadedImage && (
               <div className="space-y-2">
                 <img
-                  src={(selectedUploadedDoc?.url || selectedLocalPreview?.url) ?? ""}
+                  src={
+                    (selectedUploadedDoc?.url || selectedLocalPreview?.url) ??
+                    ""
+                  }
                   alt={selectedRequirement?.name || "Uploaded preview"}
                   className="w-full rounded-md border object-contain bg-muted/20 max-h-[720px]"
                 />
                 <p className="text-xs text-muted-foreground truncate">
-                  {(selectedUploadedDoc?.fileName || selectedLocalPreview?.fileName) ??
+                  {(selectedUploadedDoc?.fileName ||
+                    selectedLocalPreview?.fileName) ??
                     ""}
                 </p>
               </div>
@@ -636,12 +772,18 @@ const DocumentsSection: React.FC<FormSectionProps> = ({
             {shouldShowUploadedPreview && isUploadedPdf && (
               <div className="space-y-2">
                 <iframe
-                  src={(selectedUploadedDoc?.url || selectedLocalPreview?.url) ?? ""}
+                  src={
+                    (selectedUploadedDoc?.url || selectedLocalPreview?.url) ??
+                    ""
+                  }
                   title={selectedRequirement?.name || "Uploaded PDF preview"}
                   className="h-[720px] w-full rounded-md border bg-muted/20"
                 />
                 <a
-                  href={(selectedUploadedDoc?.url || selectedLocalPreview?.url) ?? "#"}
+                  href={
+                    (selectedUploadedDoc?.url || selectedLocalPreview?.url) ??
+                    "#"
+                  }
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline"
@@ -662,7 +804,9 @@ const DocumentsSection: React.FC<FormSectionProps> = ({
                         alt={`${selectedRequirement.name} sample`}
                         className="w-full rounded-md border object-contain bg-muted/20 max-h-[720px]"
                       />
-                      <p className="text-xs text-muted-foreground">{sample.label}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {sample.label}
+                      </p>
                     </div>
                   ))}
                 </div>

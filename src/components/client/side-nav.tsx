@@ -45,27 +45,16 @@ const SideNav = ({ age }: { age?: number }) => {
 
       {!isAgeIneligible && (
         <SidebarMenuItem>
-          <Collapsible defaultOpen={isApplicationSection} className="group/collapse">
-            <CollapsibleTrigger asChild>
-              <SidebarMenuButton isActive={isApplicationSection} tooltip="Application Form">
-                <FileText />
-                <span>Application Form</span>
-                <ChevronDown className="ml-auto transition-transform group-data-[state=open]/collapse:rotate-180" />
-              </SidebarMenuButton>
-            </CollapsibleTrigger>
-            <CollapsibleContent>
-              <SidebarMenuSub>
-                <SidebarMenuSubItem>
-                  <SidebarMenuSubButton
-                    asChild
-                    isActive={checkActive("/protected/client/application")}
-                  >
-                    <Link href="/protected/client/application">SPES</Link>
-                  </SidebarMenuSubButton>
-                </SidebarMenuSubItem>
-              </SidebarMenuSub>
-            </CollapsibleContent>
-          </Collapsible>
+          <SidebarMenuButton
+            asChild
+            isActive={isApplicationSection}
+            tooltip="Application Form"
+          >
+            <Link href="/protected/client/application">
+              <FileText />
+              <span>Application Form</span>
+            </Link>
+          </SidebarMenuButton>
         </SidebarMenuItem>
       )}
     </SidebarMenu>

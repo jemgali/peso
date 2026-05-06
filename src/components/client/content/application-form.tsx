@@ -1,5 +1,4 @@
 "use client";
-/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import React, { useState, useCallback, useMemo } from "react";
 import SPESApplicationForm, {
@@ -155,19 +154,22 @@ const ApplicationForm: React.FC<ApplicationFormProps> = ({
                 key={step.id}
                 type="button"
                 onClick={() => handleStepClick(step.id)}
-                  className={cn(
-                    "h-2 w-4 rounded-full transition-all duration-300",
-                    index === safeCurrentStep && "bg-primary",
-                    index !== safeCurrentStep &&
-                      stepStatuses[step.id] === "complete" &&
-                    "bg-green-500",
-                    index !== safeCurrentStep &&
-                      stepStatuses[step.id] === "error" &&
-                    "bg-red-500",
-                    index !== safeCurrentStep &&
-                      stepStatuses[step.id] === "incomplete" &&
-                    "bg-muted"
-                  )}
+                    className={cn(
+                      "h-2 w-4 rounded-full transition-all duration-300",
+                      index === safeCurrentStep && "bg-primary",
+                      index !== safeCurrentStep &&
+                        stepStatuses[step.id] === "complete" &&
+                      "bg-green-500",
+                      index !== safeCurrentStep &&
+                        stepStatuses[step.id] === "error" &&
+                      "bg-red-500",
+                      index !== safeCurrentStep &&
+                        stepStatuses[step.id] === "revision" &&
+                      "bg-orange-500 animate-pulse",
+                      index !== safeCurrentStep &&
+                        stepStatuses[step.id] === "incomplete" &&
+                      "bg-muted"
+                    )}
                 aria-label={`Go to ${step.title}`}
               />
             ))}

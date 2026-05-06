@@ -122,6 +122,7 @@ export type AssignWorkflowInput = z.infer<typeof assignWorkflowSchema>
 export const listWorkflowsQuerySchema = z.object({
   search: z.string().trim().max(120, "Search text is too long").optional(),
   status: z.enum(SPES_SELECTION_STATUSES).optional(),
+  category: z.enum(SPES_APPLICANT_CATEGORIES).optional(),
 })
 export type ListWorkflowsQueryInput = z.infer<typeof listWorkflowsQuerySchema>
 

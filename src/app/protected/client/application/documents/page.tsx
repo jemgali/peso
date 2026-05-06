@@ -6,16 +6,7 @@ import { PageHeader } from "@/components/shared"
 import { requireUser } from "@/lib/utils/user-auth"
 import { prisma } from "@/lib/prisma"
 
-const LONG_BOND_DOCS = [
-  { file: "dole-spes-checklist.docx", label: "DOLE SPES Checklist" },
-  { file: "dole-spes-registration.docx", label: "DOLE SPES Registration" },
-]
-
-const A4_DOCS = [
-  { file: "dole-spes-application.docx", label: "DOLE SPES Application" },
-  { file: "dole-spes-contract.docx", label: "DOLE SPES Contract" },
-  { file: "dole-spes-oath.docx", label: "DOLE SPES Oath" },
-]
+import GranteeView from "@/components/client/grantee-view"
 
 export default async function DocumentsPrintingPage() {
   const user = await requireUser()
@@ -65,44 +56,14 @@ export default async function DocumentsPrintingPage() {
     )
   }
 
-  const renderDocList = (items: Array<{ file: string; label: string }>) => (
-    <div className="space-y-3">
-      {items.map((doc) => (
-        <div key={doc.file} className="flex items-center justify-between rounded-md border p-3">
-          <div>
-            <p className="font-medium">{doc.label}</p>
-            <p className="text-xs text-muted-foreground">{doc.file}</p>
-          </div>
-          <Button asChild size="sm">
-            <Link href={`/form-layouts/${doc.file}`} target="_blank" rel="noopener noreferrer">
-              View / Print
-            </Link>
-          </Button>
-        </div>
-      ))}
-    </div>
-  )
-
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        title="Documents Printing"
-        description="Download and print your required DOLE SPES forms"
+        title="SPES Grantee Portal"
+        description="Complete your final steps: Batch selection and document printing"
       />
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Long Bond Paper (21.59cm x 33.02cm / 8.5&quot; x 13&quot;)</CardTitle>
-        </CardHeader>
-        <CardContent>{renderDocList(LONG_BOND_DOCS)}</CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>A4 Paper (21cm x 29.7cm / 8.27&quot; x 11.69&quot;)</CardTitle>
-        </CardHeader>
-        <CardContent>{renderDocList(A4_DOCS)}</CardContent>
-      </Card>
+      <GranteeView />
     </div>
   )
 }
