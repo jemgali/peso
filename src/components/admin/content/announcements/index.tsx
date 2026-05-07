@@ -16,7 +16,7 @@ import {
   type EventType,
 } from "@/lib/validations/schedule-event"
 import { cn } from "@/lib/utils"
-import { MANILA_TIME_ZONE } from "@/lib/manila-datetime"
+import { MANILA_TIME_ZONE, formatDateInputInManila } from "@/lib/manila-datetime"
 import { useDialogState } from "@/hooks"
 
 export default function Announcements() {
@@ -96,11 +96,14 @@ export default function Announcements() {
 
   const formatDate = (date: Date, allDay: boolean) => {
     if (allDay) {
-      return date.toLocaleDateString("en-US", {
+      // Use formatDateInputInManila to guarantee Manila timezone extraction (returns YYYY-MM-DD)
+      const formatted = formatDateInputInManila(date)
+      const [y, m, d] = formatted.split("-")
+      const tempDate = new Date(parseInt(y), parseInt(m) - 1, parseInt(d))
+      return tempDate.toLocaleDateString("en-US", {
         year: "numeric",
         month: "short",
         day: "numeric",
-        timeZone: MANILA_TIME_ZONE,
       })
     }
     return date.toLocaleString("en-US", {

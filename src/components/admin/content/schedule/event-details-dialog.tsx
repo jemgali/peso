@@ -30,7 +30,7 @@ import {
 } from "@/lib/validations/schedule-event"
 import { cn } from "@/lib/utils"
 import { useFormSubmit } from "@/hooks"
-import { MANILA_TIME_ZONE } from "@/lib/manila-datetime"
+import { MANILA_TIME_ZONE, formatDateInputInManila } from "@/lib/manila-datetime"
 
 interface EventDetailsDialogProps {
   open: boolean
@@ -42,12 +42,14 @@ interface EventDetailsDialogProps {
 
 function formatDateTime(date: Date, allDay: boolean) {
   if (allDay) {
-    return date.toLocaleDateString("en-US", {
+    const formatted = formatDateInputInManila(date)
+    const [y, m, d] = formatted.split("-")
+    const tempDate = new Date(parseInt(y), parseInt(m) - 1, parseInt(d))
+    return tempDate.toLocaleDateString("en-US", {
       weekday: "long",
       year: "numeric",
       month: "long",
       day: "numeric",
-      timeZone: MANILA_TIME_ZONE,
     })
   }
   return date.toLocaleString("en-US", {
