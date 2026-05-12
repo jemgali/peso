@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+import "dotenv/config";
 import { PrismaClient } from "@/generated/prisma/client";
 import { Pool } from "pg";
 import { PrismaPg } from "@prisma/adapter-pg";
@@ -12,7 +12,14 @@ const adapter = new PrismaPg(pool as any);
 const prisma = new PrismaClient({ adapter });
 
 async function main() {
-  const adminEmail = "[EMAIL_ADDRESS]";
+  const adminEmail = process.env.ADMIN_EMAIL;
+  const adminPassword = process.env.ADMIN_PASSWORD;
+
+  if (!adminEmail || !adminPassword) {
+    throw new Error(
+      "ADMIN_EMAIL and ADMIN_PASSWORD environment variables are required"
+    );
+  }
 
   // Check if admin already exists
   const existingAdmin = await prisma.user.findUnique({
@@ -24,7 +31,7 @@ async function main() {
     return;
   }
 
-  const hashedPassword = await hashPassword("admin123");
+  const hashedPassword = await hashPassword(adminPassword);
   const userId = generateId(); // Generate a unique ID for the user
 
   // Create the User
