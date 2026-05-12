@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { logAudit } from "@/lib/audit";
 import {
   type BatchListItem,
   type BatchListResponse,
@@ -62,6 +63,24 @@ export async function DELETE(
       where: { batchId: id },
     });
 
+    // Audit Log
+    const headersList = await headers()
+    await logAudit({
+      userId: adminUserId,
+      action: "DELETE",
+      entity: "SpesBatch",
+      entityId: id,
+      details: {
+        before: {
+          batchName: batch.batchName,
+          batchYear: batch.batchYear,
+        },
+        message: `Deleted batch ${batch.batchName}`,
+      },
+      ipAddress: headersList.get("x-forwarded-for") || undefined,
+      userAgent: headersList.get("user-agent") || undefined,
+    })
+
     return NextResponse.json({ success: true, message: "Batch deleted" });
   } catch (error) {
     console.error("Error deleting batch:", error);
@@ -95,14 +114,47 @@ export async function PUT(
   }
 
   try {
+    const oldBatch = await prisma.spesBatch.findUnique({
+      where: { batchId: id },
+    });
+
+    if (!oldBatch) {
+      return NextResponse.json(
+        { success: false, error: "Batch not found" },
+        { status: 404 }
+      );
+    }
+
     const updatedBatch = await prisma.spesBatch.update({
       where: { batchId: id },
       data: {
-        batchName: payload.batchName.trim(),
+        batchName: payload.batchName.trim().toUpperCase(),
         startDate: new Date(payload.startDate),
         batchYear: parseInt(payload.startDate.split("-")[0] || "0", 10),
       },
     });
+
+    // Audit Log
+    const headersList = await headers()
+    await logAudit({
+      userId: adminUserId,
+      action: "UPDATE",
+      entity: "SpesBatch",
+      entityId: id,
+      details: {
+        before: {
+          batchName: oldBatch.batchName,
+          startDate: oldBatch.startDate,
+        },
+        after: {
+          batchName: updatedBatch.batchName,
+          startDate: updatedBatch.startDate,
+        },
+        message: `Updated batch ${updatedBatch.batchName}`,
+      },
+      ipAddress: headersList.get("x-forwarded-for") || undefined,
+      userAgent: headersList.get("user-agent") || undefined,
+    })
 
     return NextResponse.json({
       success: true,

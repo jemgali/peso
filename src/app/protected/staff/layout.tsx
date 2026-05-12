@@ -1,21 +1,13 @@
 import React from 'react'
-import { cookies } from "next/headers"
 import Header from '@/components/protected/header'
 import Footer from '@/components/protected/footer'
-import Side from '@/components/admin/side'
+import StaffSideNav from '@/components/staff/side-nav'
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar'
-import { requireAdmin } from '@/lib/utils/admin-auth'
-import { ADMIN_SERVICE_COOKIE, isAdminService } from "@/lib/constants/admin-service"
-
+import { requireStaff } from '@/lib/utils/staff-auth'
 import AdminNotificationListener from '@/components/notifications/admin-notification-listener'
 
 const Layout = async ({ children }: { children: React.ReactNode }) => {
-  await requireAdmin()
-  const cookieStore = await cookies()
-  const selectedServiceValue = cookieStore.get(ADMIN_SERVICE_COOKIE)?.value
-  const selectedService = isAdminService(selectedServiceValue)
-    ? selectedServiceValue
-    : undefined
+  await requireStaff()
 
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-background">
@@ -23,7 +15,10 @@ const Layout = async ({ children }: { children: React.ReactNode }) => {
       <Header />
       <div className="relative flex flex-1 overflow-hidden">
         <SidebarProvider className="absolute inset-0 h-full min-h-0 w-full">
-          <Side service={selectedService} />
+          {/* We wrap StaffSideNav in a sidebar-like structure or just use it directly if it's already a sidebar */}
+          <div className="w-64 border-r bg-muted/10 hidden md:block">
+            <StaffSideNav />
+          </div>
           <SidebarInset className="flex-1 overflow-y-auto">
             <main className="h-full p-4 md:p-6">
               {children}

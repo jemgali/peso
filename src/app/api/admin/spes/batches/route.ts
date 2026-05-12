@@ -98,7 +98,7 @@ export async function POST(request: Request): Promise<NextResponse<CreateBatchRe
   const createdBatch = await prisma.spesBatch.create({
     data: {
       batchId: crypto.randomUUID(),
-      batchName: parsed.data.batchName.trim(),
+      batchName: parsed.data.batchName.trim().toUpperCase(),
       batchYear: parsed.data.batchYear,
       startDate: new Date(parsed.data.startDate),
       createdById: adminUserId,
@@ -145,6 +145,25 @@ export async function POST(request: Request): Promise<NextResponse<CreateBatchRe
   if (notificationData.length > 0) {
     await prisma.notification.createMany({ data: notificationData })
   }
+
+  // Audit Log
+  const headersList = await headers()
+  await logAudit({
+    userId: adminUserId,
+    action: "CREATE",
+    entity: "SpesBatch",
+    entityId: createdBatch.batchId,
+    details: {
+      after: {
+        batchName: createdBatch.batchName,
+        batchYear: createdBatch.batchYear,
+        startDate: createdBatch.startDate,
+      },
+      message: `Created batch ${createdBatch.batchName}`,
+    },
+    ipAddress: headersList.get("x-forwarded-for") || undefined,
+    userAgent: headersList.get("user-agent") || undefined,
+  })
 
   return NextResponse.json(
     {

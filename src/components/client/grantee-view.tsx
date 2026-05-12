@@ -253,7 +253,9 @@ export default function GranteeView() {
                       asChild
                     >
                       <Link
-                        href={`/form-layouts/${selectedDoc.file}`}
+                        href={selectedDoc.file === "dole-spes-application.pdf" 
+                          ? "/api/client/spes/generate-pdf" 
+                          : `/form-layouts/${selectedDoc.file}`}
                         target="_blank"
                       >
                         <Printer className="size-4 mr-2" />

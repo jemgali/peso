@@ -105,9 +105,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, error: "Not a grantee" }, { status: 403 })
     }
 
-    if (workflow.batchId) {
-      return NextResponse.json({ success: false, error: "Batch already assigned" }, { status: 400 })
-    }
+    const oldBatchId = workflow.batchId
 
     const json = await req.json()
     const parsed = selectBatchSchema.safeParse(json)
@@ -116,6 +114,10 @@ export async function POST(req: Request) {
     }
 
     const { batchId } = parsed.data
+
+    if (oldBatchId === batchId) {
+      return NextResponse.json({ success: true, data: { batchId } })
+    }
 
     const targetBatch = await db.spesBatch.findUnique({
       where: { batchId },
@@ -140,9 +142,35 @@ export async function POST(req: Request) {
         historyId: `sh_${createId()}`,
         workflowId: workflow.workflowId,
         stage: "BATCH_ASSIGNED",
-        note: "Grantee self-selected batch",
+        note: oldBatchId ? `Grantee changed batch from ${oldBatchId} to ${targetBatch.batchName}` : "Grantee self-selected batch",
       },
     })
+
+    // Notify Admins
+    const admins = await db.user.findMany({
+      where: { role: "admin" },
+      select: { id: true },
+    })
+
+    if (admins.length > 0) {
+      const profile = await db.profileUser.findUnique({
+        where: { userId: user.id },
+      })
+      const applicantName = profile 
+        ? `${profile.profileFirstName} ${profile.profileLastName}`.trim() 
+        : user.name || "A grantee"
+
+      await db.notification.createMany({
+        data: admins.map((admin) => ({
+          notificationId: `nt_${createId()}`,
+          userId: admin.id,
+          type: "batch_change",
+          title: "Batch Change Notification",
+          message: `${applicantName} has changed their batch to ${targetBatch.batchName}.`,
+          link: `/protected/admin/batches?batchId=${targetBatch.batchId}`,
+        })),
+      })
+    }
 
     return NextResponse.json({ success: true, data: { batchId: targetBatch.batchId } })
   } catch (error) {

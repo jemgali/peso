@@ -51,6 +51,8 @@ export const ROUTES = {
         WORKFLOWS_BULK_STATUS: "/api/admin/spes/workflows/bulk-status",
         WORKFLOWS_BULK_ASSIGNMENT: "/api/admin/spes/workflows/bulk-assignment",
         WORKFLOWS_NOTIFY: "/api/admin/spes/workflows/notify",
+        REPORTS: "/api/admin/spes/reports",
+        REPORTS_EXPORT: "/api/admin/spes/reports/export",
       },
     },
     CLIENT: {

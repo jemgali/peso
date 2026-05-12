@@ -119,15 +119,6 @@ export default function BatchManagement() {
   const [updatingBatch, setUpdatingBatch] = useState(false);
   const [deletingBatchId, setDeletingBatchId] = useState<string | null>(null);
 
-  const [notifyingApplicants, setNotifyingApplicants] = useState(false);
-  const [notificationNote, setNotificationNote] = useState("");
-  const [attachSchedule, setAttachSchedule] = useState(false);
-  const [scheduleTitle, setScheduleTitle] = useState("");
-  const [scheduleDescription, setScheduleDescription] = useState("");
-  const [scheduleAllDay, setScheduleAllDay] = useState(false);
-  const [scheduleStartDate, setScheduleStartDate] = useState(
-    formatDateTimeInputInManila(new Date())
-  );
   const [scheduleEndDate, setScheduleEndDate] = useState("");
 
   const loadBatches = useCallback(async () => {
@@ -246,7 +237,7 @@ export default function BatchManagement() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          batchName,
+          batchName: batchName.trim().toUpperCase(),
           startDate,
           batchYear: parseInt(startDate.split("-")[0] || "0", 10),
         }),
@@ -293,7 +284,7 @@ export default function BatchManagement() {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          batchName: editBatchName,
+          batchName: editBatchName.trim().toUpperCase(),
           startDate: editStartDate,
         }),
       });
@@ -348,135 +339,7 @@ export default function BatchManagement() {
     }
   };
 
-  const notifySelectedApplicants = async () => {
-    const targetWorkflowIds = Array.from(selectedBatchWorkflowIds);
-    if (targetWorkflowIds.length === 0) {
-      toast.error("Select at least one applicant from the batch");
-      return;
-    }
 
-    let schedulePayload:
-      | {
-          title: string;
-          description?: string;
-          startDate: string;
-          endDate?: string | null;
-          allDay: boolean;
-        }
-      | undefined;
-
-    if (attachSchedule) {
-      const trimmedScheduleTitle = scheduleTitle.trim();
-      if (!trimmedScheduleTitle) {
-        toast.error(
-          "Schedule title is required when calendar scheduling is enabled",
-        );
-        return;
-      }
-
-      if (!scheduleStartDate) {
-        toast.error("Schedule start date is required");
-        return;
-      }
-
-      const startDateInputValue = scheduleAllDay
-        ? scheduleStartDate.split("T")[0] || scheduleStartDate
-        : scheduleStartDate;
-      const parsedStartDate = scheduleAllDay
-        ? parseManilaDateInput(startDateInputValue)
-        : parseManilaDateTimeInput(scheduleStartDate);
-      if (!parsedStartDate) {
-        toast.error("Schedule start date is invalid");
-        return;
-      }
-
-      let parsedEndDate: Date | null = null;
-      if (scheduleEndDate) {
-        const endDateInputValue = scheduleAllDay
-          ? scheduleEndDate.split("T")[0] || scheduleEndDate
-          : scheduleEndDate;
-        parsedEndDate = scheduleAllDay
-          ? parseManilaDateInput(endDateInputValue)
-          : parseManilaDateTimeInput(scheduleEndDate);
-        if (!parsedEndDate) {
-          toast.error("Schedule end date is invalid");
-          return;
-        }
-
-        if (parsedEndDate.getTime() < parsedStartDate.getTime()) {
-          toast.error("Schedule end date must be after or equal to start date");
-          return;
-        }
-      }
-
-      schedulePayload = {
-        title: trimmedScheduleTitle,
-        description: scheduleDescription.trim() || undefined,
-        startDate: parsedStartDate.toISOString(),
-        endDate: parsedEndDate ? parsedEndDate.toISOString() : null,
-        allDay: scheduleAllDay,
-      };
-    }
-
-    setNotifyingApplicants(true);
-    try {
-      const response = await fetch(ROUTES.API.ADMIN.SPES.WORKFLOWS_NOTIFY, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          workflowIds: targetWorkflowIds,
-          note: notificationNote.trim() || undefined,
-          schedule: schedulePayload,
-        }),
-      });
-      const payload = (await response.json()) as BulkNotifyWorkflowsResponse;
-      const result = payload.data;
-
-      if (!response.ok || !payload.success || !result) {
-        throw new Error(payload.error || "Failed to notify selected applicants");
-      }
-
-      toast.success(
-        `Notified ${result.notified} applicant${
-          result.notified === 1 ? "" : "s"
-        } (${result.emailSent} email${result.emailSent === 1 ? "" : "s"} sent).`,
-      );
-      if (result.scheduledEvent) {
-        toast.success(
-          `Scheduled "${result.scheduledEvent.title}" for ${
-            result.scheduledEvent.recipientCount
-          } selected applicant${
-            result.scheduledEvent.recipientCount === 1 ? "" : "s"
-          }.`,
-        );
-      }
-      if (result.missingWorkflowIds.length > 0) {
-        toast.info(
-          `${result.missingWorkflowIds.length} selected record${
-            result.missingWorkflowIds.length === 1 ? " was" : "s were"
-          } skipped because they were unavailable.`,
-        );
-      }
-
-      setSelectedBatchWorkflowIds(new Set());
-      setNotificationNote("");
-      setAttachSchedule(false);
-      setScheduleTitle("");
-      setScheduleDescription("");
-      setScheduleAllDay(false);
-      setScheduleStartDate(formatDateTimeInputInManila(new Date()));
-      setScheduleEndDate("");
-      await loadWorkflows();
-    } catch (error) {
-      toast.error(
-        error instanceof Error
-          ? error.message
-          : "Failed to notify selected applicants",
-      );
-    } finally {
-      setNotifyingApplicants(false);
-    }
-  };
 
   const removeSelectedGranteesFromBatch = async () => {
     const workflowIds = Array.from(selectedBatchWorkflowIds);
@@ -612,6 +475,7 @@ export default function BatchManagement() {
   );
 
   const filteredBatches = useMemo(() => {
+    if (batchYearFilter === "all") return batches;
     return batches.filter((batch) => batch.batchYear.toString() === batchYearFilter);
   }, [batches, batchYearFilter]);
 
@@ -682,6 +546,7 @@ export default function BatchManagement() {
                   value={batchYearFilter}
                   onChange={(event) => setBatchYearFilter(event.target.value)}
                 >
+                  <NativeSelectOption value="all">All Batch</NativeSelectOption>
                   <NativeSelectOption value={(new Date().getFullYear() - 1).toString()}>{new Date().getFullYear() - 1}</NativeSelectOption>
                   <NativeSelectOption value={(new Date().getFullYear()).toString()}>{new Date().getFullYear()}</NativeSelectOption>
                   <NativeSelectOption value={(new Date().getFullYear() + 1).toString()}>{new Date().getFullYear() + 1}</NativeSelectOption>
@@ -822,9 +687,8 @@ export default function BatchManagement() {
         </Card>
 
         <Tabs defaultValue="batch-creation" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="batch-creation">Batch Creation</TabsTrigger>
-            <TabsTrigger value="notify">Notify</TabsTrigger>
             <TabsTrigger value="office-assignment">
               Office Assignment
             </TabsTrigger>
@@ -930,7 +794,13 @@ export default function BatchManagement() {
                                 <div className="flex flex-col">
                                   <span className="font-medium text-sm">{batch.batchName}</span>
                                   <span className="text-xs text-muted-foreground">
-                                    Start: {new Date(batch.startDate).toLocaleDateString("en-US", { timeZone: MANILA_TIME_ZONE })} &middot; Grantees: {batch.granteeCount || 0}
+                                    Start: {(() => {
+                                      const d = new Date(batch.startDate);
+                                      const mm = String(d.getMonth() + 1).padStart(2, '0');
+                                      const dd = String(d.getDate()).padStart(2, '0');
+                                      const yyyy = d.getFullYear();
+                                      return `${mm}/${dd}/${yyyy}`;
+                                    })()} &middot; Grantees: {batch.granteeCount || 0}
                                   </span>
                                 </div>
                                 <div className="flex items-center gap-1">
@@ -966,122 +836,7 @@ export default function BatchManagement() {
             </Card>
           </TabsContent>
 
-          <TabsContent value="notify" className="mt-0">
-            <Card>
-              <CardHeader>
-                <CardTitle>Notify</CardTitle>
-                <CardDescription>
-                  Send an email notification and schedule a calendar event for the selected applicants.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="flex flex-col gap-4">
-                <div className="flex flex-col gap-2">
-                  <Label htmlFor="notificationNote">Notification Note (optional)</Label>
-                  <Textarea
-                    id="notificationNote"
-                    value={notificationNote}
-                    onChange={(event) => setNotificationNote(event.target.value)}
-                    placeholder="Additional context included in the notification email..."
-                  />
-                </div>
 
-                <div className="rounded-lg border p-4 shadow-sm">
-                  <div className="mb-4 flex items-start gap-2">
-                    <Checkbox
-                      id="attachSchedule"
-                      checked={attachSchedule}
-                      onCheckedChange={(checked) => setAttachSchedule(checked === true)}
-                    />
-                    <div className="space-y-1">
-                      <Label htmlFor="attachSchedule" className="cursor-pointer">
-                        Add calendar event for selected applicants
-                      </Label>
-                      <p className="text-xs text-muted-foreground">
-                        Include a schedule event in the notification email.
-                      </p>
-                    </div>
-                  </div>
-
-                  {attachSchedule && (
-                    <div className="space-y-3 rounded-lg bg-muted/30 p-3">
-                      <div className="flex flex-col gap-2">
-                        <Label htmlFor="notifyScheduleTitle">Schedule Title</Label>
-                        <NativeSelect
-                          id="notifyScheduleTitle"
-                          value={scheduleTitle}
-                          onChange={(event) => setScheduleTitle(event.target.value)}
-                        >
-                          <NativeSelectOption value="">Select Title</NativeSelectOption>
-                          <NativeSelectOption value="Orientation">Orientation</NativeSelectOption>
-                          <NativeSelectOption value="Deployment">Deployment</NativeSelectOption>
-                          <NativeSelectOption value="Others">Others</NativeSelectOption>
-                        </NativeSelect>
-                      </div>
-
-                      <div className="flex flex-col gap-2">
-                        <Label htmlFor="notifyScheduleDescription">Schedule Description (optional)</Label>
-                        <Textarea
-                          id="notifyScheduleDescription"
-                          value={scheduleDescription}
-                          onChange={(event) => setScheduleDescription(event.target.value)}
-                          placeholder="Optional details about this scheduled event"
-                        />
-                      </div>
-
-                      <div className="flex items-center gap-3">
-                        <Checkbox
-                          id="notifyScheduleAllDay"
-                          checked={scheduleAllDay}
-                          onCheckedChange={(checked) => setScheduleAllDay(checked === true)}
-                        />
-                        <Label htmlFor="notifyScheduleAllDay" className="cursor-pointer">
-                          All-day event
-                        </Label>
-                      </div>
-
-                      <div className="grid gap-3 md:grid-cols-2">
-                        <div className="flex flex-col gap-2">
-                          <Label htmlFor="notifyScheduleStart">
-                            {scheduleAllDay ? "Start Date" : "Start Date & Time"}
-                          </Label>
-                          <Input
-                            id="notifyScheduleStart"
-                            type={scheduleAllDay ? "date" : "datetime-local"}
-                            value={scheduleAllDay ? scheduleStartDate.split("T")[0] || "" : scheduleStartDate}
-                            onChange={(event) => setScheduleStartDate(event.target.value)}
-                          />
-                        </div>
-                        <div className="flex flex-col gap-2">
-                          <Label htmlFor="notifyScheduleEnd">
-                            {scheduleAllDay ? "End Date (optional)" : "End Date & Time (optional)"}
-                          </Label>
-                          <Input
-                            id="notifyScheduleEnd"
-                            type={scheduleAllDay ? "date" : "datetime-local"}
-                            value={scheduleAllDay ? scheduleEndDate.split("T")[0] || "" : scheduleEndDate}
-                            onChange={(event) => setScheduleEndDate(event.target.value)}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                <div className="rounded-lg bg-muted/40 p-3 text-sm text-muted-foreground">
-                  Selected applicants: <span className="font-medium text-foreground">{selectedBatchWorkflowIds.size}</span>
-                </div>
-
-                <Button
-                  type="button"
-                  onClick={notifySelectedApplicants}
-                  disabled={notifyingApplicants || selectedBatchWorkflowIds.size === 0}
-                >
-                  {notifyingApplicants && <Spinner data-icon="inline-start" />}
-                  Send Notification
-                </Button>
-              </CardContent>
-            </Card>
-          </TabsContent>
 
           <TabsContent value="office-assignment" className="mt-0">
             <Card>

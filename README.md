@@ -1,133 +1,157 @@
 # PESO Portal
 
-Next.js (App Router) + TypeScript + Better Auth + Prisma (PostgreSQL).
+A comprehensive management system for the Public Employment Service Office (PESO), specifically designed to streamline the Special Program for Employment of Students (SPES). Built with a modern, high-performance tech stack focused on security, scalability, and developer experience.
 
-## Tech stack
+## 🛠 Tech Stack
 
-- Next.js 16 (App Router)
-- React 19
-- TypeScript (strict)
-- Prisma (client output: `generated/prisma`)
-- PostgreSQL (`auth` + `public` schemas)
-- Better Auth (email/password + Google)
-- Resend (email verification)
+- **Framework**: Next.js 16 (App Router)
+- **Language**: TypeScript (Strict mode)
+- **Authentication**: [Better Auth](https://www.better-auth.com/) (Email/Password + Google OAuth)
+- **Database**: PostgreSQL with [Prisma ORM](https://www.prisma.io/)
+- **Styling**: Tailwind CSS 4 + [Shadcn/UI](https://ui.shadcn.com/)
+- **File Storage**: [UploadThing](https://uploadthing.com/)
+- **Emails**: [Resend](https://resend.com/)
+- **Time Management**: Standardized Manila Time (`Asia/Manila`)
 
-## Requirements
+---
 
-- Node.js:
-  - **Node 20+ recommended**
-  - Note: Some dependencies (e.g., Resend) require modern Node versions.
-- pnpm (recommended, repo includes `pnpm-lock.yaml`)
+## 🚀 Getting Started
 
-## 1) Install dependencies
+### 1. Prerequisites
+
+- **Node.js**: Version 20.x or higher is required.
+- **Package Manager**: `pnpm` is highly recommended.
+- **Database**: A PostgreSQL instance (local or hosted).
+
+### 2. Environment Setup
+
+Create a `.env` file in the root directory and populate it with the following:
+
+```bash
+# Database
+# Note: The system requires "auth" and "public" schemas.
+DATABASE_URL="postgresql://USER:PASSWORD@HOST:5432/DBNAME?schema=public"
+
+# Better Auth
+BETTER_AUTH_URL="http://localhost:3000"
+BETTER_AUTH_SECRET="your-generate-secret-here"
+
+# Resend (Emails)
+RESEND_API_KEY="re_..."
+
+# UploadThing (File Storage)
+UPLOADTHING_TOKEN="..."
+
+# Google OAuth (Optional)
+GOOGLE_CLIENT_ID="..."
+GOOGLE_CLIENT_SECRET="..."
+
+# Google Sheets Export (Optional - for Reports)
+GOOGLE_SHEETS_SPREADSHEET_ID="..."
+GOOGLE_SHEETS_CLIENT_EMAIL="..."
+GOOGLE_SHEETS_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
+```
+
+### 3. Installation
 
 ```bash
 pnpm install
 ```
 
-## 2) Environment variables
+### 4. Database Initialization
 
-Create a `.env` file in the repository root.
+The project uses two schemas: `auth` for authentication tables and `public` for the application logic.
 
-### Required
+1.  **Create Schemas** (if not done automatically):
+    ```sql
+    CREATE SCHEMA IF NOT EXISTS auth;
+    CREATE SCHEMA IF NOT EXISTS public;
+    ```
 
-```bash
-# Postgres connection string used by Prisma + Better Auth
-DATABASE_URL="postgresql://USER:PASSWORD@HOST:5432/DBNAME?schema=public"
+2.  **Generate Prisma Client**:
+    ```bash
+    pnpm prisma generate
+    ```
 
-# Better Auth base URL (used by server + client)
-BETTER_AUTH_URL="http://localhost:3000"
+3.  **Apply Migrations**:
+    ```bash
+    pnpm prisma migrate dev
+    ```
 
-# Resend (used for email verification + /api/send test route)
-RESEND_API_KEY="re_..."
+4.  **Seed Initial Data**:
+    This creates the initial administrative account and system settings.
+    ```bash
+    pnpm prisma db seed
+    ```
 
-# UploadThing token (required for file upload routes + signed file access)
-UPLOADTHING_TOKEN="..."
-```
-
-### Optional (Google OAuth)
-
-```bash
-GOOGLE_CLIENT_ID="..."
-GOOGLE_CLIENT_SECRET="..."
-```
-
-## 3) Database setup (PostgreSQL)
-
-This project expects PostgreSQL and uses two schemas:
-
-- `auth` (Better Auth tables/models)
-- `public` (application domain tables/models)
-
-Make sure your database exists and that these schemas are available.
-
-Example (psql):
-
-```sql
-CREATE SCHEMA IF NOT EXISTS auth;
-CREATE SCHEMA IF NOT EXISTS public;
-```
-
-## 4) Prisma: generate + migrate + seed
-
-> Prisma client output is configured to `generated/prisma` and is gitignored.
-
-### Run migrations
-
-If you already have migrations, apply them:
-
-```bash
-pnpm prisma migrate dev
-```
-
-### Seed (creates initial admin)
-
-Seeding is configured in `prisma.config.ts` to run:
-
-```bash
-pnpx tsx prisma/seed.ts
-```
-
-You can run seed via Prisma:
-
-```bash
-pnpm prisma db seed
-```
-
-The seed script will create an admin user if it does not already exist.
-
-> Note: The current seed script uses a fixed admin email/password inside `prisma/seed.ts`. Change these before production use.
-
-## 5) Run the app
+### 5. Run Development Server
 
 ```bash
 pnpm dev
 ```
+Open [http://localhost:3000](http://localhost:3000) to see the application.
 
-Open:
+---
 
-- http://localhost:3000
+## 🏗 Project Structure & Modules
 
-## Auth routes
+- **`/auth`**: Public routes for sign-in, sign-up, and email verification.
+- **`/protected/admin`**: Administrative dashboard.
+  - **Announcements & Schedule**: Manage system-wide events and notices.
+  - **Applications**: Multi-stage review process (New vs. SPES Baby).
+  - **Evaluation**: Scoring and remarks for grantees.
+  - **Batches**: Management of SPES work periods and office assignments.
+  - **Users**: RBAC (Role-Based Access Control) management.
+- **`/protected/client`**: Grantee/Applicant portal.
+  - **Application Tracker**: Real-time status updates on submissions.
+  - **Document Center**: Upload and manage required SPES documents.
+- **`/protected/employee`**: Staff-level portal (in development).
 
-- `/auth/sign-in`
-- `/auth/sign-up`
-- `/auth/verified` (success page after verification)
+---
 
-## Protected routes (role-based)
+## 📋 Roadmap & Project Status
 
-- `/protected/admin` (server-guarded; redirects if not admin)
-- `/protected/client`
-- `/protected/employee`
+### System Modules Status
 
-## API routes
+| Module | Status | Features |
+| :--- | :--- | :--- |
+| **Authentication** | ✅ Complete | Email/Password, Google OAuth, Role-based access (RBAC). |
+| **Applications** | ✅ Complete | New/SPES Baby workflows, status tracking, admin review. |
+| **Evaluation** | ✅ Complete | Multi-criteria scoring, remarks, violation tracking, file uploads. |
+| **Batches** | ✅ Complete | Batch creation, year filtering, office assignments. |
+| **Reports** | ✅ Complete | Data visualization (Recharts), Google Sheets export. |
+| **Notify** | ✅ Complete | Bulk applicant selection, calendar events, email integration. |
+| **Schedule** | ✅ Complete | Unified event management, Manila timezone support. |
+| **Grantee Portal** | 🚧 Beta | Application tracker, Document center, PDF generation. |
+| **Employee Portal** | ✅ Complete | Restricted workspace for non-admin evaluators. |
+| **Audit Logs** | ✅ Complete | Full administrative action history with diff tracking. |
 
-- `POST /api/send`
-  - Sends a sample email using Resend and a React email template
-  - Source: `src/app/api/send/route.ts`
+---
 
-## Notes / gotchas
+### 🚀 Planned Enhancements
 
-- The repo ignores `.env*` files—do not commit secrets.
-- The generated Prisma client lives in `generated/prisma` (also ignored by git).
-- Resend “from” domain in development uses `onboarding@resend.dev` in code; adjust for your real domain in production.
+#### 1. Administrative Features
+- [x] **Real-time Admin Alerts**: Live notifications (toasts) when critical events occur.
+- [x] **Advanced Audit Logging**: Track all administrative changes with detailed history.
+- [x] **Batch UX Refinement**: Replaced "Bulk Control" with "Status Control" for clarity.
+- [x] **Standardized Naming**: Enforced strict ALL-CAPS naming for batch identifiers.
+
+#### 2. Grantee Portal
+- [x] **Automated Form Generation**: Server-side PDF filling (`pdf-lib`) for SPES forms.
+- [ ] **Document Printing Redesign**: Modernize the print view to match the dashboard aesthetic.
+
+#### 3. Employee Workflow
+- [x] **Employee Portal Implementation**: Dedicated workspace for non-admin evaluators.
+
+#### 4. System Standards
+- [x] **Strict Manila Time**: Audited all components for `manila-datetime` compliance.
+- [x] **Standard Date Format**: Enforced `{mm/dd/yyyy}` globally in administrative UI.
+
+#### 5. Advanced Infrastructure
+- [ ] **Production Hardening**: SSL/TLS finalization and SSH security audits.
+
+---
+
+## 📝 Notes
+- Prisma client is generated into `generated/prisma` to keep the root clean.
+- Ensure `DATABASE_URL` includes `?schema=public` for standard Prisma behavior while supporting multiple schemas.

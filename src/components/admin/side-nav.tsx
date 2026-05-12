@@ -13,6 +13,7 @@ import {
   ClipboardCheck,
   Layers,
   FileWarning,
+  History,
 } from "lucide-react";
 import { usePathname } from "next/navigation";
 import {
@@ -20,7 +21,6 @@ import {
   type NavItem,
 } from "@/components/shared/side-nav";
 import type { AdminService } from "@/lib/constants/admin-service";
-
 const generalNavItems: NavItem[] = [
   { title: "Dashboard", url: "/protected/admin", icon: Blocks },
   { title: "Programs", url: "/protected/admin/programs", icon: Handshake },
@@ -31,6 +31,7 @@ const generalNavItems: NavItem[] = [
   },
   { title: "Schedule", url: "/protected/admin/schedule", icon: CalendarDays },
   { title: "Users", url: "/protected/admin/users", icon: Users },
+  { title: "Audit Logs", url: "/protected/admin/audit", icon: History },
 ];
 
 const spesNavItems: NavItem[] = [
@@ -45,6 +46,7 @@ const spesNavItems: NavItem[] = [
     icon: ClipboardCheck,
   },
   { title: "Batch Management", url: "/protected/admin/batches", icon: Layers },
+  { title: "Notify", url: "/protected/admin/notify", icon: Megaphone },
   { title: "Remarks", url: "/protected/admin/remarks", icon: FileWarning },
   { title: "Reports", url: "/protected/admin/reports", icon: FileText },
 ];
@@ -59,7 +61,8 @@ function isGeneralRoute(pathname: string): boolean {
     pathname.startsWith("/protected/admin/programs") ||
     pathname.startsWith("/protected/admin/announcements") ||
     pathname.startsWith("/protected/admin/schedule") ||
-    pathname.startsWith("/protected/admin/users")
+    pathname.startsWith("/protected/admin/users") ||
+    pathname.startsWith("/protected/admin/audit")
   );
 }
 
@@ -68,6 +71,7 @@ function isSpesRoute(pathname: string): boolean {
     pathname.startsWith("/protected/admin/applications") ||
     pathname.startsWith("/protected/admin/evaluation") ||
     pathname.startsWith("/protected/admin/batches") ||
+    pathname.startsWith("/protected/admin/notify") ||
     pathname.startsWith("/protected/admin/remarks") ||
     pathname.startsWith("/protected/admin/reports")
   );

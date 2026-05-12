@@ -1,11 +1,11 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { ClipboardCheckIcon, FileWarningIcon, UsersIcon } from "lucide-react"
 
-export default function EmployeeDashboard() {
+export default function StaffDashboard() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-3xl font-bold">Employee Workspace</h1>
+        <h1 className="text-3xl font-bold">Staff Workspace</h1>
         <p className="text-muted-foreground">
           Welcome to the evaluation portal. You can review and score SPES applicants here.
         </p>
@@ -47,7 +47,7 @@ export default function EmployeeDashboard() {
       <Card className="col-span-3">
         <CardHeader>
           <CardTitle>Getting Started</CardTitle>
-          <CardDescription>How to use the employee portal</CardDescription>
+          <CardDescription>How to use the staff portal</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4 text-sm text-muted-foreground">
           <p>

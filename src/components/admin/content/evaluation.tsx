@@ -147,13 +147,6 @@ export default function Evaluation() {
   const [workflows, setWorkflows] = useState<SpesWorkflowListItem[]>([])
   const [drafts, setDrafts] = useState<Record<string, WorkflowDraft>>({})
   const [selectedWorkflowIds, setSelectedWorkflowIds] = useState<Set<string>>(new Set())
-  const [scheduleTitle, setScheduleTitle] = useState("")
-  const [scheduleDescription, setScheduleDescription] = useState("")
-  const [scheduleAllDay, setScheduleAllDay] = useState(false)
-  const [scheduleStartDate, setScheduleStartDate] = useState(
-    formatDateTimeInputInManila(new Date())
-  )
-  const [scheduleEndDate, setScheduleEndDate] = useState("")
   const [search, setSearch] = useState("")
   const [applicantCategory, setApplicantCategory] = useState<SpesApplicantCategory>("new")
   const [statusFilter, setStatusFilter] = useState<SpesSelectionStatus | "all">("all")
@@ -405,123 +398,7 @@ export default function Evaluation() {
     })
   }
 
-  const notifySelectedApplicants = async () => {
-    const targetWorkflowIds = Array.from(selectedWorkflowIds)
-    if (targetWorkflowIds.length === 0) {
-      toast.error("Select at least one applicant from the table")
-      return
-    }
 
-    let schedulePayload:
-      | {
-          title: string
-          description?: string
-          startDate: string
-          endDate?: string | null
-          allDay: boolean
-        }
-      | undefined
-
-    const trimmedScheduleTitle = scheduleTitle.trim()
-    if (!trimmedScheduleTitle) {
-      toast.error("Schedule title is required")
-      return
-    }
-
-    if (!scheduleStartDate) {
-      toast.error("Schedule start date is required")
-      return
-    }
-
-    const startDateInputValue = scheduleAllDay
-      ? scheduleStartDate.split("T")[0] || scheduleStartDate
-      : scheduleStartDate
-    const parsedStartDate = scheduleAllDay
-      ? parseManilaDateInput(startDateInputValue)
-      : parseManilaDateTimeInput(scheduleStartDate)
-    if (!parsedStartDate) {
-      toast.error("Schedule start date is invalid")
-      return
-    }
-
-    let parsedEndDate: Date | null = null
-    if (scheduleEndDate) {
-      const endDateInputValue = scheduleAllDay
-        ? scheduleEndDate.split("T")[0] || scheduleEndDate
-        : scheduleEndDate
-      parsedEndDate = scheduleAllDay
-        ? parseManilaDateInput(endDateInputValue)
-        : parseManilaDateTimeInput(scheduleEndDate)
-      if (!parsedEndDate) {
-        toast.error("Schedule end date is invalid")
-        return
-      }
-
-      if (parsedEndDate.getTime() < parsedStartDate.getTime()) {
-        toast.error("Schedule end date must be after or equal to start date")
-        return
-      }
-    }
-
-    schedulePayload = {
-      title: trimmedScheduleTitle,
-      description: scheduleDescription.trim() || undefined,
-      startDate: parsedStartDate.toISOString(),
-      endDate: parsedEndDate ? parsedEndDate.toISOString() : null,
-      allDay: scheduleAllDay,
-    }
-
-    setNotifyingApplicants(true)
-    try {
-      const response = await fetch(ROUTES.API.ADMIN.SPES.WORKFLOWS_NOTIFY, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          workflowIds: targetWorkflowIds,
-          note: undefined,
-          schedule: schedulePayload,
-        }),
-      })
-      const payload = (await response.json()) as BulkNotifyWorkflowsResponse
-      const result = payload.data
-
-      if (!response.ok || !payload.success || !result) {
-        throw new Error(payload.error || "Failed to notify selected applicants")
-      }
-
-      toast.success(
-        `Notified ${result.notified} applicant${result.notified === 1 ? "" : "s"} (${result.emailSent} email${
-          result.emailSent === 1 ? "" : "s"
-        } sent).`
-      )
-      if (result.scheduledEvent) {
-        toast.success(
-          `Scheduled "${result.scheduledEvent.title}" for ${result.scheduledEvent.recipientCount} selected applicant${
-            result.scheduledEvent.recipientCount === 1 ? "" : "s"
-          }.`
-        )
-      }
-      if (result.missingWorkflowIds.length > 0) {
-        toast.info(
-          `${result.missingWorkflowIds.length} selected record${
-            result.missingWorkflowIds.length === 1 ? " was" : "s were"
-          } skipped because they were unavailable.`
-        )
-      }
-
-      setSelectedWorkflowIds(new Set())
-      setScheduleTitle("")
-      setScheduleDescription("")
-      setScheduleAllDay(false)
-      setScheduleStartDate(formatDateTimeInputInManila(new Date()))
-      setScheduleEndDate("")
-      await loadWorkflows()
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to notify selected applicants")
-    } finally {
-      setNotifyingApplicants(false)
-    }
-  }
 
   const applyBulkStatus = async () => {
     const targetWorkflowIds = Array.from(selectedWorkflowIds)
@@ -823,99 +700,11 @@ export default function Evaluation() {
           </CardContent>
         </Card>
 
-        <Tabs defaultValue="notify" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="notify">Notify</TabsTrigger>
+        <Tabs defaultValue="exam-settings" className="space-y-4">
+          <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="exam-settings">Exam Settings</TabsTrigger>
-            <TabsTrigger value="bulk-control">Bulk Control</TabsTrigger>
+            <TabsTrigger value="status-control">Status Control</TabsTrigger>
           </TabsList>
-
-          <TabsContent value="notify" className="mt-0">
-            <Card>
-              <CardHeader>
-                <CardTitle>Notify Selected Applicants</CardTitle>
-                <CardDescription>
-                  Send a calendar event notification to all selected applicants.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="flex flex-col gap-6">
-                <div className="space-y-4">
-                  <div className="flex flex-col gap-2">
-                    <Label htmlFor="notifyScheduleTitle">Schedule Title</Label>
-                    <NativeSelect
-                      id="notifyScheduleTitle"
-                      value={scheduleTitle}
-                      onChange={(event) => setScheduleTitle(event.target.value)}
-                    >
-                      <NativeSelectOption value="">Select Title</NativeSelectOption>
-                      <NativeSelectOption value="Interview">Interview</NativeSelectOption>
-                      <NativeSelectOption value="Examination">Examination</NativeSelectOption>
-                      <NativeSelectOption value="Orientation">Orientation</NativeSelectOption>
-                      <NativeSelectOption value="Others">Others</NativeSelectOption>
-                    </NativeSelect>
-                  </div>
-
-                  <div className="flex flex-col gap-2">
-                    <Label htmlFor="notifyScheduleDescription">Schedule Description (optional)</Label>
-                    <Textarea
-                      id="notifyScheduleDescription"
-                      value={scheduleDescription}
-                      onChange={(event) => setScheduleDescription(event.target.value)}
-                      placeholder="Optional details about the event"
-                      className="min-h-[80px]"
-                    />
-                  </div>
-
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div className="flex flex-col gap-2">
-                      <Label htmlFor="notifyScheduleStartDate">Start Date & Time</Label>
-                      <Input
-                        id="notifyScheduleStartDate"
-                        type={scheduleAllDay ? "date" : "datetime-local"}
-                        value={scheduleStartDate}
-                        onChange={(event) => setScheduleStartDate(event.target.value)}
-                      />
-                    </div>
-
-                    <div className="flex flex-col gap-2">
-                      <Label htmlFor="notifyScheduleEndDate">End Date & Time (optional)</Label>
-                      <Input
-                        id="notifyScheduleEndDate"
-                        type={scheduleAllDay ? "date" : "datetime-local"}
-                        value={scheduleEndDate}
-                        onChange={(event) => setScheduleEndDate(event.target.value)}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <Checkbox
-                      id="notifyScheduleAllDay"
-                      checked={scheduleAllDay}
-                      onCheckedChange={(checked) => setScheduleAllDay(checked === true)}
-                    />
-                    <Label htmlFor="notifyScheduleAllDay" className="cursor-pointer">
-                      All day event
-                    </Label>
-                  </div>
-                </div>
-
-                <Button
-                  className="w-full"
-                  size="lg"
-                  onClick={() => void notifySelectedApplicants()}
-                  disabled={notifyingApplicants || selectedCount === 0}
-                >
-                  {notifyingApplicants ? (
-                    <Spinner data-icon="inline-start" />
-                  ) : (
-                    <ClipboardListIcon data-icon="inline-start" />
-                  )}
-                  Send Event Notification ({selectedCount})
-                </Button>
-              </CardContent>
-            </Card>
-          </TabsContent>
 
           <TabsContent value="exam-settings" className="mt-0">
             <Card>
@@ -974,10 +763,10 @@ export default function Evaluation() {
             </Card>
           </TabsContent>
 
-          <TabsContent value="bulk-control" className="mt-0">
+          <TabsContent value="status-control" className="mt-0">
             <Card>
               <CardHeader>
-                <CardTitle>Bulk Control</CardTitle>
+                <CardTitle>Status Control</CardTitle>
                 <CardDescription>
                   Apply one status to selected applicants. Denied is auto-derived for failed examinees.
                 </CardDescription>
@@ -1001,7 +790,7 @@ export default function Evaluation() {
                 </div>
 
                 <div className="flex flex-col gap-2">
-                  <Label htmlFor="bulkNote">Bulk Note (optional)</Label>
+                  <Label htmlFor="bulkNote">Status Note (optional)</Label>
                   <Textarea
                     id="bulkNote"
                     value={bulkNote}
@@ -1016,11 +805,12 @@ export default function Evaluation() {
 
                 <Button
                   type="button"
+                  className="w-full"
                   onClick={applyBulkStatus}
                   disabled={updatingBulkStatus || selectedCount === 0}
                 >
                   {updatingBulkStatus && <Spinner data-icon="inline-start" />}
-                  Apply Bulk Status
+                  Apply Status
                 </Button>
               </CardContent>
             </Card>
