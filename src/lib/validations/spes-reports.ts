@@ -38,6 +38,7 @@ export type ListSpesReportsQuery = z.infer<typeof listSpesReportsQuerySchema>
 export const exportSpesReportsSchema = z.object({
   year: z.coerce.number().int().min(SPES_REPORT_MIN_YEAR).max(SPES_REPORT_MAX_YEAR).optional(),
   spreadsheetId: z.string().trim().min(1).optional(),
+  createNew: z.boolean().optional(),
 })
 
 export type ExportSpesReportsInput = z.infer<typeof exportSpesReportsSchema>

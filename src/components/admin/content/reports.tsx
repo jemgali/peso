@@ -34,6 +34,9 @@ import {
   NativeSelect,
   NativeSelectOption,
 } from "@/components/ui/native-select"
+import { Input } from "@/components/ui/input"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Label } from "@/components/ui/label"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Spinner } from "@/components/ui/spinner"
 import {
@@ -121,6 +124,8 @@ export default function Reports() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [exporting, setExporting] = useState(false)
+  const [spreadsheetId, setSpreadsheetId] = useState("")
+  const [createNew, setCreateNew] = useState(false)
 
   const fetchReports = useCallback(async (year: string) => {
     const requestId = ++latestRequestRef.current
@@ -170,7 +175,11 @@ export default function Reports() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ year: Number.parseInt(selectedYear, 10) }),
+        body: JSON.stringify({
+          year: Number.parseInt(selectedYear, 10),
+          spreadsheetId: spreadsheetId.trim() || undefined,
+          createNew: createNew,
+        }),
       })
       const payload = (await response.json()) as ExportSpesReportsResponse
       if (!response.ok || !payload.success || !payload.data) {
@@ -178,6 +187,10 @@ export default function Reports() {
       }
 
       toast.success(`Exported to Google Sheets tab ${payload.data.sheetTitle}`)
+      if (createNew || !spreadsheetId) {
+        setSpreadsheetId(payload.data.spreadsheetId)
+        setCreateNew(false)
+      }
     } catch (exportError) {
       const message =
         exportError instanceof Error ? exportError.message : "Failed to export report"
@@ -260,6 +273,29 @@ export default function Reports() {
               </NativeSelectOption>
             ))}
           </NativeSelect>
+          <div className="flex w-full items-center gap-2 sm:w-[350px]">
+            <Input
+              type="text"
+              placeholder="Target Spreadsheet ID"
+              value={spreadsheetId}
+              onChange={(e) => {
+                setSpreadsheetId(e.target.value)
+                if (e.target.value.trim()) setCreateNew(false)
+              }}
+              className="w-full"
+              disabled={createNew}
+            />
+          </div>
+          <div className="flex items-center gap-2 px-2">
+            <Checkbox
+              id="createNew"
+              checked={createNew}
+              onCheckedChange={(checked) => setCreateNew(checked === true)}
+            />
+            <Label htmlFor="createNew" className="cursor-pointer">
+              Create New
+            </Label>
+          </div>
           <Button onClick={handleExport} disabled={exporting} className="w-full sm:w-auto">
             {exporting ? (
               <Spinner data-icon="inline-start" />

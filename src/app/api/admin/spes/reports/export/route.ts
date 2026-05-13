@@ -55,6 +55,7 @@ export async function POST(request: Request): Promise<NextResponse<ExportSpesRep
     const report = await getSpesReportsData(parsed.data.year)
     const exportResult = await exportSpesReportsToGoogleSheets(report, {
       spreadsheetId: parsed.data.spreadsheetId,
+      createNew: parsed.data.createNew,
     })
 
     return NextResponse.json({

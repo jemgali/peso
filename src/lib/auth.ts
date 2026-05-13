@@ -15,8 +15,9 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 const OTP_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
 function generateAlphanumericOtp(length = 8): string {
-  return Array.from({ length }, () =>
-    OTP_CHARS[randomInt(0, OTP_CHARS.length)]
+  return Array.from(
+    { length },
+    () => OTP_CHARS[randomInt(0, OTP_CHARS.length)],
   ).join("");
 }
 
@@ -42,7 +43,7 @@ export const auth = betterAuth({
     autoSignInAfterVerification: true,
     sendVerificationEmail: async ({ user, url }) => {
       await resend.emails.send({
-        from: "PESO <noreply@jemgali.tech>",
+        from: process.env.EMAIL_FROM as string,
         to: user.email,
         subject: "Verify your email address",
         html: `<p>Hi ${user.name},</p><p>Please click <a href="${url}">here</a> to verify your email address.</p>`,
@@ -75,7 +76,7 @@ export const auth = betterAuth({
           const normalizedRole =
             !user.role || user.role === "user" ? "client" : user.role;
 
-          // For OAuth signups (callback path), force emailVerified to false 
+          // For OAuth signups (callback path), force emailVerified to false
           // so they must go through our verification flow.
           // Also nullify image to avoid using Google profile pictures.
           if (ctx?.path?.startsWith("/callback")) {
@@ -118,7 +119,7 @@ export const auth = betterAuth({
           // 2. If user is unverified (OAuth case), trigger verification email
           if (!user.emailVerified) {
             try {
-              // Note: Since we are in an adapter hook, we use our exported auth instance 
+              // Note: Since we are in an adapter hook, we use our exported auth instance
               // or ctx.api if available. Here we'll use the auth.api directly.
               const { auth } = await import("./auth");
               await auth.api.sendVerificationEmail({
@@ -128,7 +129,10 @@ export const auth = betterAuth({
                 },
               });
             } catch (error) {
-              console.error("Failed to send automatic verification email:", error);
+              console.error(
+                "Failed to send automatic verification email:",
+                error,
+              );
             }
           }
         },
@@ -166,7 +170,7 @@ export const auth = betterAuth({
         }
 
         await resend.emails.send({
-          from: "PESO <noreply@jemgali.tech>",
+          from: process.env.EMAIL_FROM as string,
           to: email,
           subject: "Your PESO password reset code",
           html: `<p>You requested to reset your PESO password.</p><p>Your verification code is:</p><p style="font-size:20px;font-weight:700;letter-spacing:2px;">${otp}</p><p>This code expires in 15 minutes.</p>`,

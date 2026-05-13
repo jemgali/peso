@@ -7,7 +7,7 @@ export async function POST() {
   try {
     const { data, error } = await resend.emails.send({
       // Replace "Acme" with your desired sender name, and use any prefix with your verified domain
-      from: "PESO <noreply@jemgali.tech>",
+      from: process.env.EMAIL_FROM as string,
       // Replace with the actual recipient's email address
       to: ["delivered@resend.dev"],
       subject: "Hello world",

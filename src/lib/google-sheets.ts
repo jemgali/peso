@@ -1,7 +1,10 @@
 import { google } from "googleapis"
 import type { SpesReportsData } from "@/lib/validations/spes-reports"
 
-const GOOGLE_SHEETS_SCOPE = "https://www.googleapis.com/auth/spreadsheets"
+const GOOGLE_SHEETS_SCOPES = [
+  "https://www.googleapis.com/auth/spreadsheets",
+  "https://www.googleapis.com/auth/drive.file",
+]
 const GOOGLE_SHEETS_SHEET_TITLE_MAX_LENGTH = 100
 
 function getRequiredEnv(name: string): string {
@@ -152,25 +155,50 @@ function buildRows(report: SpesReportsData): Array<Array<string | number>> {
 
 export async function exportSpesReportsToGoogleSheets(
   report: SpesReportsData,
-  options?: { spreadsheetId?: string }
+  options?: { spreadsheetId?: string; createNew?: boolean }
 ): Promise<{ spreadsheetId: string; sheetTitle: string; updatedCells: number }> {
-  const spreadsheetId = options?.spreadsheetId?.trim() || getRequiredEnv("GOOGLE_SHEETS_SPREADSHEET_ID")
   const clientEmail = getRequiredEnv("GOOGLE_SHEETS_CLIENT_EMAIL")
   const privateKey = normalizePrivateKey(getRequiredEnv("GOOGLE_SHEETS_PRIVATE_KEY"))
 
   const auth = new google.auth.JWT({
     email: clientEmail,
     key: privateKey,
-    scopes: [GOOGLE_SHEETS_SCOPE],
+    scopes: GOOGLE_SHEETS_SCOPES,
   })
   const sheets = google.sheets({ version: "v4", auth })
+
+  let finalSpreadsheetId = options?.createNew ? undefined : options?.spreadsheetId?.trim() || process.env.GOOGLE_SHEETS_SPREADSHEET_ID?.trim()
+
+  if (!finalSpreadsheetId) {
+    try {
+      const createResult = await sheets.spreadsheets.create({
+        requestBody: {
+          properties: {
+            title: `PESO SPES Reports - ${report.selectedYear}`,
+          },
+        },
+      })
+      finalSpreadsheetId = createResult.data.spreadsheetId ?? undefined
+      if (!finalSpreadsheetId) {
+        throw new Error("Failed to create a new Google Spreadsheet")
+      }
+    } catch (createError: any) {
+      console.error("[GOOGLE_SHEETS_CREATE_ERROR]", {
+        message: createError.message,
+        errors: createError.response?.data?.error?.errors,
+        status: createError.status,
+      })
+      throw new Error(`Google Sheets creation failed: ${createError.message}. Please ensure Google Sheets and Google Drive APIs are enabled in your Google Cloud Console.`)
+    }
+  }
 
   const sheetTitle = buildSheetTitle(report.selectedYear)
   const rows = buildRows(report)
 
   try {
+    // Add a new sheet to the spreadsheet
     await sheets.spreadsheets.batchUpdate({
-      spreadsheetId,
+      spreadsheetId: finalSpreadsheetId,
       requestBody: {
         requests: [
           {
@@ -183,7 +211,7 @@ export async function exportSpesReportsToGoogleSheets(
     })
 
     const updateResult = await sheets.spreadsheets.values.update({
-      spreadsheetId,
+      spreadsheetId: finalSpreadsheetId,
       range: `'${sheetTitle}'!A1`,
       valueInputOption: "USER_ENTERED",
       requestBody: {
@@ -192,7 +220,7 @@ export async function exportSpesReportsToGoogleSheets(
     })
 
     return {
-      spreadsheetId,
+      spreadsheetId: finalSpreadsheetId,
       sheetTitle,
       updatedCells: updateResult.data.updatedCells ?? 0,
     }

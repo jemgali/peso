@@ -9,7 +9,7 @@ import type {
 } from "@/lib/validations/application-review";
 import { GoogleNotificationEmail } from "@/components/email-template/google-notification";
 
-const FROM_EMAIL = "PESO <noreply@jemgali.tech>";
+const FROM_EMAIL = process.env.EMAIL_FROM as string;
 
 interface SendApplicationEmailParams {
   to: string;
@@ -123,7 +123,7 @@ export async function sendEvaluationBulkNotifyEmail({
       "PESO sent an update regarding your SPES application evaluation.",
       "Please check your application status page for details and next steps.",
     ];
-    
+
     if (note?.trim()) {
       messageLines.push(`Admin note: ${note.trim()}`);
     }
